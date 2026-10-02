@@ -33,13 +33,13 @@ export type CareResult = {
 
 const SYSTEM = `You are a Veteran mental-health care NAVIGATOR (not a clinician). Never diagnose.
 Extract search variables from the whole conversation. Reply ONLY with JSON:
-{"reply": string (open with one or two sincere, sympathetic sentences ONLY when the latest message shares feelings, struggles or a hard situation — NOT when they just give practical details like location, format or insurance (then simply say thanks/got it); then, if what they need help with (need) or their preferred care format is missing, gently ask for it — at most two short questions; plain language),
+{"reply": string (open with one or two sincere, sympathetic sentences ONLY when the latest message shares feelings, struggles or a hard situation — NOT when they just give practical details like location, format or insurance (then simply say thanks/got it); then gently ask for what is still missing — what they need help with (need), their preferred care format, whether they want VA care or a community/civilian provider (va_vs_community), and whether they prefer one-on-one therapy or a support group (care_type) — at most two short questions per reply; plain language),
  "crisis": boolean (true if any sign of immediate danger, suicide, self-harm),
  "variables": {"location": string|null (city, ST), "distance_miles": number|null, "care_format": "in-person"|"telehealth"|"phone"|null,
-  "care_type": "therapy"|"counseling"|"psychiatry"|"group"|"iop"|"residential"|null,
+  "care_type": "therapy"|"counseling"|"psychiatry"|"group"|"iop"|"residential"|null (use "group" for support groups/group therapy; "therapy" or "counseling" for one-on-one),
   "need": "ptsd"|"depression"|"anxiety"|"mst"|"grief"|"trauma"|"substance use"|null,
   "payment": "va"|"tricare"|"medicaid"|"medicare"|"private"|"self-pay"|null,
-  "va_vs_community": "va"|"community"|"either"|null, "urgency": "routine"|"soon"|"urgent"|"crisis"|null}}`;
+  "va_vs_community": "va"|"community"|"either"|null ("va" = VA facility/Vet Center, "community" = civilian therapist or non-VA provider, "either" = no preference), "urgency": "routine"|"soon"|"urgent"|"crisis"|null}}`;
 
 const CRISIS_RE = /\b(suicid|kill myself|end it|self[- ]harm|hurt myself|don'?t want to live)/i;
 
@@ -64,10 +64,14 @@ function fallbackExtract(text: string): Variables {
     location: loc ? `${loc[0]}, ${loc[1]}` : null,
     distance_miles: dist ? Number(dist[1]) : null,
     care_format: t.includes("tele") || t.includes("video") || t.includes("online") ? "telehealth" : t.includes("in person") ? "in-person" : null,
-    care_type: pick(["therapy", "counseling", "psychiatry", "group", "residential"]),
+    care_type: t.includes("group") || t.includes("support group") || t.includes("peer") ? "group"
+      : t.includes("one on one") || t.includes("one-on-one") || t.includes("1 on 1") || t.includes("individual") ? "therapy"
+      : pick(["therapy", "counseling", "psychiatry", "residential"]),
     need: pick(["ptsd", "depression", "anxiety", "mst", "grief", "trauma", "substance use"]),
     payment: pick(["tricare", "medicaid", "medicare", "self-pay"]) ?? (t.includes("insurance") ? "private" : null),
-    va_vs_community: t.includes("not the va") || t.includes("community") ? "community" : t.includes(" va") ? "va" : null,
+    va_vs_community: t.includes("not the va") || t.includes("community") || t.includes("civilian") || t.includes("private therapist") ? "community"
+      : t.includes("either") || t.includes("no preference") || t.includes("don't care") ? "either"
+      : /\bva\b/.test(t) || t.includes("vet center") ? "va" : null,
     urgency: CRISIS_RE.test(t) ? "crisis" : t.includes("soon") || t.includes("asap") ? "soon" : null,
   };
 }
@@ -166,6 +170,8 @@ export const navigate = createServerFn({ method: "POST" })
     if (!locationGiven) variables.location = null;
     const missing: string[] = [];
     if (!variables.need) missing.push("what you'd like support with (for example PTSD, depression, anxiety, grief, or substance use)");
+    if (!variables.care_type) missing.push("whether you'd prefer one-on-one therapy or a support group");
+    if (!variables.va_vs_community) missing.push("whether you'd like care through the VA or from a community provider, like a civilian therapist");
     if (!variables.care_format) missing.push("whether you'd prefer in-person, telehealth, or phone care");
     if (!variables.location) missing.push("your city and state (I'll use Atlanta, GA until you tell me otherwise)");
     const needsMore = missing.length > 0 && !crisis;
