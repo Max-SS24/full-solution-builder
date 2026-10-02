@@ -33,7 +33,7 @@ export type CareResult = {
 
 const SYSTEM = `You are a Veteran mental-health care NAVIGATOR (not a clinician). Never diagnose.
 Extract search variables from the whole conversation. Reply ONLY with JSON:
-{"reply": string (ALWAYS open with one or two sincere, sympathetic sentences acknowledging what the veteran shared; then, if what they need help with (need) or their preferred care format is missing, gently ask for it — at most two short questions; plain language),
+{"reply": string (open with one or two sincere, sympathetic sentences ONLY when the latest message shares feelings, struggles or a hard situation — NOT when they just give practical details like location, format or insurance (then simply say thanks/got it); then, if what they need help with (need) or their preferred care format is missing, gently ask for it — at most two short questions; plain language),
  "crisis": boolean (true if any sign of immediate danger, suicide, self-harm),
  "variables": {"location": string|null (city, ST), "distance_miles": number|null, "care_format": "in-person"|"telehealth"|"phone"|null,
   "care_type": "therapy"|"counseling"|"psychiatry"|"group"|"iop"|"residential"|null,
@@ -46,10 +46,22 @@ const CRISIS_RE = /\b(suicid|kill myself|end it|self[- ]harm|hurt myself|don'?t 
 function fallbackExtract(text: string): Variables {
   const t = text.toLowerCase();
   const pick = <T extends string>(opts: T[]) => opts.find((o) => t.includes(o)) ?? null;
-  const loc = text.match(/\b(?:in|near|around)\s+([A-Z][a-zA-Z .]+,\s*[A-Z]{2})/);
+  const ST = "AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC";
+  const re = new RegExp(`([A-Za-z][A-Za-z.]*(?:\\s[A-Za-z][A-Za-z.]*){0,2}),?\\s+(${ST})\\b`, "gi");
+  const stop = /^(in|near|around|at|from|live|i|am|im|i'm|the|a|with|and|to|of|for|by|is|me|my)$/i;
+  let loc: [string, string] | null = null;
+  for (const m of text.matchAll(re)) {
+    const all = (m[1] ?? "").split(/\s+/);
+    let cut = -1;
+    all.forEach((w, i) => { if (stop.test(w)) cut = i; });
+    const words = all.slice(cut + 1);
+    if (!words.length || ((m[2] ?? "").toUpperCase() === "VA" && !m[0].includes(","))) continue;
+    const city = words.map((w) => (w[0] ?? "").toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+    loc = [city, (m[2] ?? "").toUpperCase()];
+  }
   const dist = t.match(/(\d+)\s*(?:mi|miles)/);
   return {
-    location: loc?.[1] ?? null,
+    location: loc ? `${loc[0]}, ${loc[1]}` : null,
     distance_miles: dist ? Number(dist[1]) : null,
     care_format: t.includes("tele") || t.includes("video") || t.includes("online") ? "telehealth" : t.includes("in person") ? "in-person" : null,
     care_type: pick(["therapy", "counseling", "psychiatry", "group", "residential"]),
@@ -102,7 +114,9 @@ export const navigate = createServerFn({ method: "POST" })
         aiUsed = true;
         reply = out.reply ?? "";
         crisis = crisis || !!out.crisis;
-        variables = { ...variables, ...(out.variables ?? {}) };
+        for (const [k, val] of Object.entries(out.variables ?? {})) {
+          if (val != null && val !== "") (variables as Record<string, unknown>)[k] = val;
+        }
       }
     } catch (e) {
       aiError = e instanceof Error ? e.message : "AI unavailable";
@@ -157,7 +171,12 @@ export const navigate = createServerFn({ method: "POST" })
     const needsMore = missing.length > 0 && !crisis;
 
     if (!reply) {
-      const sympathy = "I'm really sorry you're dealing with this, and thank you for reaching out — that takes strength.";
+      const last = data.messages.filter((m) => m.role === "user").at(-1)?.content ?? "";
+      const firstTurn = data.messages.filter((m) => m.role === "user").length === 1;
+      const emotional = /\b(struggl|hard|tough|lost|alone|sad|depress|anxi|ptsd|trauma|scared|hurt|can'?t sleep|nightmare|grief|griev|overwhelm|help)/i.test(last);
+      const sympathy = firstTurn || emotional
+        ? "I'm really sorry you're dealing with this, and thank you for reaching out — that takes strength."
+        : "Got it, thanks.";
       reply = needsMore
         ? `${sympathy} To find the right fit, could you tell me ${missing.slice(0, 2).join(" and ")}?`
         : results.length
