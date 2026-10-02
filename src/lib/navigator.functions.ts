@@ -148,7 +148,11 @@ export const navigate = createServerFn({ method: "POST" })
       const v = variables;
       const city = v.location?.split(",")[0]?.trim().toLowerCase();
       const state = v.location?.split(",")[1]?.trim().toUpperCase();
-      results = rows
+      // Community-only seekers never see VA facilities or Vet Centers.
+      const pool = v.va_vs_community === "community"
+        ? rows.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center")
+        : rows;
+      results = pool
         .map((r) => {
           let score = 0;
           if (state && r.state !== state) return null;
@@ -189,7 +193,9 @@ export const navigate = createServerFn({ method: "POST" })
         ? `${sympathy} To find the right fit, could you tell me ${missing.slice(0, 2).join(" and ")}?`
         : results.length
           ? `${sympathy} Here's what I found from approved sources — each one links back so you can verify.`
-          : `${sympathy} I couldn't find a close match yet — could you share a bit more about what you're looking for?`;
+          : variables.va_vs_community === "community"
+            ? `${sympathy} I couldn't find a community (non-VA) option that fits yet — I've left out all VA facilities as you asked. If you'd ever reconsider, VA options can be included too.`
+            : `${sympathy} I couldn't find a close match yet — could you share a bit more about what you're looking for?`;
     }
 
     return {
