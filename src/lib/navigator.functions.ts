@@ -33,7 +33,7 @@ export type CareResult = {
 
 const SYSTEM = `You are a Veteran mental-health care NAVIGATOR (not a clinician). Never diagnose.
 Extract search variables from the whole conversation. Reply ONLY with JSON:
-{"reply": string (warm, short, plain language; ask ONE clarifying question only if a missing value materially changes the search),
+{"reply": string (ALWAYS open with one or two sincere, sympathetic sentences acknowledging what the veteran shared; then, if what they need help with (need) or their preferred care format is missing, gently ask for it — at most two short questions; plain language),
  "crisis": boolean (true if any sign of immediate danger, suicide, self-harm),
  "variables": {"location": string|null (city, ST), "distance_miles": number|null, "care_format": "in-person"|"telehealth"|"phone"|null,
   "care_type": "therapy"|"counseling"|"psychiatry"|"group"|"iop"|"residential"|null,
@@ -115,6 +115,9 @@ export const navigate = createServerFn({ method: "POST" })
       }
     }
 
+    const locationGiven = !!variables.location;
+    if (!variables.location) variables.location = "Atlanta, GA";
+
     const { data: rows, error } = await sb
       .from("care_resources")
       .select("*, data_sources!inner(name, enabled)")
@@ -146,17 +149,28 @@ export const navigate = createServerFn({ method: "POST" })
         .map((x) => x.item);
     }
 
+    if (!locationGiven) variables.location = null;
+    const missing: string[] = [];
+    if (!variables.need) missing.push("what you'd like support with (for example PTSD, depression, anxiety, grief, or substance use)");
+    if (!variables.care_format) missing.push("whether you'd prefer in-person, telehealth, or phone care");
+    if (!variables.location) missing.push("your city and state (I'll use Atlanta, GA until you tell me otherwise)");
+    const needsMore = missing.length > 0 && !crisis;
+
     if (!reply) {
-      reply = results.length
-        ? "Thank you for sharing that. Here's what I found from approved sources — each one links back so you can verify."
-        : "Thanks — tell me a bit more, like your city and state and what kind of support you're looking for.";
+      const sympathy = "I'm really sorry you're dealing with this, and thank you for reaching out — that takes strength.";
+      reply = needsMore
+        ? `${sympathy} To find the right fit, could you tell me ${missing.slice(0, 2).join(" and ")}?`
+        : results.length
+          ? `${sympathy} Here's what I found from approved sources — each one links back so you can verify.`
+          : `${sympathy} I couldn't find a close match yet — could you share a bit more about what you're looking for?`;
     }
 
     return {
       reply,
       crisis,
       variables,
-      results,
+      results: needsMore ? [] : results,
+      needsMore,
       connectorError: error ? "A data source is temporarily unavailable." : null,
       aiNote: aiUsed ? null : aiError ?? `No AI key configured for ${activeProvider(aiCfg).name}; using basic matching.`,
     };
