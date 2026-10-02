@@ -1,5 +1,6 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "va-navigator-capstone",
+  "description": "VA Navigator - IT Capstone: helps Veterans find mental-health care from approved VA and community sources",
   "private": true,
   "sideEffects": false,
   "type": "module",
