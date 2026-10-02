@@ -14,3 +14,6 @@
 - Care search reads care_resources joined to data_sources; only enabled sources are returned (RLS), so admins control retrieval by toggling sources.
 - First signed-in user to open /admin becomes admin via claim_first_admin(); roles live in user_roles, never on profiles.
 - Registered-user search preferences live in user_preferences (jsonb, one row per user) and are merged server-side only where the chat left a variable empty.
+- Search history is saved client-side to search_history (owner-only RLS) after each answer; reopened via /?h=<id>.
+- Audit log rows are written only by the audit_changes() trigger on data_sources and api_settings; clients can read (admins) but never write.
+- AI provider precedence: api_settings row (admin page) -> AI_PROVIDER secret -> grok; keys always remain secrets.

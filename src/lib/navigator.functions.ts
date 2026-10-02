@@ -71,6 +71,23 @@ export const navigate = createServerFn({ method: "POST" })
     const { completeJson, activeProvider } = await import("./ai/providers.server");
     const userText = data.messages.filter((m) => m.role === "user").map((m) => m.content).join("\n");
 
+    // Query approved sources (public read via RLS: only enabled sources' records).
+    const url = process.env["SUPABASE_URL"]!;
+    const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
+    const sb = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input, init) => {
+          const h = new Headers(init?.headers);
+          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+          h.set("apikey", key);
+          return fetch(input, { ...init, headers: h });
+        },
+      },
+    });
+    const { data: aiRows } = await sb.rpc("get_ai_settings");
+    const aiCfg = (aiRows as { provider: string; model: string | null }[] | null)?.[0];
+
     let reply = "";
     let crisis = CRISIS_RE.test(userText);
     let variables: Variables = fallbackExtract(userText);
@@ -78,7 +95,7 @@ export const navigate = createServerFn({ method: "POST" })
     let aiUsed = false;
 
     try {
-      const out = (await completeJson([{ role: "system", content: SYSTEM }, ...data.messages])) as
+      const out = (await completeJson([{ role: "system", content: SYSTEM }, ...data.messages], aiCfg)) as
         | { reply?: string; crisis?: boolean; variables?: Partial<Variables> }
         | null;
       if (out) {
@@ -98,20 +115,6 @@ export const navigate = createServerFn({ method: "POST" })
       }
     }
 
-    // Query approved sources (public read via RLS: only enabled sources' records).
-    const url = process.env["SUPABASE_URL"]!;
-    const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
-    const sb = createClient(url, key, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: {
-        fetch: (input, init) => {
-          const h = new Headers(init?.headers);
-          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
-          h.set("apikey", key);
-          return fetch(input, { ...init, headers: h });
-        },
-      },
-    });
     const { data: rows, error } = await sb
       .from("care_resources")
       .select("*, data_sources!inner(name, enabled)")
@@ -155,6 +158,6 @@ export const navigate = createServerFn({ method: "POST" })
       variables,
       results,
       connectorError: error ? "A data source is temporarily unavailable." : null,
-      aiNote: aiUsed ? null : aiError ?? `No AI key configured for ${activeProvider().name}; using basic matching.`,
+      aiNote: aiUsed ? null : aiError ?? `No AI key configured for ${activeProvider(aiCfg).name}; using basic matching.`,
     };
   });

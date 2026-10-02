@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_settings: {
+        Row: {
+          id: number
+          model: string | null
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          model?: string | null
+          provider?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          model?: string | null
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          details: Json
+          entity: string
+          entity_id: string | null
+          id: number
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity: string
+          entity_id?: string | null
+          id?: never
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity?: string
+          entity_id?: string | null
+          id?: never
+        }
+        Relationships: []
+      }
       care_resources: {
         Row: {
           care_types: string[]
@@ -109,6 +163,39 @@ export type Database = {
         }
         Relationships: []
       }
+      search_history: {
+        Row: {
+          created_at: string
+          id: string
+          messages: Json
+          question: string
+          reply: string
+          results: Json
+          user_id: string
+          variables: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          question: string
+          reply: string
+          results?: Json
+          user_id: string
+          variables?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          question?: string
+          reply?: string
+          results?: Json
+          user_id?: string
+          variables?: Json
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           prefs: Json
@@ -151,6 +238,13 @@ export type Database = {
     }
     Functions: {
       claim_first_admin: { Args: never; Returns: boolean }
+      get_ai_settings: {
+        Args: never
+        Returns: {
+          model: string
+          provider: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

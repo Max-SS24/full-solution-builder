@@ -12,7 +12,8 @@
 //   GEMINI_API_KEY     Google Gemini
 //
 // HOW TO SWITCH PROVIDERS (backend only):
-//   Add a secret AI_PROVIDER = grok | openai | gemini   (default: grok)
+//   Admins can pick the provider/model on the Admin page (changes are audit-logged),
+//   or add a secret AI_PROVIDER = grok | openai | gemini   (default: grok)
 //   Optional: AI_MODEL = a specific model id to override the default below.
 //
 // TO ADD A NEW PROVIDER: add one entry to PROVIDERS (any OpenAI-compatible
@@ -32,18 +33,22 @@ const PROVIDERS: Record<string, ProviderConfig> = {
 
 export type ChatMsg = { role: "system" | "user" | "assistant"; content: string };
 
-export function activeProvider() {
-  const name = (process.env["AI_PROVIDER"] || "grok").toLowerCase();
+export function activeProvider(override?: { provider?: string | null; model?: string | null }) {
+  // Priority: admin setting (audited, stored in api_settings) -> AI_PROVIDER secret -> grok
+  const name = (override?.provider || process.env["AI_PROVIDER"] || "grok").toLowerCase();
   const cfg: ProviderConfig = PROVIDERS[name] ?? PROVIDERS["grok"]!;
-  const model = process.env["AI_MODEL"] || cfg.model;
+  const model = override?.model || process.env["AI_MODEL"] || cfg.model;
   // <-- API KEY IS READ HERE from the secret named in cfg.keyEnv (e.g. XAI_API_KEY)
   const apiKey = process.env[cfg.keyEnv];
   return { name, ...cfg, model, apiKey };
 }
 
 /** Returns the model's JSON reply, or null if no provider key is configured. */
-export async function completeJson(messages: ChatMsg[]): Promise<unknown | null> {
-  const p = activeProvider();
+export async function completeJson(
+  messages: ChatMsg[],
+  override?: { provider?: string | null; model?: string | null },
+): Promise<unknown | null> {
+  const p = activeProvider(override);
   if (!p.apiKey) return null;
   const res = await fetch(`${p.baseURL}/chat/completions`, {
     method: "POST",
