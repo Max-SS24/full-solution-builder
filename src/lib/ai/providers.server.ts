@@ -16,7 +16,7 @@ export type ChatMsg = { role: "system" | "user" | "assistant"; content: string }
 
 export function activeProvider() {
   const name = (process.env["AI_PROVIDER"] || "grok").toLowerCase();
-  const cfg = PROVIDERS[name] ?? PROVIDERS.grok;
+  const cfg: ProviderConfig = PROVIDERS[name] ?? PROVIDERS["grok"]!;
   const model = process.env["AI_MODEL"] || cfg.model;
   const apiKey = process.env[cfg.keyEnv];
   return { name, ...cfg, model, apiKey };
