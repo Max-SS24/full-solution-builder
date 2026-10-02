@@ -18,6 +18,9 @@ export function SiteHeader() {
           {isAdmin && (
             <Link to="/admin" className="rounded-full border-[3px] border-ink bg-sun px-4 py-1.5 font-semibold">Admin</Link>
           )}
+          {user && (
+            <Link to="/history" className="rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft">History</Link>
+          )}
           {user ? (
             <Link to="/account" className="rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft">My account</Link>
           ) : (
