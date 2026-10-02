@@ -40,13 +40,13 @@ function Account() {
   return (
     <div className="min-h-screen bg-cream">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <div className="flex items-center justify-between">
-          <h1 className="font-display text-4xl font-bold">My account</h1>
-          <button onClick={signOut} className="rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Sign out</button>
+      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+          <h1 className="min-w-0 font-display text-3xl font-bold sm:text-4xl">My account</h1>
+          <button onClick={signOut} className="shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Sign out</button>
         </div>
-        <p className="mt-2 text-sm text-ink/60">{user?.email}</p>
-        <section className="mt-8 rounded-[26px] border-[3px] border-ink bg-paper p-6 shadow-hard-lg">
+        <p className="mt-2 break-all text-sm text-ink/60">{user?.email}</p>
+        <section className="mt-8 rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[26px] sm:p-6">
           <h2 className="font-display text-xl font-bold">Saved preferences</h2>
           <p className="mt-1 text-sm text-ink/60">These fill in automatically on your next search. Anything you say in the chat overrides them.</p>
           {entries.length === 0 ? (
@@ -54,7 +54,7 @@ function Account() {
           ) : (
             <div className="mt-4 flex flex-wrap gap-2">
               {entries.map(([k, v]) => (
-                <span key={k} className="rounded-full border-2 border-ink bg-soft px-3 py-1 text-sm font-bold">{LABELS[k] ?? k}: {String(v)}</span>
+                <span key={k} className="max-w-full break-words rounded-full border-2 border-ink bg-soft px-3 py-1 text-sm font-bold">{LABELS[k] ?? k}: {String(v)}</span>
               ))}
             </div>
           )}

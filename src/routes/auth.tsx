@@ -45,8 +45,8 @@ function AuthPage() {
   return (
     <div className="min-h-screen bg-cream">
       <SiteHeader />
-      <main className="mx-auto max-w-md px-6 py-16">
-        <form onSubmit={submit} className="rounded-[30px] border-[3px] border-ink bg-paper p-8 shadow-[8px_8px_0_var(--ink)]">
+      <main className="mx-auto max-w-md px-4 py-10 sm:px-6 sm:py-16">
+        <form onSubmit={submit} className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[30px] sm:p-8 sm:shadow-[8px_8px_0_var(--ink)]">
           <h1 className="font-display text-3xl font-bold">{mode === "in" ? "Sign in" : "Create your account"}</h1>
           <p className="mt-2 text-sm text-ink/60">Save your search preferences for next time. Admins sign in here too.</p>
           <label className="mt-6 block text-sm font-bold" htmlFor="email">Email</label>

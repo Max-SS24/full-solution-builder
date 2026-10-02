@@ -42,8 +42,8 @@ function History() {
   return (
     <div className="min-h-screen bg-cream">
       <SiteHeader />
-      <main className="mx-auto max-w-4xl px-6 py-12">
-        <h1 className="font-display text-4xl font-bold">My search history</h1>
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+        <h1 className="font-display text-3xl font-bold sm:text-4xl">My search history</h1>
         <p className="mt-2 text-sm text-ink/60">🔒 Private — only you can see these. Delete any entry at any time.</p>
         {q.isLoading && <p className="mt-6">Loading…</p>}
         {q.data?.length === 0 && (
@@ -51,17 +51,17 @@ function History() {
         )}
         <ul className="mt-8 space-y-4">
           {q.data?.map((h) => (
-            <li key={h.id} className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+             <li key={h.id} className="rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard sm:p-5">
+               <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-semibold text-ink/50">{new Date(h.created_at).toLocaleString()}</div>
-                  <p className="mt-1 font-display text-lg font-bold">“{h.question}”</p>
-                  <p className="mt-2 text-sm text-ink/70">{h.reply}</p>
+                   <p className="mt-1 break-words font-display text-lg font-bold">“{h.question}”</p>
+                   <p className="mt-2 break-words text-sm text-ink/70">{h.reply}</p>
                   <p className="mt-2 text-xs font-semibold text-ink/50">{(h.results as unknown[]).length} care options found</p>
                 </div>
-                <div className="flex gap-2">
-                  <Link to="/" search={{ h: h.id }} className="rounded-full border-[3px] border-ink bg-navy px-4 py-1.5 text-sm font-bold text-cream shadow-hard">Reopen</Link>
-                  <button onClick={() => remove(h.id)} className="rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-bold">Delete</button>
+                 <div className="grid grid-cols-2 gap-2 sm:flex">
+                   <Link to="/" search={{ h: h.id }} className="rounded-full border-[3px] border-ink bg-navy px-4 py-1.5 text-center text-sm font-bold text-cream shadow-hard">Reopen</Link>
+                   <button onClick={() => remove(h.id)} className="rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-bold">Delete</button>
                 </div>
               </div>
             </li>
