@@ -13,3 +13,4 @@
 - AI provider is chosen server-side only via AI_PROVIDER env (grok|openai|gemini) in src/lib/ai/providers.server.ts — users never see or pick the model.
 - Care search reads care_resources joined to data_sources; only enabled sources are returned (RLS), so admins control retrieval by toggling sources.
 - First signed-in user to open /admin becomes admin via claim_first_admin(); roles live in user_roles, never on profiles.
+- Registered-user search preferences live in user_preferences (jsonb, one row per user) and are merged server-side only where the chat left a variable empty.
