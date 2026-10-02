@@ -51,12 +51,12 @@ function fallbackExtract(text: string): Variables {
   const stop = /^(in|near|around|at|from|live|i|am|im|i'm|the|a|with|and|to|of|for|by|is|me|my)$/i;
   let loc: [string, string] | null = null;
   for (const m of text.matchAll(re)) {
-    const all = m[1].split(/\s+/);
+    const all = (m[1] ?? "").split(/\s+/);
     let cut = -1;
     all.forEach((w, i) => { if (stop.test(w)) cut = i; });
     const words = all.slice(cut + 1);
-    if (!words.length || (m[2].toUpperCase() === "VA" && !m[0].includes(","))) continue;
-    const city = words.map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+    if (!words.length || ((m[2] ?? "").toUpperCase() === "VA" && !m[0].includes(","))) continue;
+    const city = words.map((w) => (w[0] ?? "").toUpperCase() + w.slice(1).toLowerCase()).join(" ");
     loc = [city, (m[2] ?? "").toUpperCase()];
   }
   const dist = t.match(/(\d+)\s*(?:mi|miles)/);
