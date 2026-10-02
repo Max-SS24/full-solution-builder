@@ -39,7 +39,7 @@ Extract search variables from the whole conversation. Reply ONLY with JSON:
   "care_type": "therapy"|"counseling"|"psychiatry"|"group"|"iop"|"residential"|null (use "group" for support groups/group therapy; "therapy" or "counseling" for one-on-one),
   "need": "ptsd"|"depression"|"anxiety"|"mst"|"grief"|"trauma"|"substance use"|null,
   "payment": "va"|"tricare"|"medicaid"|"medicare"|"private"|"self-pay"|null,
-  "va_vs_community": "va"|"community"|"either"|null ("va" = VA facility/Vet Center, "community" = civilian therapist or non-VA provider, "either" = no preference), "urgency": "routine"|"soon"|"urgent"|"crisis"|null}}`;
+  "va_vs_community": "va"|"community"|"either"|null ("va" = VA facility/Vet Center, "community" = civilian therapist or non-VA provider — ALSO use "community" whenever they say they don't want the VA, don't want to deal with the VA or government, or want to avoid VA/government care, "either" = no preference), "urgency": "routine"|"soon"|"urgent"|"crisis"|null}}`;
 
 const CRISIS_RE = /\b(suicid|kill myself|end it|self[- ]harm|hurt myself|don'?t want to live)/i;
 
@@ -69,7 +69,9 @@ function fallbackExtract(text: string): Variables {
       : pick(["therapy", "counseling", "psychiatry", "residential"]),
     need: pick(["ptsd", "depression", "anxiety", "mst", "grief", "trauma", "substance use"]),
     payment: pick(["tricare", "medicaid", "medicare", "self-pay"]) ?? (t.includes("insurance") ? "private" : null),
-    va_vs_community: t.includes("not the va") || t.includes("community") || t.includes("civilian") || t.includes("private therapist") ? "community"
+    va_vs_community: t.includes("not the va") || t.includes("community") || t.includes("civilian") || t.includes("private therapist")
+        || /don'?t want (to deal with )?(the )?va/.test(t) || /no[n -]?va/.test(t) || /avoid (the )?va/.test(t)
+        || /don'?t want (to deal with )?(the )?government/.test(t) || /no[n -]?government/.test(t) || /outside (the )?va/.test(t) ? "community"
       : t.includes("either") || t.includes("no preference") || t.includes("don't care") ? "either"
       : /\bva\b/.test(t) || t.includes("vet center") ? "va" : null,
     urgency: CRISIS_RE.test(t) ? "crisis" : t.includes("soon") || t.includes("asap") ? "soon" : null,
