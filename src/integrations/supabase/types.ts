@@ -14,16 +14,135 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      care_resources: {
+        Row: {
+          care_types: string[]
+          city: string | null
+          formats: string[]
+          id: string
+          kind: string
+          last_checked: string
+          name: string
+          needs: string[]
+          payment: string[]
+          phone: string | null
+          source_id: string
+          source_url: string
+          state: string | null
+          verified: boolean
+          veteran_focus: boolean
+        }
+        Insert: {
+          care_types?: string[]
+          city?: string | null
+          formats?: string[]
+          id?: string
+          kind: string
+          last_checked?: string
+          name: string
+          needs?: string[]
+          payment?: string[]
+          phone?: string | null
+          source_id: string
+          source_url: string
+          state?: string | null
+          verified?: boolean
+          veteran_focus?: boolean
+        }
+        Update: {
+          care_types?: string[]
+          city?: string | null
+          formats?: string[]
+          id?: string
+          kind?: string
+          last_checked?: string
+          name?: string
+          needs?: string[]
+          payment?: string[]
+          phone?: string | null
+          source_id?: string
+          source_url?: string
+          state?: string | null
+          verified?: boolean
+          veteran_focus?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_resources_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_sources: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          name: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_first_admin: { Args: never; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +269,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
