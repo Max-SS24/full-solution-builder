@@ -170,6 +170,8 @@ export const navigate = createServerFn({ method: "POST" })
     if (!locationGiven) variables.location = null;
     const missing: string[] = [];
     if (!variables.need) missing.push("what you'd like support with (for example PTSD, depression, anxiety, grief, or substance use)");
+    if (!variables.care_type) missing.push("whether you'd prefer one-on-one therapy or a support group");
+    if (!variables.va_vs_community) missing.push("whether you'd like care through the VA or from a community provider, like a civilian therapist");
     if (!variables.care_format) missing.push("whether you'd prefer in-person, telehealth, or phone care");
     if (!variables.location) missing.push("your city and state (I'll use Atlanta, GA until you tell me otherwise)");
     const needsMore = missing.length > 0 && !crisis;
