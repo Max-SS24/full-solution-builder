@@ -114,7 +114,9 @@ export const navigate = createServerFn({ method: "POST" })
         aiUsed = true;
         reply = out.reply ?? "";
         crisis = crisis || !!out.crisis;
-        variables = { ...variables, ...(out.variables ?? {}) };
+        for (const [k, val] of Object.entries(out.variables ?? {})) {
+          if (val != null && val !== "") (variables as Record<string, unknown>)[k] = val;
+        }
       }
     } catch (e) {
       aiError = e instanceof Error ? e.message : "AI unavailable";
