@@ -51,7 +51,14 @@ function Home() {
   const [crisis, setCrisis] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
-  useEffect(() => endRef.current?.scrollIntoView({ block: "nearest" }), [messages]);
+  const hasRenderedMessages = useRef(false);
+  useEffect(() => {
+    if (!hasRenderedMessages.current) {
+      hasRenderedMessages.current = true;
+      return;
+    }
+    endRef.current?.scrollIntoView({ block: "nearest" });
+  }, [messages]);
   const { h } = Route.useSearch();
   useEffect(() => {
     if (!h || !user) return;

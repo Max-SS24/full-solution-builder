@@ -5,7 +5,7 @@ export function SiteHeader() {
   const { user, isAdmin } = useAccount();
   return (
     <header className="border-b-[3px] border-ink bg-cream">
-      <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4 lg:flex lg:items-center lg:justify-between lg:gap-6">
+      <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4 md:flex md:items-center md:justify-between md:gap-6">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <Link to="/" className="flex min-w-0 items-center gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border-[3px] border-ink bg-sun font-display text-xl font-bold shadow-hard sm:h-11 sm:w-11 sm:rounded-2xl sm:text-2xl">V</span>
@@ -14,9 +14,10 @@ export function SiteHeader() {
               <div className="hidden text-[11px] font-medium uppercase tracking-[0.14em] text-ink/55 sm:block">Veteran mental-health navigator</div>
             </div>
           </Link>
-          <a href="/#chat" className="shrink-0 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-cream shadow-hard sm:px-5">Start a chat</a>
+          <a href="/#chat" className="shrink-0 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-cream shadow-hard sm:px-5 md:hidden">Start a chat</a>
         </div>
-        <nav className="mt-3 flex min-w-0 items-center gap-2 overflow-x-auto pb-1 text-sm lg:mt-0 lg:overflow-visible lg:pb-0">
+        <nav className="mt-3 flex min-w-0 items-center gap-2 overflow-x-auto pb-1 text-sm md:mt-0 md:overflow-visible md:pb-0">
+          <a href="/#chat" className="hidden shrink-0 rounded-full bg-navy px-5 py-2 font-semibold text-cream shadow-hard md:inline-flex">Start a chat</a>
           {isAdmin && (
             <Link to="/admin" className="shrink-0 rounded-full border-[3px] border-ink bg-sun px-4 py-1.5 font-semibold">Admin</Link>
           )}
