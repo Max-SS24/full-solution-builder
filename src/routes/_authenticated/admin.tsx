@@ -108,10 +108,10 @@ function Admin() {
   return (
     <div className="min-h-screen bg-cream">
       <SiteHeader />
-      <main className="mx-auto max-w-5xl px-6 py-12">
-        <div className="flex items-center justify-between">
-          <h1 className="font-display text-4xl font-bold">Approved data sources</h1>
-          <button onClick={signOut} className="rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Sign out</button>
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+          <h1 className="min-w-0 font-display text-3xl font-bold sm:text-4xl">Approved data sources</h1>
+          <button onClick={signOut} className="shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Sign out</button>
         </div>
 
         {isAdmin.isLoading && <p className="mt-6">Checking access…</p>}
@@ -121,53 +121,53 @@ function Admin() {
 
         {isAdmin.data && (
           <>
-            <form onSubmit={add} className="mt-8 grid gap-3 rounded-[26px] border-[3px] border-ink bg-paper p-6 shadow-hard-lg md:grid-cols-2">
+             <form onSubmit={add} className="mt-8 grid min-w-0 gap-3 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:p-6 md:grid-cols-2 md:rounded-[26px]">
               <h2 className="font-display text-xl font-bold md:col-span-2">Add a source</h2>
-              <input required placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
-              <input required placeholder="https://…" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} className="rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="rounded-full border-[3px] border-ink bg-cream px-4 py-2">
+               <input required placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
+               <input required placeholder="https://…" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} className="min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
+               <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2">
                 <option value="va">VA</option>
                 <option value="community">Community</option>
                 <option value="licensing">Licensing</option>
                 <option value="nonprofit">Nonprofit</option>
               </select>
-              <input placeholder="Short description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
+               <input placeholder="Short description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
               <button className="rounded-full border-[3px] border-ink bg-mint py-2.5 font-bold text-paper shadow-hard md:col-span-2">Add source</button>
             </form>
 
             <ul className="mt-8 space-y-4">
               {sources.data?.map((s) => (
-                <li key={s.id} className="flex flex-wrap items-center gap-4 rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard">
+                 <li key={s.id} className="grid gap-4 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:p-5">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-display text-lg font-bold">{s.name}</span>
-                      <span className="rounded-full bg-skytint px-2 py-0.5 text-[10px] font-bold uppercase">{s.category}</span>
+                     <div className="flex min-w-0 flex-wrap items-center gap-2">
+                       <span className="min-w-0 break-words font-display text-lg font-bold">{s.name}</span>
+                       <span className="shrink-0 rounded-full bg-skytint px-2 py-0.5 text-[10px] font-bold uppercase">{s.category}</span>
                     </div>
                     <a href={s.url} target="_blank" rel="noreferrer" className="block truncate text-sm text-ink/60 underline">{s.url}</a>
                     {s.description && <p className="text-sm text-ink/70">{s.description}</p>}
                   </div>
-                  <button onClick={() => toggle(s.id, !s.enabled)} className={`rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-bold ${s.enabled ? "bg-minttint" : "bg-soft text-ink/50"}`}>
+                   <button onClick={() => toggle(s.id, !s.enabled)} className={`w-full rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-bold sm:w-auto ${s.enabled ? "bg-minttint" : "bg-soft text-ink/50"}`}>
                     {s.enabled ? "Enabled" : "Disabled"}
                   </button>
-                  <button onClick={() => remove(s.id)} className="rounded-full border-[3px] border-ink bg-coral px-4 py-1.5 text-sm font-bold text-paper">Remove</button>
+                   <button onClick={() => remove(s.id)} className="w-full rounded-full border-[3px] border-ink bg-coral px-4 py-1.5 text-sm font-bold text-paper sm:w-auto">Remove</button>
                 </li>
               ))}
             </ul>
 
-            <section className="mt-12 rounded-[26px] border-[3px] border-ink bg-paper p-6 shadow-hard-lg">
+             <section className="mt-12 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:rounded-[26px] sm:p-6">
               <h2 className="font-display text-2xl font-bold">AI service</h2>
               <p className="mt-1 text-sm text-ink/60">Visitors never see this. API keys stay in protected secrets — only the provider choice is set here.</p>
               {api.data && (
-                <form onSubmit={saveApi} key={api.data.updated_at} className="mt-4 flex flex-wrap items-end gap-3">
-                  <label className="text-sm font-bold">Provider
-                    <select name="provider" defaultValue={api.data.provider} className="mt-1 block rounded-full border-[3px] border-ink bg-cream px-4 py-2">
+                 <form onSubmit={saveApi} key={api.data.updated_at} className="mt-4 grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+                   <label className="min-w-0 text-sm font-bold">Provider
+                     <select name="provider" defaultValue={api.data.provider} className="mt-1 block w-full min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2">
                       <option value="grok">Grok (XAI_API_KEY)</option>
                       <option value="openai">OpenAI (OPENAI_API_KEY)</option>
                       <option value="gemini">Gemini (GEMINI_API_KEY)</option>
                     </select>
                   </label>
-                  <label className="text-sm font-bold">Model (optional)
-                    <input name="model" defaultValue={api.data.model ?? ""} placeholder="default" className="mt-1 block rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
+                   <label className="min-w-0 text-sm font-bold">Model (optional)
+                     <input name="model" defaultValue={api.data.model ?? ""} placeholder="default" className="mt-1 block w-full min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
                   </label>
                   <button className="rounded-full border-[3px] border-ink bg-mint px-5 py-2.5 font-bold text-paper shadow-hard">Save</button>
                 </form>
@@ -177,8 +177,8 @@ function Admin() {
             <section className="mt-12">
               <h2 className="font-display text-2xl font-bold">Audit log</h2>
               <p className="mt-1 text-sm text-ink/60">Every change to data sources and AI settings, with who made it and when.</p>
-              <div className="mt-4 overflow-x-auto rounded-[22px] border-[3px] border-ink bg-paper">
-                <table className="w-full text-left text-sm">
+               <div className="mt-4 max-w-full overflow-x-auto rounded-[22px] border-[3px] border-ink bg-paper">
+                 <table className="min-w-[760px] w-full text-left text-sm">
                   <thead className="border-b-[3px] border-ink bg-soft">
                     <tr><th className="p-3">When</th><th className="p-3">Who</th><th className="p-3">Action</th><th className="p-3">What</th><th className="p-3">Change</th></tr>
                   </thead>
@@ -201,12 +201,14 @@ type AuditEntry = { id: number; actor_email: string | null; action: string; enti
 function AuditRow({ a }: { a: AuditEntry }) {
   const d = (a.details ?? {}) as { old?: Record<string, unknown>; new?: Record<string, unknown> };
   const rec = d.new ?? d.old ?? {};
+  const oldValues = d.old;
+  const newValues = d.new;
   const label = a.entity === "api_settings" ? "AI settings" : String(rec["name"] ?? "Data source");
   const changed =
-    d.old && d.new
-      ? Object.keys(d.new)
-          .filter((k) => k !== "updated_at" && JSON.stringify(d.old![k]) !== JSON.stringify(d.new![k]))
-          .map((k) => `${k}: ${String(d.old![k] ?? "—")} → ${String(d.new![k] ?? "—")}`)
+    oldValues && newValues
+      ? Object.keys(newValues)
+          .filter((k) => k !== "updated_at" && JSON.stringify(oldValues[k]) !== JSON.stringify(newValues[k]))
+          .map((k) => `${k}: ${String(oldValues[k] ?? "—")} → ${String(newValues[k] ?? "—")}`)
           .join("; ")
       : a.action === "insert" ? "added" : "removed";
   return (

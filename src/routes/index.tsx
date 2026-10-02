@@ -107,11 +107,11 @@ function Home() {
         </div>
       )}
 
-      <section className="mx-auto max-w-6xl px-6 pt-14 pb-16">
-        <div className="grid items-start gap-10 lg:grid-cols-[1.05fr_1fr]">
-          <div>
+      <section className="mx-auto max-w-6xl px-4 pt-8 pb-12 sm:px-6 sm:pt-12 sm:pb-16">
+        <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
+          <div className="min-w-0">
             <span className="inline-block rounded-full border-[3px] border-ink bg-skytint px-4 py-1.5 text-xs font-bold uppercase tracking-[0.12em]">Confidential · 24/7 · Free</span>
-            <h1 className="mt-5 font-display text-5xl font-bold leading-[0.92] tracking-tight md:text-6xl">
+            <h1 className="mt-5 font-display text-4xl font-bold leading-[0.95] sm:text-5xl md:text-6xl">
               Tell us what you need.<br /><span className="text-coral">We'll find your care.</span>
             </h1>
             <p className="mt-5 max-w-md text-lg leading-relaxed text-ink/70">
@@ -128,15 +128,15 @@ function Home() {
             </p>
           </div>
 
-          <div id="chat" className="rounded-[30px] border-[3px] border-ink bg-paper shadow-[8px_8px_0_var(--ink)]">
-            <div className="flex items-center gap-3 border-b-[3px] border-ink px-6 py-4">
+          <div id="chat" className="min-w-0 rounded-[22px] border-[3px] border-ink bg-paper shadow-hard-lg sm:rounded-[30px] sm:shadow-[8px_8px_0_var(--ink)]">
+            <div className="flex items-center gap-3 border-b-[3px] border-ink px-4 py-4 sm:px-6">
               <span className="grid h-10 w-10 place-items-center rounded-full border-[3px] border-ink bg-coral text-lg font-bold text-paper">N</span>
               <div>
                 <div className="font-display text-lg font-bold leading-none">Navigator</div>
                 <div className="text-xs font-semibold text-mint">● online</div>
               </div>
             </div>
-            <div className="max-h-[420px] space-y-4 overflow-y-auto px-6 py-6" aria-live="polite">
+            <div className="max-h-[min(420px,55dvh)] space-y-4 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6" aria-live="polite">
               {messages.map((m, i) =>
                 m.role === "user" ? (
                   <div key={i} className="ml-auto max-w-[85%] rounded-[22px] rounded-br-md border-[3px] border-ink bg-sky px-4 py-3 text-[15px] font-medium text-paper shadow-hard">{m.content}</div>
@@ -162,7 +162,7 @@ function Home() {
               {busy && <div className="w-fit rounded-[22px] border-[3px] border-ink bg-soft px-4 py-3 text-sm font-semibold">Searching sources…</div>}
               <div ref={endRef} />
             </div>
-            <form onSubmit={send} className="flex items-center gap-3 border-t-[3px] border-ink px-6 py-4">
+            <form onSubmit={send} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-t-[3px] border-ink px-4 py-4 sm:gap-3 sm:px-6">
               <label htmlFor="msg" className="sr-only">Describe your situation</label>
               <input
                 id="msg"
@@ -171,21 +171,21 @@ function Home() {
                 onFocus={() => setFocused(true)}
                 onClick={() => setFocused(true)}
                 placeholder="Type your situation…"
-                className="flex-1 cursor-text rounded-full border-[3px] border-ink bg-cream px-4 py-2.5 text-sm placeholder:text-ink/45 focus:outline-none"
+                className="min-w-0 cursor-text rounded-full border-[3px] border-ink bg-cream px-4 py-2.5 text-sm placeholder:text-ink/45 focus:outline-none"
               />
-              <button disabled={busy} className="rounded-full border-[3px] border-ink bg-mint px-5 py-2.5 text-sm font-bold text-paper shadow-hard disabled:opacity-60">Send →</button>
+               <button disabled={busy} className="shrink-0 rounded-full border-[3px] border-ink bg-mint px-4 py-2.5 text-sm font-bold text-paper shadow-hard disabled:opacity-60 sm:px-5">Send →</button>
             </form>
           </div>
         </div>
       </section>
 
       <section className="border-t-[3px] border-ink bg-soft">
-        <div className="mx-auto max-w-6xl px-6 py-14">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 className="font-display text-4xl font-bold">
+        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+            <h2 className="min-w-0 font-display text-3xl font-bold sm:text-4xl">
               {results === null ? "Your care options will appear here" : results.length ? `${results.length} care options, ranked for you` : "No matches yet"}
             </h2>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-3 md:justify-end">
               {note && <span className="text-sm font-semibold text-ink/50">{note}</span>}
               {vars && (user ? (
                 <button
@@ -204,7 +204,7 @@ function Home() {
             </div>
           </div>
           {results && results.length > 0 && (
-            <div className="mt-8 grid gap-6 md:grid-cols-3">
+             <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {results.map((r) => (
                 <article key={r.id} className="flex flex-col rounded-[26px] border-[3px] border-ink bg-paper shadow-hard-lg">
                   <div className="border-b-[3px] border-ink p-5">
@@ -238,13 +238,13 @@ function Home() {
       </section>
 
       {focused && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-ink/60 p-6 backdrop-blur-sm" onClick={() => setFocused(false)}>
+        <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink/60 p-3 backdrop-blur-sm sm:p-6" onClick={() => setFocused(false)}>
           <form
             onSubmit={send}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-3xl rounded-[30px] border-[3px] border-ink bg-paper p-6 shadow-[10px_10px_0_var(--ink)] animate-in zoom-in-95 fade-in duration-200"
+            className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-y-auto rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg animate-in zoom-in-95 fade-in duration-200 sm:max-h-[calc(100dvh-3rem)] sm:rounded-[30px] sm:p-6 sm:shadow-[10px_10px_0_var(--ink)]"
           >
-            <label htmlFor="msg-big" className="font-display text-2xl font-bold">Tell us what's going on</label>
+            <label htmlFor="msg-big" className="font-display text-xl font-bold sm:text-2xl">Tell us what's going on</label>
             <p className="mt-1 text-sm text-ink/60">Where you are, what you need, how you'd like to be seen. Press Enter to send, Shift+Enter for a new line, Esc to close.</p>
             <div className="mt-4 max-h-64 space-y-2 overflow-y-auto">
               {messages.slice(-6).map((m, i) => (
@@ -256,7 +256,7 @@ function Home() {
               id="msg-big"
               key={messages.length}
               autoFocus
-              rows={7}
+              rows={5}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -264,9 +264,9 @@ function Home() {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); }
               }}
               placeholder="e.g. I'm a veteran in Atlanta, GA dealing with PTSD. I'd prefer telehealth and have Tricare."
-              className="mt-4 w-full resize-none rounded-[22px] border-[3px] border-ink bg-cream p-5 text-lg leading-relaxed placeholder:text-ink/40 focus:outline-none"
+              className="mt-4 w-full resize-none rounded-[18px] border-[3px] border-ink bg-cream p-4 text-base leading-relaxed placeholder:text-ink/40 focus:outline-none sm:rounded-[22px] sm:p-5 sm:text-lg"
             />
-            <div className="mt-4 flex justify-end gap-3">
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
               <button type="button" onClick={() => setFocused(false)} className="rounded-full border-[3px] border-ink px-5 py-2.5 text-sm font-bold">Close</button>
               <button disabled={busy || !input.trim()} className="rounded-full border-[3px] border-ink bg-mint px-6 py-2.5 text-sm font-bold text-paper shadow-hard disabled:opacity-60">Send →</button>
             </div>
@@ -275,7 +275,7 @@ function Home() {
       )}
 
       <CrisisBar />
-      <footer className="mx-auto max-w-6xl px-6 py-8 text-center text-xs font-semibold text-ink/40">
+       <footer className="mx-auto max-w-6xl px-4 py-8 text-center text-xs font-semibold text-ink/40 sm:px-6">
         Every option links to its source and verification date. Nothing here is a substitute for emergency care.
       </footer>
     </div>
