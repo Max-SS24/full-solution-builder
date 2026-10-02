@@ -40,7 +40,39 @@ function Admin() {
     },
   });
   const [form, setForm] = useState({ name: "", url: "", category: "community", description: "" });
-  const refresh = () => qc.invalidateQueries({ queryKey: ["sources"] });
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["sources"] });
+    qc.invalidateQueries({ queryKey: ["audit"] });
+  };
+  const api = useQuery({
+    queryKey: ["api-settings"],
+    enabled: isAdmin.data === true,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("api_settings").select("*").eq("id", 1).single();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const audit = useQuery({
+    queryKey: ["audit"],
+    enabled: isAdmin.data === true,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(200);
+      if (error) throw error;
+      return data;
+    },
+  });
+  async function saveApi(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const provider = String(fd.get("provider"));
+    const model = String(fd.get("model") || "").trim() || null;
+    const { error } = await supabase.from("api_settings").update({ provider, model, updated_at: new Date().toISOString() }).eq("id", 1);
+    if (error) { toast.error(error.message); return; }
+    toast.success("AI settings saved");
+    qc.invalidateQueries({ queryKey: ["api-settings"] });
+    refresh();
+  }
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -121,9 +153,69 @@ function Admin() {
                 </li>
               ))}
             </ul>
+
+            <section className="mt-12 rounded-[26px] border-[3px] border-ink bg-paper p-6 shadow-hard-lg">
+              <h2 className="font-display text-2xl font-bold">AI service</h2>
+              <p className="mt-1 text-sm text-ink/60">Visitors never see this. API keys stay in protected secrets — only the provider choice is set here.</p>
+              {api.data && (
+                <form onSubmit={saveApi} key={api.data.updated_at} className="mt-4 flex flex-wrap items-end gap-3">
+                  <label className="text-sm font-bold">Provider
+                    <select name="provider" defaultValue={api.data.provider} className="mt-1 block rounded-full border-[3px] border-ink bg-cream px-4 py-2">
+                      <option value="grok">Grok (XAI_API_KEY)</option>
+                      <option value="openai">OpenAI (OPENAI_API_KEY)</option>
+                      <option value="gemini">Gemini (GEMINI_API_KEY)</option>
+                    </select>
+                  </label>
+                  <label className="text-sm font-bold">Model (optional)
+                    <input name="model" defaultValue={api.data.model ?? ""} placeholder="default" className="mt-1 block rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
+                  </label>
+                  <button className="rounded-full border-[3px] border-ink bg-mint px-5 py-2.5 font-bold text-paper shadow-hard">Save</button>
+                </form>
+              )}
+            </section>
+
+            <section className="mt-12">
+              <h2 className="font-display text-2xl font-bold">Audit log</h2>
+              <p className="mt-1 text-sm text-ink/60">Every change to data sources and AI settings, with who made it and when.</p>
+              <div className="mt-4 overflow-x-auto rounded-[22px] border-[3px] border-ink bg-paper">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b-[3px] border-ink bg-soft">
+                    <tr><th className="p-3">When</th><th className="p-3">Who</th><th className="p-3">Action</th><th className="p-3">What</th><th className="p-3">Change</th></tr>
+                  </thead>
+                  <tbody>
+                    {audit.data?.map((a) => <AuditRow key={a.id} a={a} />)}
+                    {audit.data?.length === 0 && <tr><td colSpan={5} className="p-4 text-ink/50">No changes recorded yet.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </>
         )}
       </main>
     </div>
+  );
+}
+
+type AuditEntry = { id: number; actor_email: string | null; action: string; entity: string; details: unknown; created_at: string };
+
+function AuditRow({ a }: { a: AuditEntry }) {
+  const d = (a.details ?? {}) as { old?: Record<string, unknown>; new?: Record<string, unknown> };
+  const rec = d.new ?? d.old ?? {};
+  const label = a.entity === "api_settings" ? "AI settings" : String(rec["name"] ?? "Data source");
+  const changed =
+    d.old && d.new
+      ? Object.keys(d.new)
+          .filter((k) => k !== "updated_at" && JSON.stringify(d.old![k]) !== JSON.stringify(d.new![k]))
+          .map((k) => `${k}: ${String(d.old![k] ?? "—")} → ${String(d.new![k] ?? "—")}`)
+          .join("; ")
+      : a.action === "insert" ? "added" : "removed";
+  return (
+    <tr className="border-b border-ink/15 align-top">
+      <td className="p-3 whitespace-nowrap">{new Date(a.created_at).toLocaleString()}</td>
+      <td className="p-3">{a.actor_email ?? "system"}</td>
+      <td className="p-3 font-bold uppercase">{a.action}</td>
+      <td className="p-3">{label}</td>
+      <td className="p-3 text-ink/70">{changed || "—"}</td>
+    </tr>
   );
 }
