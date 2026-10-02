@@ -8,9 +8,9 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Manage sources — Care Compass admin" },
+      { title: "Manage sources — VA Navigator admin" },
       { name: "description", content: "Approve, add, and disable data sources used for care searches." },
-      { property: "og:title", content: "Manage sources — Care Compass" },
+      { property: "og:title", content: "Manage sources — VA Navigator" },
       { property: "og:description", content: "Admin panel for approved data sources." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

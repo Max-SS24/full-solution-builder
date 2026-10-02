@@ -79,7 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Care Compass — Veteran Mental Health Navigator" },
+      { title: "VA Navigator — Veteran Mental Health Navigator" },
       { name: "description", content: "Find source-linked mental-health care options for Veterans." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

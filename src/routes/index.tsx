@@ -7,9 +7,9 @@ import { SiteHeader, CrisisBar } from "@/components/SiteHeader";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Care Compass — Find Veteran mental-health care" },
+      { title: "VA Navigator — Find Veteran mental-health care" },
       { name: "description", content: "Describe what you need in plain words and get source-linked VA and community care options." },
-      { property: "og:title", content: "Care Compass — Veteran Mental Health Navigator" },
+      { property: "og:title", content: "VA Navigator — Veteran Mental Health Navigator" },
       { property: "og:description", content: "Plain-language search for VA and community mental-health care, with sources shown." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -95,7 +95,7 @@ function Home() {
               <span className="rounded-full border-[3px] border-ink bg-soft px-4 py-2 text-sm font-semibold">🔗 Provenance</span>
             </div>
             <p className="mt-8 max-w-md text-xs font-semibold text-ink/50">
-              Care Compass helps you find care. It does not diagnose, treat, or decide eligibility.
+              VA Navigator helps you find care. It does not diagnose, treat, or decide eligibility.
             </p>
           </div>
 

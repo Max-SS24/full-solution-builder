@@ -7,10 +7,10 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Admin sign in — Care Compass" },
+      { title: "Admin sign in — VA Navigator" },
       { name: "description", content: "Sign in to manage approved data sources." },
-      { property: "og:title", content: "Admin sign in — Care Compass" },
-      { property: "og:description", content: "Administrator access for Care Compass." },
+      { property: "og:title", content: "Admin sign in — VA Navigator" },
+      { property: "og:description", content: "Administrator access for VA Navigator." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

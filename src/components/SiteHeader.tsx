@@ -7,7 +7,7 @@ export function SiteHeader() {
         <Link to="/" className="flex items-center gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-2xl border-[3px] border-ink bg-sun font-display text-2xl font-bold shadow-hard">V</span>
           <div>
-            <div className="font-display text-xl font-bold leading-none">Care Compass</div>
+            <div className="font-display text-xl font-bold leading-none">VA Navigator</div>
             <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink/55">Veteran mental-health navigator</div>
           </div>
         </Link>
