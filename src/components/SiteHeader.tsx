@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
+import { useAccount } from "@/hooks/useAccount";
 
 export function SiteHeader() {
+  const { user, isAdmin } = useAccount();
   return (
     <header className="border-b-[3px] border-ink bg-cream">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -12,8 +14,15 @@ export function SiteHeader() {
           </div>
         </Link>
         <nav className="flex items-center gap-2 text-sm">
-          <a href="#chat" className="rounded-full bg-navy px-5 py-2 font-semibold text-cream shadow-hard">Start a chat</a>
-          <Link to="/admin" className="rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft">Admin</Link>
+          <a href="/#chat" className="rounded-full bg-navy px-5 py-2 font-semibold text-cream shadow-hard">Start a chat</a>
+          {isAdmin && (
+            <Link to="/admin" className="rounded-full border-[3px] border-ink bg-sun px-4 py-1.5 font-semibold">Admin</Link>
+          )}
+          {user ? (
+            <Link to="/account" className="rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft">My account</Link>
+          ) : (
+            <Link to="/auth" className="rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft">Sign in</Link>
+          )}
         </nav>
       </div>
     </header>
