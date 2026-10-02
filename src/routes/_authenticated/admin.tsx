@@ -47,10 +47,10 @@ function Admin() {
     try {
       new URL(form.url);
     } catch {
-      return toast.error("Enter a full website address starting with https://");
+      { toast.error("Enter a full website address starting with https://"); return; }
     }
     const { error } = await supabase.from("data_sources").insert(form);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setForm({ name: "", url: "", category: "community", description: "" });
     toast.success("Source added");
     refresh();

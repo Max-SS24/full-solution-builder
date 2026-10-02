@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Build app in design v1 (Playful care navigator): chat, extracted variables, results, crisis bar
-- [ ] Backend-only swappable AI provider (start with Grok)
-- [ ] Admin login + manage authorized data sources
-- [ ] Grok API key (needs user)
+- [x] Build app in design v1 (Playful care navigator)
+- [x] Backend-only swappable AI provider (Grok default)
+- [x] Admin login + manage authorized data sources
+- [ ] Grok API key (waiting on user)
