@@ -1,5 +1,23 @@
-// Server-only AI provider registry. Switch providers with the AI_PROVIDER env var
-// (grok | openai | gemini). Each provider reads its own API key secret.
+// =====================================================================
+// AI PROVIDER SETTINGS  (server-only — never shipped to the browser)
+// =====================================================================
+// WHERE THE API KEY GOES:
+//   Do NOT paste keys into this file or any other file. Keys are stored as
+//   project secrets (Lovable Cloud -> Secrets) and read below via process.env.
+//
+//   Secret name        Provider
+//   -----------        --------
+//   XAI_API_KEY        Grok (xAI)  <- default
+//   OPENAI_API_KEY     OpenAI
+//   GEMINI_API_KEY     Google Gemini
+//
+// HOW TO SWITCH PROVIDERS (backend only):
+//   Add a secret AI_PROVIDER = grok | openai | gemini   (default: grok)
+//   Optional: AI_MODEL = a specific model id to override the default below.
+//
+// TO ADD A NEW PROVIDER: add one entry to PROVIDERS (any OpenAI-compatible
+//   /chat/completions API works) with its base URL, key secret name and model.
+// =====================================================================
 type ProviderConfig = { baseURL: string; keyEnv: string; model: string };
 
 const PROVIDERS: Record<string, ProviderConfig> = {
@@ -18,6 +36,7 @@ export function activeProvider() {
   const name = (process.env["AI_PROVIDER"] || "grok").toLowerCase();
   const cfg: ProviderConfig = PROVIDERS[name] ?? PROVIDERS["grok"]!;
   const model = process.env["AI_MODEL"] || cfg.model;
+  // <-- API KEY IS READ HERE from the secret named in cfg.keyEnv (e.g. XAI_API_KEY)
   const apiKey = process.env[cfg.keyEnv];
   return { name, ...cfg, model, apiKey };
 }

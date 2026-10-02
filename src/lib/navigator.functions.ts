@@ -64,6 +64,7 @@ export const navigate = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z.object({
       messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(4000) })).min(1).max(30),
+      prefs: z.record(z.string(), z.union([z.string(), z.number(), z.null()])).optional(),
     }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -88,6 +89,13 @@ export const navigate = createServerFn({ method: "POST" })
       }
     } catch (e) {
       aiError = e instanceof Error ? e.message : "AI unavailable";
+    }
+
+    // Fill gaps with the signed-in user's saved preferences (what they said now wins).
+    if (data.prefs) {
+      for (const [k, val] of Object.entries(data.prefs)) {
+        if (k in variables && (variables as Record<string, unknown>)[k] == null && val != null) (variables as Record<string, unknown>)[k] = val;
+      }
     }
 
     // Query approved sources (public read via RLS: only enabled sources' records).

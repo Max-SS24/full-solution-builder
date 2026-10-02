@@ -3,13 +3,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState, useEffect } from "react";
 import { navigate, type CareResult, type Variables } from "@/lib/navigator.functions";
 import { SiteHeader, CrisisBar } from "@/components/SiteHeader";
+import { useAccount } from "@/hooks/useAccount";
+import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Care Compass — Find Veteran mental-health care" },
+      { title: "VA Navigator — Find Veteran mental-health care" },
       { name: "description", content: "Describe what you need in plain words and get source-linked VA and community care options." },
-      { property: "og:title", content: "Care Compass — Veteran Mental Health Navigator" },
+      { property: "og:title", content: "VA Navigator — Veteran Mental Health Navigator" },
       { property: "og:description", content: "Plain-language search for VA and community mental-health care, with sources shown." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -34,6 +37,8 @@ const KIND_TINT: Record<string, string> = { "VA facility": "bg-minttint", "Vet C
 
 function Home() {
   const run = useServerFn(navigate);
+  const { user, prefs, savePrefs } = useAccount();
+  const [focused, setFocused] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: "Hi, I'm here to help you find care. Tell me what's going on and where you are — in your own words." },
   ]);
@@ -46,8 +51,9 @@ function Home() {
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => endRef.current?.scrollIntoView({ block: "nearest" }), [messages]);
 
-  async function send(e: React.FormEvent) {
-    e.preventDefault();
+  async function send(e?: React.FormEvent) {
+    e?.preventDefault();
+    setFocused(false);
     const text = input.trim();
     if (!text || busy) return;
     const next = [...messages, { role: "user" as const, content: text }];
@@ -55,7 +61,7 @@ function Home() {
     setInput("");
     setBusy(true);
     try {
-      const out = await run({ data: { messages: next.slice(1) } });
+      const out = await run({ data: { messages: next.slice(1), prefs: prefs ?? undefined } });
       setMessages([...next, { role: "assistant", content: out.reply }]);
       setVars(out.variables);
       setResults(out.results);
@@ -95,7 +101,7 @@ function Home() {
               <span className="rounded-full border-[3px] border-ink bg-soft px-4 py-2 text-sm font-semibold">🔗 Provenance</span>
             </div>
             <p className="mt-8 max-w-md text-xs font-semibold text-ink/50">
-              Care Compass helps you find care. It does not diagnose, treat, or decide eligibility.
+              VA Navigator helps you find care. It does not diagnose, treat, or decide eligibility.
             </p>
           </div>
 
@@ -138,9 +144,11 @@ function Home() {
               <input
                 id="msg"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                readOnly
+                onFocus={() => setFocused(true)}
+                onClick={() => setFocused(true)}
                 placeholder="Type your situation…"
-                className="flex-1 rounded-full border-[3px] border-ink bg-cream px-4 py-2.5 text-sm placeholder:text-ink/45 focus:outline-none"
+                className="flex-1 cursor-text rounded-full border-[3px] border-ink bg-cream px-4 py-2.5 text-sm placeholder:text-ink/45 focus:outline-none"
               />
               <button disabled={busy} className="rounded-full border-[3px] border-ink bg-mint px-5 py-2.5 text-sm font-bold text-paper shadow-hard disabled:opacity-60">Send →</button>
             </form>
@@ -154,7 +162,23 @@ function Home() {
             <h2 className="font-display text-4xl font-bold">
               {results === null ? "Your care options will appear here" : results.length ? `${results.length} care options, ranked for you` : "No matches yet"}
             </h2>
-            {note && <span className="text-sm font-semibold text-ink/50">{note}</span>}
+            <div className="flex flex-wrap items-center gap-3">
+              {note && <span className="text-sm font-semibold text-ink/50">{note}</span>}
+              {vars && (user ? (
+                <button
+                  onClick={async () => {
+                    try {
+                      const { urgency: _u, ...keep } = vars;
+                      await savePrefs({ ...(prefs ?? {}), ...keep });
+                      toast.success("Saved — we'll use these next time.");
+                    } catch { toast.error("Couldn't save preferences."); }
+                  }}
+                  className="rounded-full border-[3px] border-ink bg-sun px-4 py-1.5 text-sm font-bold shadow-hard"
+                >⭐ Save as my preferences</button>
+              ) : (
+                <Link to="/auth" className="rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-bold">Sign in to save preferences</Link>
+              ))}
+            </div>
           </div>
           {results && results.length > 0 && (
             <div className="mt-8 grid gap-6 md:grid-cols-3">
@@ -189,6 +213,36 @@ function Home() {
           )}
         </div>
       </section>
+
+      {focused && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-ink/60 p-6 backdrop-blur-sm" onClick={() => setFocused(false)}>
+          <form
+            onSubmit={send}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-3xl rounded-[30px] border-[3px] border-ink bg-paper p-6 shadow-[10px_10px_0_var(--ink)] animate-in zoom-in-95 fade-in duration-200"
+          >
+            <label htmlFor="msg-big" className="font-display text-2xl font-bold">Tell us what's going on</label>
+            <p className="mt-1 text-sm text-ink/60">Where you are, what you need, how you'd like to be seen. Press Enter to send, Shift+Enter for a new line, Esc to close.</p>
+            <textarea
+              id="msg-big"
+              autoFocus
+              rows={7}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setFocused(false);
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); }
+              }}
+              placeholder="e.g. I'm a veteran in Columbus, OH dealing with PTSD. I'd prefer telehealth and have Tricare."
+              className="mt-4 w-full resize-none rounded-[22px] border-[3px] border-ink bg-cream p-5 text-lg leading-relaxed placeholder:text-ink/40 focus:outline-none"
+            />
+            <div className="mt-4 flex justify-end gap-3">
+              <button type="button" onClick={() => setFocused(false)} className="rounded-full border-[3px] border-ink px-5 py-2.5 text-sm font-bold">Close</button>
+              <button disabled={busy || !input.trim()} className="rounded-full border-[3px] border-ink bg-mint px-6 py-2.5 text-sm font-bold text-paper shadow-hard disabled:opacity-60">Send →</button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <CrisisBar />
       <footer className="mx-auto max-w-6xl px-6 py-8 text-center text-xs font-semibold text-ink/40">

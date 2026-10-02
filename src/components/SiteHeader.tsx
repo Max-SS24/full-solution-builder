@@ -1,19 +1,28 @@
 import { Link } from "@tanstack/react-router";
+import { useAccount } from "@/hooks/useAccount";
 
 export function SiteHeader() {
+  const { user, isAdmin } = useAccount();
   return (
     <header className="border-b-[3px] border-ink bg-cream">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-2xl border-[3px] border-ink bg-sun font-display text-2xl font-bold shadow-hard">V</span>
           <div>
-            <div className="font-display text-xl font-bold leading-none">Care Compass</div>
+            <div className="font-display text-xl font-bold leading-none">VA Navigator</div>
             <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink/55">Veteran mental-health navigator</div>
           </div>
         </Link>
         <nav className="flex items-center gap-2 text-sm">
-          <a href="#chat" className="rounded-full bg-navy px-5 py-2 font-semibold text-cream shadow-hard">Start a chat</a>
-          <Link to="/admin" className="rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft">Admin</Link>
+          <a href="/#chat" className="rounded-full bg-navy px-5 py-2 font-semibold text-cream shadow-hard">Start a chat</a>
+          {isAdmin && (
+            <Link to="/admin" className="rounded-full border-[3px] border-ink bg-sun px-4 py-1.5 font-semibold">Admin</Link>
+          )}
+          {user ? (
+            <Link to="/account" className="rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft">My account</Link>
+          ) : (
+            <Link to="/auth" className="rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft">Sign in</Link>
+          )}
         </nav>
       </div>
     </header>

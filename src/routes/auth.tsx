@@ -7,10 +7,10 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Admin sign in — Care Compass" },
-      { name: "description", content: "Sign in to manage approved data sources." },
-      { property: "og:title", content: "Admin sign in — Care Compass" },
-      { property: "og:description", content: "Administrator access for Care Compass." },
+      { title: "Sign in — VA Navigator" },
+      { name: "description", content: "Sign in to save your care search preferences." },
+      { property: "og:title", content: "Sign in — VA Navigator" },
+      { property: "og:description", content: "Sign in or create a VA Navigator account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -32,9 +32,9 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       setBusy(false);
       if (error) { toast.error(error.message); return; }
-      nav({ to: "/admin" });
+      nav({ to: "/" });
     } else {
-      const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + "/admin" } });
+      const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
       setBusy(false);
       if (error) { toast.error(error.message); return; }
       toast.success("Check your email to confirm your account, then sign in.");
@@ -47,8 +47,8 @@ function AuthPage() {
       <SiteHeader />
       <main className="mx-auto max-w-md px-6 py-16">
         <form onSubmit={submit} className="rounded-[30px] border-[3px] border-ink bg-paper p-8 shadow-[8px_8px_0_var(--ink)]">
-          <h1 className="font-display text-3xl font-bold">{mode === "in" ? "Admin sign in" : "Create admin account"}</h1>
-          <p className="mt-2 text-sm text-ink/60">Only administrators can manage data sources.</p>
+          <h1 className="font-display text-3xl font-bold">{mode === "in" ? "Sign in" : "Create your account"}</h1>
+          <p className="mt-2 text-sm text-ink/60">Save your search preferences for next time. Admins sign in here too.</p>
           <label className="mt-6 block text-sm font-bold" htmlFor="email">Email</label>
           <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full rounded-full border-[3px] border-ink bg-cream px-4 py-2.5" />
           <label className="mt-4 block text-sm font-bold" htmlFor="pw">Password</label>
