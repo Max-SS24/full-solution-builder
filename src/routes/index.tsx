@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { navigate, type CareResult, type Variables } from "@/lib/navigator.functions";
 import { SiteHeader, CrisisBar } from "@/components/SiteHeader";
 import { useAccount } from "@/hooks/useAccount";
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({ h: typeof s.h === "string" ? s.h : undefined }),
   component: Home,
 });
 
@@ -50,6 +52,16 @@ function Home() {
   const [note, setNote] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => endRef.current?.scrollIntoView({ block: "nearest" }), [messages]);
+  const { h } = Route.useSearch();
+  useEffect(() => {
+    if (!h || !user) return;
+    supabase.from("search_history").select("*").eq("id", h).maybeSingle().then(({ data }) => {
+      if (!data) return;
+      setMessages(data.messages as Msg[]);
+      setVars(data.variables as Variables);
+      setResults(data.results as CareResult[]);
+    });
+  }, [h, user]);
 
   async function send(e?: React.FormEvent) {
     e?.preventDefault();
@@ -67,6 +79,16 @@ function Home() {
       setResults(out.results);
       setCrisis(out.crisis);
       setNote(out.connectorError ?? out.aiNote);
+      if (user) {
+        await supabase.from("search_history").insert({
+          user_id: user.id,
+          question: text,
+          reply: out.reply,
+          messages: [...next, { role: "assistant", content: out.reply }],
+          variables: out.variables,
+          results: out.results,
+        });
+      }
     } catch {
       setMessages([...next, { role: "assistant", content: "Sorry — something went wrong. Please try again." }]);
     } finally {
