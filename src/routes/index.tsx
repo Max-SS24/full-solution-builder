@@ -65,7 +65,6 @@ function Home() {
 
   async function send(e?: React.FormEvent) {
     e?.preventDefault();
-    setFocused(false);
     const text = input.trim();
     if (!text || busy) return;
     const next = [...messages, { role: "user" as const, content: text }];
@@ -79,6 +78,8 @@ function Home() {
       setResults(out.results);
       setCrisis(out.crisis);
       setNote(out.connectorError ?? out.aiNote);
+      // Stay enlarged until we have suitable results (or a crisis needs the full page).
+      if (out.crisis || (!out.needsMore && out.results.length > 0)) setFocused(false);
       if (user) {
         await supabase.from("search_history").insert({
           user_id: user.id,
@@ -245,8 +246,15 @@ function Home() {
           >
             <label htmlFor="msg-big" className="font-display text-2xl font-bold">Tell us what's going on</label>
             <p className="mt-1 text-sm text-ink/60">Where you are, what you need, how you'd like to be seen. Press Enter to send, Shift+Enter for a new line, Esc to close.</p>
+            <div className="mt-4 max-h-64 space-y-2 overflow-y-auto">
+              {messages.slice(-6).map((m, i) => (
+                <p key={i} className={m.role === "user" ? "ml-auto w-fit max-w-[85%] rounded-2xl bg-ink px-4 py-2 text-sm text-paper" : "w-fit max-w-[85%] text-sm text-ink"}>{m.content}</p>
+              ))}
+              {busy && <p className="text-sm text-ink/50">Thinking…</p>}
+            </div>
             <textarea
               id="msg-big"
+              key={messages.length}
               autoFocus
               rows={7}
               value={input}
@@ -255,7 +263,7 @@ function Home() {
                 if (e.key === "Escape") setFocused(false);
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); }
               }}
-              placeholder="e.g. I'm a veteran in Columbus, OH dealing with PTSD. I'd prefer telehealth and have Tricare."
+              placeholder="e.g. I'm a veteran in Atlanta, GA dealing with PTSD. I'd prefer telehealth and have Tricare."
               className="mt-4 w-full resize-none rounded-[22px] border-[3px] border-ink bg-cream p-5 text-lg leading-relaxed placeholder:text-ink/40 focus:outline-none"
             />
             <div className="mt-4 flex justify-end gap-3">
