@@ -57,7 +57,7 @@ function fallbackExtract(text: string): Variables {
     const words = all.slice(cut + 1);
     if (!words.length || (m[2].toUpperCase() === "VA" && !m[0].includes(","))) continue;
     const city = words.map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-    loc = [city, m[2].toUpperCase()];
+    loc = [city, (m[2] ?? "").toUpperCase()];
   }
   const dist = t.match(/(\d+)\s*(?:mi|miles)/);
   return {
