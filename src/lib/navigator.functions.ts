@@ -48,10 +48,13 @@ function fallbackExtract(text: string): Variables {
   const pick = <T extends string>(opts: T[]) => opts.find((o) => t.includes(o)) ?? null;
   const ST = "AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC";
   const re = new RegExp(`([A-Za-z][A-Za-z.]*(?:\\s[A-Za-z][A-Za-z.]*){0,2}),?\\s+(${ST})\\b`, "gi");
-  const stop = /^(in|near|around|at|from|live|i|am|im|i'm|the|a)$/i;
+  const stop = /^(in|near|around|at|from|live|i|am|im|i'm|the|a|with|and|to|of|for|by|is|me|my)$/i;
   let loc: [string, string] | null = null;
   for (const m of text.matchAll(re)) {
-    const words = m[1].split(/\s+/).filter((w) => !stop.test(w));
+    const all = m[1].split(/\s+/);
+    let cut = -1;
+    all.forEach((w, i) => { if (stop.test(w)) cut = i; });
+    const words = all.slice(cut + 1);
     if (!words.length || (m[2].toUpperCase() === "VA" && !m[0].includes(","))) continue;
     const city = words.map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(" ");
     loc = [city, m[2].toUpperCase()];
