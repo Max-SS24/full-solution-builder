@@ -180,15 +180,13 @@ export const navigate = createServerFn({ method: "POST" })
     }))).flat();
 
     let results: CareResult[] = [];
-    if (!error && rows) {
+    void rows; void error;
+    {
       const v = variables;
       const city = v.location?.split(",")[0]?.trim().toLowerCase();
       const state = v.location?.split(",")[1]?.trim().toUpperCase();
-      const dbRows: CareResult[] = rows.map((r) => {
-        const { data_sources, ...rest } = r as typeof r & { data_sources: { name: string } };
-        return { ...rest, source_name: data_sources.name } as CareResult;
-      });
-      const all = [...liveRows, ...dbRows];
+      // Only verified live listings (FindTreatment.gov, NPI Registry) — made-up sample rows are excluded.
+      const all = [...liveRows];
       // Community-only seekers never see VA facilities or Vet Centers.
       const pool = v.va_vs_community === "community"
         ? all.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center")
