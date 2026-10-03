@@ -253,7 +253,7 @@ export const navigate = createServerFn({ method: "POST" })
       variables,
       results: needsMore ? [] : results,
       needsMore,
-      connectorError: error ? "A data source is temporarily unavailable." : null,
+      connectorError: error || liveError ? "A data source is temporarily unavailable." : null,
       aiNote: aiUsed ? null : aiError ?? `AI unavailable for ${activeProvider(aiCfg).name}; using basic matching.`,
     };
   });
