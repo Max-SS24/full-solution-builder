@@ -52,6 +52,9 @@ function Home() {
   const [crisis, setCrisis] = useState(false);
   const [danger, setDanger] = useState<"self" | "others" | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [privateMode, setPrivateMode] = useState(false);
+  useEffect(() => { setPrivateMode(localStorage.getItem("van_private") === "1"); }, []);
+  function setPrivate(v: boolean) { setPrivateMode(v); localStorage.setItem("van_private", v ? "1" : "0"); }
   const loadProviders = useServerFn(getProviders);
   const [openRes, setOpenRes] = useState<string | null>(null);
   const [providers, setProviders] = useState<Provider[] | null>(null);
@@ -101,7 +104,7 @@ function Home() {
       setNote(out.connectorError ?? out.aiNote);
       // Stay enlarged until we have suitable results (or a crisis needs the full page).
       if (out.crisis || (!out.needsMore && out.results.length > 0)) setFocused(false);
-      if (user) {
+      if (user && !privateMode) {
         await supabase.from("search_history").insert({
           user_id: user.id,
           question: text,
@@ -231,6 +234,12 @@ function Home() {
                 <Link to="/auth" className="rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-bold">Sign in to save preferences</Link>
               ))}
             </div>
+            {user && (
+              <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm font-semibold">
+                <input type="checkbox" checked={privateMode} onChange={(e) => setPrivate(e.target.checked)} className="h-4 w-4 accent-current" />
+                🕶️ Private search — don't save to my history
+              </label>
+            )}
           </div>
           {results && results.length > 0 && (
              <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">

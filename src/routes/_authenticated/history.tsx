@@ -39,12 +39,25 @@ function History() {
     qc.invalidateQueries({ queryKey: ["account", "history"] });
   }
 
+  async function clearAll() {
+    if (!confirm("Delete ALL of your saved searches? This can't be undone.")) return;
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return;
+    const { error } = await supabase.from("search_history").delete().eq("user_id", data.user.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("All history deleted");
+    qc.invalidateQueries({ queryKey: ["account", "history"] });
+  }
+
   return (
     <div className="min-h-screen bg-cream">
       <SiteHeader />
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
         <h1 className="font-display text-3xl font-bold sm:text-4xl">My search history</h1>
         <p className="mt-2 text-sm text-ink/60">🔒 Private — only you can see these. Delete any entry at any time.</p>
+        {!!q.data?.length && (
+          <button onClick={clearAll} className="mt-4 rounded-full border-[3px] border-ink bg-coral px-4 py-1.5 text-sm font-bold text-paper">Clear all history</button>
+        )}
         {q.isLoading && <p className="mt-6">Loading…</p>}
         {q.data?.length === 0 && (
           <p className="mt-8 rounded-2xl border-[3px] border-ink bg-paper p-5 font-semibold">No searches yet. <Link to="/" className="underline">Start a chat</Link>.</p>

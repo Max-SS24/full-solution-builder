@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useAccount } from "@/hooks/useAccount";
+import { useServerFn } from "@tanstack/react-start";
+import { deleteMyAccount } from "@/lib/privacy.functions";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -37,6 +39,13 @@ function Account() {
     nav({ to: "/auth", replace: true });
   }
 
+  const erase = useServerFn(deleteMyAccount);
+  async function eraseAll() {
+    if (!confirm("Permanently delete your account, search history and preferences? This can't be undone.")) return;
+    try { await erase(); toast.success("Your account and data were deleted"); await signOut(); }
+    catch { toast.error("Couldn't delete your account. Please try again."); }
+  }
+
   return (
     <div className="min-h-screen bg-cream">
       <SiteHeader />
@@ -64,6 +73,16 @@ function Account() {
               className="mt-6 rounded-full border-[3px] border-ink bg-coral px-4 py-2 text-sm font-bold text-paper"
             >Clear preferences</button>
           )}
+        </section>
+        <section className="mt-8 rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[26px] sm:p-6">
+          <h2 className="font-display text-xl font-bold">🔒 Data security & privacy</h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink/70">
+            <li>Your searches and preferences are locked to your account — no one else, including admins, can read them.</li>
+            <li>We never sell or share your information.</li>
+            <li>Turn on "Private search" in the chat to search without saving anything.</li>
+            <li>You can erase everything at any time below.</li>
+          </ul>
+          <button onClick={eraseAll} className="mt-6 rounded-full border-[3px] border-ink bg-coral px-4 py-2 text-sm font-bold text-paper">Delete my account & all data</button>
         </section>
       </main>
     </div>
