@@ -166,7 +166,8 @@ function Admin() {
                       <option value="grok">Grok (XAI_API_KEY)</option>
                       <option value="openai">OpenAI (OPENAI_API_KEY)</option>
                       <option value="gemini">Gemini (GEMINI_API_KEY)</option>
-                      <option value="openrouter">OpenRouter (OPENROUTER_API_KEY)</option>
+                     <option value="openrouter">OpenRouter (OPENROUTER_API_KEY)</option>
+                     <option value="lovable">Lovable AI (built in, no key needed)</option>
                     </select>
                   </label>
                    <label className="min-w-0 text-sm font-bold">Model (optional)
