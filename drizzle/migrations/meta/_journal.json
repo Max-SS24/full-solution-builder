@@ -43,6 +43,13 @@
       "when": 1790998778018,
       "tag": "0005_care_providers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790999367053,
+      "tag": "0006_live_connectors",
+      "breakpoints": true
     }
   ]
 }
