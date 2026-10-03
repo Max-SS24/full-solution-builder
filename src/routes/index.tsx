@@ -254,7 +254,7 @@ function Home() {
                     {r.phone && <p>📞 <a className="underline" href={`tel:${r.phone}`}>{r.phone}</a></p>}
                   </div>
                   {r.payment.length === 0 && (
-                    <div className="border-t-[3px] border-ink bg-suntint p-5 text-sm">
+                    <div className="border-t-[3px] border-ink bg-sun/20 p-5 text-sm">
                       <p className="font-bold">✅ How to confirm your insurance</p>
                       <ol className="mt-2 list-decimal space-y-1 pl-5 text-ink/80">
                         <li>Call {r.phone ? <a className="font-bold underline" href={`tel:${r.phone}`}>{r.phone}</a> : "the office"} and ask: “Are you in-network for my plan?” Have your member ID ready.</li>
