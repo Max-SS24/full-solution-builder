@@ -177,6 +177,7 @@ export type Database = {
       data_sources: {
         Row: {
           category: string
+          connector: string | null
           created_at: string
           description: string | null
           enabled: boolean
@@ -187,6 +188,7 @@ export type Database = {
         }
         Insert: {
           category?: string
+          connector?: string | null
           created_at?: string
           description?: string | null
           enabled?: boolean
@@ -197,6 +199,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          connector?: string | null
           created_at?: string
           description?: string | null
           enabled?: boolean

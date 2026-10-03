@@ -250,9 +250,10 @@ function Home() {
                     <p>🩺 {r.needs.join(", ")} · {r.care_types.join(", ")}</p>
                     <p>💳 {r.payment.join(", ")}</p>
                     {r.veteran_focus && <p>🎖️ Veteran-experienced (per source)</p>}
+                    {r.bio && <p className="text-ink/65">📝 {r.bio}</p>}
                     {r.phone && <p>📞 <a className="underline" href={`tel:${r.phone}`}>{r.phone}</a></p>}
                   </div>
-                  {!r.kind.includes("VA") && r.kind !== "Vet Center" && (
+                  {!r.kind.includes("VA") && r.kind !== "Vet Center" && /^[0-9a-f-]{36}$/.test(r.id) && (
                     <div className="border-t-[3px] border-ink p-5">
                       <button onClick={() => void toggleProviders(r.id)} className="w-full rounded-full border-[3px] border-ink bg-sun px-4 py-2 text-sm font-bold shadow-hard">
                         {openRes === r.id ? "Hide providers" : "👥 See providers"}
@@ -290,7 +291,7 @@ function Home() {
           )}
           {results && results.some((r) => !r.kind.includes("VA") && r.kind !== "Vet Center") && (
             <ProviderMatcher
-              resourceIds={results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center").map((r) => r.id)}
+              candidates={results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center")}
               payment={vars?.payment ?? null}
             />
           )}

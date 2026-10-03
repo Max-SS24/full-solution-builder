@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { matchProviders, type ProviderMatch } from "@/lib/match.functions";
+import type { CareResult } from "@/lib/navigator.functions";
 
 const FIT: Record<string, string> = { strong: "bg-minttint", good: "bg-skytint", partial: "bg-soft" };
 
-export function ProviderMatcher({ resourceIds, payment }: { resourceIds: string[]; payment: string | null }) {
+export function ProviderMatcher({ candidates, payment }: { candidates: CareResult[]; payment: string | null }) {
   const run = useServerFn(matchProviders);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -14,7 +15,7 @@ export function ProviderMatcher({ resourceIds, payment }: { resourceIds: string[
     e.preventDefault();
     if (text.trim().length < 3 || busy) return;
     setBusy(true);
-    try { setOut(await run({ data: { priorities: text, resourceIds, payment } })); }
+    try { setOut(await run({ data: { priorities: text, payment, candidates: candidates.map((c) => ({ id: c.id, name: c.name, kind: c.kind, payment: c.payment, bio: c.bio ?? null, needs: c.needs, care_types: c.care_types, veteran_focus: c.veteran_focus })) } })); }
     catch { setOut({ summary: "", matches: [], error: "Something went wrong. Please try again." }); }
     finally { setBusy(false); }
   }
@@ -43,10 +44,10 @@ export function ProviderMatcher({ resourceIds, payment }: { resourceIds: string[
                 <span className={`rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase ${FIT[m.fit]}`}>{m.fit} fit</span>
               </div>
               <p className="mt-2 text-ink/80">{m.why}</p>
-              <p className="mt-1 text-xs font-semibold text-ink/60">💳 {m.insurance.join(", ")}</p>
+              <p className="mt-1 text-xs font-semibold text-ink/60">💳 {m.insurance.length ? m.insurance.join(", ") : "Insurance not listed — call to confirm"}</p>
             </div>
           ))}
-          <p className="text-[11px] font-semibold text-ink/50">AI-generated comparison of posted bios. Always confirm details with the provider.</p>
+          <p className="text-[11px] font-semibold text-ink/50">AI-generated comparison of verified public listings. Always confirm details with the provider.</p>
         </div>
       )}
     </div>

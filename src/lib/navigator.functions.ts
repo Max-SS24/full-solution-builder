@@ -29,6 +29,7 @@ export type CareResult = {
   verified: boolean;
   last_checked: string;
   source_name: string;
+  bio?: string | null;
 };
 
 const SYSTEM = `You are a Veteran mental-health care NAVIGATOR (not a clinician). Never diagnose.
@@ -164,15 +165,34 @@ export const navigate = createServerFn({ method: "POST" })
       .select("*, data_sources!inner(name, enabled)")
       .eq("data_sources.enabled", true);
 
+    // Live connectors for enabled sources (FindTreatment.gov, NPI Registry).
+    const { data: live } = await sb.from("data_sources").select("name, connector").eq("enabled", true).not("connector", "is", null);
+    const city0 = variables.location?.split(",")[0]?.trim() ?? "";
+    const state0 = variables.location?.split(",")[1]?.trim().toUpperCase() ?? "";
+    const { findTreatment, npiClinicians } = await import("./connectors.server");
+    let liveError = false;
+    const liveRows = (await Promise.all((live ?? []).map(async (s) => {
+      try {
+        if (s.connector === "findtreatment") return await findTreatment(city0, state0, variables, s.name);
+        if (s.connector === "npi" && variables.va_vs_community !== "va") return await npiClinicians(city0, state0, variables, s.name);
+      } catch (e) { console.error("[connector]", s.connector, e); liveError = true; }
+      return [] as CareResult[];
+    }))).flat();
+
     let results: CareResult[] = [];
     if (!error && rows) {
       const v = variables;
       const city = v.location?.split(",")[0]?.trim().toLowerCase();
       const state = v.location?.split(",")[1]?.trim().toUpperCase();
+      const dbRows: CareResult[] = rows.map((r) => {
+        const { data_sources, ...rest } = r as typeof r & { data_sources: { name: string } };
+        return { ...rest, source_name: data_sources.name } as CareResult;
+      });
+      const all = [...liveRows, ...dbRows];
       // Community-only seekers never see VA facilities or Vet Centers.
       const pool = v.va_vs_community === "community"
-        ? rows.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center")
-        : rows;
+        ? all.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center")
+        : all;
       results = pool
         .map((r) => {
           let score = 0;
@@ -185,12 +205,12 @@ export const navigate = createServerFn({ method: "POST" })
           if (v.va_vs_community === "va" && r.kind.includes("VA")) score += 2;
           if (v.va_vs_community === "community" && !r.kind.includes("VA") && r.kind !== "Vet Center") score += 2;
           if (r.veteran_focus) score += 1;
-          const { data_sources, ...rest } = r as typeof r & { data_sources: { name: string } };
-          return { score, item: { ...rest, source_name: data_sources.name } as CareResult };
+          if (r.id.startsWith("ft-") || r.id.startsWith("npi-")) score += 0.5; // prefer real listings over samples
+          return { score, item: r };
         })
         .filter((x): x is { score: number; item: CareResult } => !!x && x.score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 3)
+        .slice(0, 6)
         .map((x) => x.item);
     }
 
@@ -233,7 +253,7 @@ export const navigate = createServerFn({ method: "POST" })
       variables,
       results: needsMore ? [] : results,
       needsMore,
-      connectorError: error ? "A data source is temporarily unavailable." : null,
+      connectorError: error || liveError ? "A data source is temporarily unavailable." : null,
       aiNote: aiUsed ? null : aiError ?? `AI unavailable for ${activeProvider(aiCfg).name}; using basic matching.`,
     };
   });
