@@ -154,6 +154,8 @@ function Admin() {
               ))}
             </ul>
 
+            <AdminManager onChange={refresh} />
+
              <section className="mt-12 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:rounded-[26px] sm:p-6">
               <h2 className="font-display text-2xl font-bold">AI service</h2>
               <p className="mt-1 text-sm text-ink/60">Visitors never see this. API keys stay in protected secrets — only the provider choice is set here.</p>
@@ -194,6 +196,56 @@ function Admin() {
         )}
       </main>
     </div>
+  );
+}
+
+function AdminManager({ onChange }: { onChange: () => void }) {
+  const qc = useQueryClient();
+  const [email, setEmail] = useState("");
+  const admins = useQuery({
+    queryKey: ["admins"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("list_admins");
+      if (error) throw error;
+      return data;
+    },
+  });
+  const me = useQuery({ queryKey: ["me-id"], queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null });
+  const reload = () => { qc.invalidateQueries({ queryKey: ["admins"] }); onChange(); };
+  async function grant(e: React.FormEvent) {
+    e.preventDefault();
+    const { data, error } = await supabase.rpc("grant_admin", { _email: email });
+    if (error) { toast.error(error.message); return; }
+    toast.success(data === "already" ? "That person is already an admin" : "Admin access granted");
+    setEmail("");
+    reload();
+  }
+  async function revoke(id: string, em: string | null) {
+    if (!confirm(`Remove admin access for ${em ?? "this user"}?`)) return;
+    const { error } = await supabase.rpc("revoke_admin", { _user_id: id });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Admin access removed");
+    reload();
+  }
+  return (
+    <section className="mt-12 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:rounded-[26px] sm:p-6">
+      <h2 className="font-display text-2xl font-bold">Admins</h2>
+      <p className="mt-1 text-sm text-ink/60">The person must create an account first. Then enter their email to give them admin access.</p>
+      <form onSubmit={grant} className="mt-4 grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <input type="email" required placeholder="their@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
+        <button className="rounded-full border-[3px] border-ink bg-mint px-5 py-2.5 font-bold text-paper shadow-hard">Grant admin</button>
+      </form>
+      <ul className="mt-4 space-y-2">
+        {admins.data?.map((a) => (
+          <li key={a.user_id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border-[3px] border-ink bg-cream px-4 py-2">
+            <span className="min-w-0 break-words font-semibold">{a.email}{a.user_id === me.data && <span className="ml-2 text-xs text-ink/50">(you)</span>}</span>
+            {a.user_id !== me.data && (
+              <button onClick={() => revoke(a.user_id, a.email)} className="rounded-full border-[3px] border-ink bg-coral px-3 py-1 text-sm font-bold text-paper">Remove</button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
