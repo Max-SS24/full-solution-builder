@@ -10,16 +10,17 @@
 //   XAI_API_KEY        Grok (xAI)  <- default
 //   OPENAI_API_KEY     OpenAI
 //   GEMINI_API_KEY     Google Gemini
+//   OPENROUTER_API_KEY OpenRouter (free models end in ":free")
 //
 // HOW TO SWITCH PROVIDERS (backend only):
 //   Admins can pick the provider/model on the Admin page (changes are audit-logged),
-//   or add a secret AI_PROVIDER = grok | openai | gemini   (default: grok)
+//   or add a secret AI_PROVIDER = grok | openai | gemini | openrouter   (default: grok)
 //   Optional: AI_MODEL = a specific model id to override the default below.
 //
 // TO ADD A NEW PROVIDER: add one entry to PROVIDERS (any OpenAI-compatible
 //   /chat/completions API works) with its base URL, key secret name and model.
 // =====================================================================
-type ProviderConfig = { baseURL: string; keyEnv: string; model: string };
+type ProviderConfig = { baseURL: string; keyEnv: string; model: string; headers?: Record<string, string> };
 
 const PROVIDERS: Record<string, ProviderConfig> = {
   grok: { baseURL: "https://api.x.ai/v1", keyEnv: "XAI_API_KEY", model: "grok-4" },
@@ -28,6 +29,12 @@ const PROVIDERS: Record<string, ProviderConfig> = {
     baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
     keyEnv: "GEMINI_API_KEY",
     model: "gemini-2.5-flash",
+  },
+  openrouter: {
+    baseURL: "https://openrouter.ai/api/v1",
+    keyEnv: "OPENROUTER_API_KEY", // <-- OpenRouter key secret name
+    model: "meta-llama/llama-3.3-70b-instruct:free",
+    headers: { "HTTP-Referer": "https://va-navigator.lovable.app", "X-Title": "VA Navigator" },
   },
 };
 
@@ -52,7 +59,7 @@ export async function completeJson(
   if (!p.apiKey) return null;
   const res = await fetch(`${p.baseURL}/chat/completions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${p.apiKey}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${p.apiKey}`, ...(p.headers ?? {}) },
     body: JSON.stringify({ model: p.model, messages, response_format: { type: "json_object" } }),
   });
   if (!res.ok) {

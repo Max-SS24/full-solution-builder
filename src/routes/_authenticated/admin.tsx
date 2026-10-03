@@ -164,10 +164,11 @@ function Admin() {
                       <option value="grok">Grok (XAI_API_KEY)</option>
                       <option value="openai">OpenAI (OPENAI_API_KEY)</option>
                       <option value="gemini">Gemini (GEMINI_API_KEY)</option>
+                      <option value="openrouter">OpenRouter (OPENROUTER_API_KEY)</option>
                     </select>
                   </label>
                    <label className="min-w-0 text-sm font-bold">Model (optional)
-                     <input name="model" defaultValue={api.data.model ?? ""} placeholder="default" className="mt-1 block w-full min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
+                     <input name="model" defaultValue={api.data.model ?? ""} placeholder="e.g. meta-llama/llama-3.3-70b-instruct:free" className="mt-1 block w-full min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
                   </label>
                   <button className="rounded-full border-[3px] border-ink bg-mint px-5 py-2.5 font-bold text-paper shadow-hard">Save</button>
                 </form>
