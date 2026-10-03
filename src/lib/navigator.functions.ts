@@ -41,7 +41,28 @@ Extract search variables from the whole conversation. Reply ONLY with JSON:
   "payment": "va"|"tricare"|"medicaid"|"medicare"|"private"|"self-pay"|null,
   "va_vs_community": "va"|"community"|"either"|null ("va" = VA facility/Vet Center, "community" = civilian therapist or non-VA provider — ALSO use "community" whenever they say they don't want the VA, don't want to deal with the VA or government, or want to avoid VA/government care, "either" = no preference), "urgency": "routine"|"soon"|"urgent"|"crisis"|null}}`;
 
-const CRISIS_RE = /\b(suicid|kill myself|end it|self[- ]harm|hurt myself|don'?t want to live)/i;
+const VOCAB = `
+Map everyday language to "need": depression = feeling down, empty, numb, hopeless, heavy, unmotivated, can't get out of bed, nothing matters, lost interest, dark place, burden, stuck in a rut, no purpose/mission;
+anxiety = on edge, nervous, keyed up, can't relax, racing thoughts, panic, can't breathe, chest tight, constant worry, jumpy;
+ptsd = flashbacks, nightmares, hypervigilant, always scanning, triggered, startle, back in the sandbox/deployment, combat memories, can't stop reliving;
+grief = lost my buddy/friend/spouse, someone died, can't stop missing, mourning, survivor's guilt;
+trauma = something bad happened, abuse, assault, accident, can't shake it;
+mst = assaulted/harassed while serving, military sexual trauma;
+"substance use" = drinking too much, can't stop drinking, using, pills, high, addicted, need a drink to cope.
+Set "crisis": true for any sign of harming self (no point anymore, better off without me, want to disappear, ending it, have a plan) OR harming others (want to hurt/kill someone, going to snap on someone, losing control and might hurt somebody).`;
+
+const CRISIS_RE = /\b(suicid|kill myself|end it|ending it|self[- ]harm|hurt myself|don'?t want to (live|be here)|no point (in living|anymore)|better off without me|want to die|wanna die|not wake up|have a plan to)/i;
+const HARM_OTHERS_RE = /\b((hurt|kill|shoot|stab|attack) (someone|somebody|him|her|them|people|my)|going to snap|gonna snap|lose it on (someone|somebody)|homicid)/i;
+
+const NEED_PATTERNS: [string, RegExp][] = [
+  ["ptsd", /\b(ptsd|flashback|nightmare|hypervigil|always scanning|triggered|startl|sandbox|combat memor|reliving)/],
+  ["mst", /\b(mst|military sexual|assaulted while serving|harassed while serving)/],
+  ["substance use", /\b(substance|drinking too much|can'?t stop drinking|alcohol|addict|pills|using again|need a drink)/],
+  ["grief", /\b(grief|griev|lost my (buddy|friend|wife|husband|spouse|son|daughter|brother|sister)|passed away|died|mourning|survivor'?s guilt|missing (him|her))/],
+  ["anxiety", /\b(anxi|on edge|nervous|keyed up|can'?t relax|racing thoughts|panic|can'?t breathe|chest (is )?tight|worry|jumpy)/],
+  ["depression", /\b(depress|feeling down|empty|numb|hopeless|unmotivated|can'?t get out of bed|nothing matters|lost interest|dark place|burden|stuck in a rut|no purpose)/],
+  ["trauma", /\b(trauma|abuse|assault|accident|can'?t shake)/],
+];
 
 function fallbackExtract(text: string): Variables {
   const t = text.toLowerCase();
@@ -67,14 +88,14 @@ function fallbackExtract(text: string): Variables {
     care_type: t.includes("group") || t.includes("support group") || t.includes("peer") ? "group"
       : t.includes("one on one") || t.includes("one-on-one") || t.includes("1 on 1") || t.includes("individual") ? "therapy"
       : pick(["therapy", "counseling", "psychiatry", "residential"]),
-    need: pick(["ptsd", "depression", "anxiety", "mst", "grief", "trauma", "substance use"]),
+    need: NEED_PATTERNS.find(([, re]) => re.test(t))?.[0] ?? null,
     payment: pick(["tricare", "medicaid", "medicare", "self-pay"]) ?? (t.includes("insurance") ? "private" : null),
     va_vs_community: t.includes("not the va") || t.includes("community") || t.includes("civilian") || t.includes("private therapist")
         || /don'?t want (to deal with )?(the )?va/.test(t) || /no[n -]?va/.test(t) || /avoid (the )?va/.test(t)
         || /don'?t want (to deal with )?(the )?government/.test(t) || /no[n -]?government/.test(t) || /outside (the )?va/.test(t) ? "community"
       : t.includes("either") || t.includes("no preference") || t.includes("don't care") ? "either"
       : /\bva\b/.test(t) || t.includes("vet center") ? "va" : null,
-    urgency: CRISIS_RE.test(t) ? "crisis" : t.includes("soon") || t.includes("asap") ? "soon" : null,
+    urgency: CRISIS_RE.test(t) || HARM_OTHERS_RE.test(t) ? "crisis" : t.includes("soon") || t.includes("asap") ? "soon" : null,
   };
 }
 
