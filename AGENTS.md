@@ -18,3 +18,4 @@
 - Audit log rows are written only by the audit_changes() trigger on data_sources and api_settings; clients can read (admins) but never write.
 - AI provider precedence: api_settings row (admin page) -> AI_PROVIDER secret -> grok; if the chosen provider has no key or fails, the built-in Lovable AI Gateway (src/lib/ai/gateway.server.ts) is used; keys always remain secrets.
 - Live data connectors (src/lib/connectors.server.ts) run per request for data_sources rows with a non-null connector that are enabled; listings are never copied from sites that forbid it.
+- Account erasure runs in src/lib/privacy.functions.ts (auth-checked server fn, admin client only for auth user deletion); private-search mode skips search_history inserts client-side.
