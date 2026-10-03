@@ -8,3 +8,6 @@
 - [x] Emotion vocabulary for needs
 - [x] Emergency box (988/838255/911) shown with top matches on danger signs
 - [x] Community provider lists with insurance + bios (sample data)
+
+- [x] Built-in Lovable AI interprets typo-filled messages (provider "lovable" + automatic fallback)
+- [x] AI provider matcher compares priorities with bios/insurance

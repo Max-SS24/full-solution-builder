@@ -7,6 +7,7 @@ import { SiteHeader, CrisisBar } from "@/components/SiteHeader";
 import { useAccount } from "@/hooks/useAccount";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
+import { ProviderMatcher } from "@/components/ProviderMatcher";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -286,6 +287,12 @@ function Home() {
                 </article>
               ))}
             </div>
+          )}
+          {results && results.some((r) => !r.kind.includes("VA") && r.kind !== "Vet Center") && (
+            <ProviderMatcher
+              resourceIds={results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center").map((r) => r.id)}
+              payment={vars?.payment ?? null}
+            />
           )}
         </div>
       </section>
