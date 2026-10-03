@@ -36,6 +36,8 @@ const PROVIDERS: Record<string, ProviderConfig> = {
     model: "meta-llama/llama-3.3-70b-instruct:free",
     headers: { "HTTP-Referer": "https://va-navigator.lovable.app", "X-Title": "VA Navigator" },
   },
+  // Built-in Lovable AI Gateway (secret LOVABLE_API_KEY, managed automatically).
+  lovable: { baseURL: "https://ai.gateway.lovable.dev/v1", keyEnv: "LOVABLE_API_KEY", model: "openai/gpt-6-astra" },
 };
 
 export type ChatMsg = { role: "system" | "user" | "assistant"; content: string };
@@ -50,13 +52,35 @@ export function activeProvider(override?: { provider?: string | null; model?: st
   return { name, ...cfg, model, apiKey };
 }
 
-/** Returns the model's JSON reply, or null if no provider key is configured. */
+/** Built-in Lovable AI: understands typos/irregular wording. Used when chosen ("lovable"),
+ *  or automatically when the chosen provider has no key or fails. */
+async function viaGateway(messages: ChatMsg[]): Promise<unknown | null> {
+  const { gatewayText, parseJson } = await import("./gateway.server");
+  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n");
+  const rest = messages.filter((m) => m.role !== "system") as { role: "user" | "assistant"; content: string }[];
+  const text = await gatewayText(
+    system + "\nMessages may contain typos, slang, missing punctuation or irregular wording — interpret the intended meaning generously. Reply with JSON only.",
+    rest,
+  );
+  return text == null ? null : parseJson(text);
+}
+
+/** Returns the model's JSON reply, or null if no provider is available. */
 export async function completeJson(
   messages: ChatMsg[],
   override?: { provider?: string | null; model?: string | null },
 ): Promise<unknown | null> {
   const p = activeProvider(override);
-  if (!p.apiKey) return null;
+  if (p.name === "lovable" || !p.apiKey) return viaGateway(messages);
+  try {
+    return await completeExternal(messages, p);
+  } catch (e) {
+    console.error(`[ai:${p.name}] failed, using built-in Lovable AI`, e);
+    return viaGateway(messages);
+  }
+}
+
+async function completeExternal(messages: ChatMsg[], p: ReturnType<typeof activeProvider>): Promise<unknown> {
   const res = await fetch(`${p.baseURL}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${p.apiKey}`, ...(p.headers ?? {}) },
