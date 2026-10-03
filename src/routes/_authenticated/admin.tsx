@@ -256,7 +256,7 @@ function AuditRow({ a }: { a: AuditEntry }) {
   const rec = d.new ?? d.old ?? {};
   const oldValues = d.old;
   const newValues = d.new;
-  const label = a.entity === "api_settings" ? "AI settings" : String(rec["name"] ?? "Data source");
+  const label = a.entity === "api_settings" ? "AI settings" : a.entity === "admin_roles" ? `Admin: ${String(rec["name"] ?? "")}` : String(rec["name"] ?? "Data source");
   const changed =
     oldValues && newValues
       ? Object.keys(newValues)
