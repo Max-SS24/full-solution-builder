@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { navigate, type CareResult, type Variables } from "@/lib/navigator.functions";
+import { navigate, getProviders, type CareResult, type Variables, type Provider } from "@/lib/navigator.functions";
 import { SiteHeader, CrisisBar } from "@/components/SiteHeader";
 import { useAccount } from "@/hooks/useAccount";
 import { toast } from "sonner";
@@ -49,7 +49,18 @@ function Home() {
   const [vars, setVars] = useState<Variables | null>(null);
   const [results, setResults] = useState<CareResult[] | null>(null);
   const [crisis, setCrisis] = useState(false);
+  const [danger, setDanger] = useState<"self" | "others" | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const loadProviders = useServerFn(getProviders);
+  const [openRes, setOpenRes] = useState<string | null>(null);
+  const [providers, setProviders] = useState<Provider[] | null>(null);
+  async function toggleProviders(id: string) {
+    if (openRes === id) { setOpenRes(null); return; }
+    setOpenRes(id);
+    setProviders(null);
+    try { setProviders(await loadProviders({ data: { resourceId: id, payment: vars?.payment ?? null } })); }
+    catch { setProviders([]); toast.error("Couldn't load providers."); }
+  }
   const endRef = useRef<HTMLDivElement>(null);
   const hasRenderedMessages = useRef(false);
   useEffect(() => {
@@ -84,6 +95,8 @@ function Home() {
       setVars(out.variables);
       setResults(out.results);
       setCrisis(out.crisis);
+      setDanger(out.danger);
+      if (out.crisis) window.scrollTo({ top: 0, behavior: "smooth" });
       setNote(out.connectorError ?? out.aiNote);
       // Stay enlarged until we have suitable results (or a crisis needs the full page).
       if (out.crisis || (!out.needsMore && out.results.length > 0)) setFocused(false);
@@ -109,8 +122,16 @@ function Home() {
       <SiteHeader />
 
       {crisis && (
-        <div role="alert" className="border-b-[3px] border-ink bg-coral px-6 py-4 text-center font-display text-lg font-bold text-paper">
-          You don't have to go through this alone. Call 988 and press 1, or text 838255 — right now, 24/7.
+        <div role="alert" className="border-b-[3px] border-ink bg-coral px-4 py-5 text-paper sm:px-6">
+          <div className="mx-auto max-w-4xl">
+            <p className="font-display text-xl font-bold">You don't have to go through this alone — help is available right now, 24/7.</p>
+            <div className="mt-3 grid gap-2 text-sm font-bold sm:grid-cols-3">
+              <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">📞 Veterans Crisis Line<br />Call 988, then press 1</a>
+              <a href="sms:838255" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">💬 Text the Crisis Line<br />838255</a>
+              <a href="tel:911" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">🚨 Emergency Services<br />Call 911 {danger === "others" ? "if anyone is in danger" : "if you're in immediate danger"}</a>
+            </div>
+            <p className="mt-3 text-sm font-semibold">Your closest care matches are listed below too.</p>
+          </div>
         </div>
       )}
 
@@ -230,6 +251,31 @@ function Home() {
                     {r.veteran_focus && <p>🎖️ Veteran-experienced (per source)</p>}
                     {r.phone && <p>📞 <a className="underline" href={`tel:${r.phone}`}>{r.phone}</a></p>}
                   </div>
+                  {!r.kind.includes("VA") && r.kind !== "Vet Center" && (
+                    <div className="border-t-[3px] border-ink p-5">
+                      <button onClick={() => void toggleProviders(r.id)} className="w-full rounded-full border-[3px] border-ink bg-sun px-4 py-2 text-sm font-bold shadow-hard">
+                        {openRes === r.id ? "Hide providers" : "👥 See providers"}
+                      </button>
+                      {openRes === r.id && (
+                        <div className="mt-4 space-y-3">
+                          {providers === null && <p className="text-sm text-ink/60">Loading providers…</p>}
+                          {providers?.length === 0 && <p className="text-sm text-ink/60">No individual providers listed yet.</p>}
+                          {providers?.map((p) => (
+                            <div key={p.id} className="rounded-2xl border-2 border-ink bg-cream p-3 text-sm">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="font-bold">{p.name}{p.credentials ? `, ${p.credentials}` : ""}</span>
+                                {p.matches && <span className="rounded-full border-2 border-ink bg-minttint px-2 py-0.5 text-[10px] font-bold uppercase">Takes your insurance</span>}
+                              </div>
+                              <p className="mt-1 text-xs font-semibold text-ink/70">💳 {p.insurance.join(", ")}</p>
+                              {p.bio && <p className="mt-2 text-ink/80">{p.bio}</p>}
+                              <a href={p.source_url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-bold underline">Source ↗</a>
+                              {p.is_sample && <span className="ml-2 text-[10px] font-semibold text-ink/50">Sample listing</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="border-t-[3px] border-ink p-5">
                     <a href={r.source_url} target="_blank" rel="noreferrer" className="block rounded-full bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">View original source ↗</a>
                     <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-ink/50">

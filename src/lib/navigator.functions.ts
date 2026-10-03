@@ -41,7 +41,28 @@ Extract search variables from the whole conversation. Reply ONLY with JSON:
   "payment": "va"|"tricare"|"medicaid"|"medicare"|"private"|"self-pay"|null,
   "va_vs_community": "va"|"community"|"either"|null ("va" = VA facility/Vet Center, "community" = civilian therapist or non-VA provider — ALSO use "community" whenever they say they don't want the VA, don't want to deal with the VA or government, or want to avoid VA/government care, "either" = no preference), "urgency": "routine"|"soon"|"urgent"|"crisis"|null}}`;
 
-const CRISIS_RE = /\b(suicid|kill myself|end it|self[- ]harm|hurt myself|don'?t want to live)/i;
+const VOCAB = `
+Map everyday language to "need": depression = feeling down, empty, numb, hopeless, heavy, unmotivated, can't get out of bed, nothing matters, lost interest, dark place, burden, stuck in a rut, no purpose/mission;
+anxiety = on edge, nervous, keyed up, can't relax, racing thoughts, panic, can't breathe, chest tight, constant worry, jumpy;
+ptsd = flashbacks, nightmares, hypervigilant, always scanning, triggered, startle, back in the sandbox/deployment, combat memories, can't stop reliving;
+grief = lost my buddy/friend/spouse, someone died, can't stop missing, mourning, survivor's guilt;
+trauma = something bad happened, abuse, assault, accident, can't shake it;
+mst = assaulted/harassed while serving, military sexual trauma;
+"substance use" = drinking too much, can't stop drinking, using, pills, high, addicted, need a drink to cope.
+Set "crisis": true for any sign of harming self (no point anymore, better off without me, want to disappear, ending it, have a plan) OR harming others (want to hurt/kill someone, going to snap on someone, losing control and might hurt somebody).`;
+
+const CRISIS_RE = /\b(suicid|kill myself|end it|ending it|self[- ]harm|hurt myself|don'?t want to (live|be here)|no point (in living|anymore)|better off without me|want to die|wanna die|not wake up|have a plan to)/i;
+const HARM_OTHERS_RE = /\b((hurt|kill|shoot|stab|attack) (someone|somebody|him|her|them|people|my)|going to snap|gonna snap|lose it on (someone|somebody)|homicid)/i;
+
+const NEED_PATTERNS: [string, RegExp][] = [
+  ["ptsd", /\b(ptsd|flashback|nightmare|hypervigil|always scanning|triggered|startl|sandbox|combat memor|reliving)/],
+  ["mst", /\b(mst|military sexual|assaulted while serving|harassed while serving)/],
+  ["substance use", /\b(substance|drinking too much|can'?t stop drinking|alcohol|addict|pills|using again|need a drink)/],
+  ["grief", /\b(grief|griev|lost my (buddy|friend|wife|husband|spouse|son|daughter|brother|sister)|passed away|died|mourning|survivor'?s guilt|missing (him|her))/],
+  ["anxiety", /\b(anxi|on edge|nervous|keyed up|can'?t relax|racing thoughts|panic|can'?t breathe|chest (is )?tight|worry|jumpy)/],
+  ["depression", /\b(depress|feeling down|empty|numb|hopeless|unmotivated|can'?t get out of bed|nothing matters|lost interest|dark place|burden|stuck in a rut|no purpose)/],
+  ["trauma", /\b(trauma|abuse|assault|accident|can'?t shake)/],
+];
 
 function fallbackExtract(text: string): Variables {
   const t = text.toLowerCase();
@@ -67,14 +88,14 @@ function fallbackExtract(text: string): Variables {
     care_type: t.includes("group") || t.includes("support group") || t.includes("peer") ? "group"
       : t.includes("one on one") || t.includes("one-on-one") || t.includes("1 on 1") || t.includes("individual") ? "therapy"
       : pick(["therapy", "counseling", "psychiatry", "residential"]),
-    need: pick(["ptsd", "depression", "anxiety", "mst", "grief", "trauma", "substance use"]),
+    need: NEED_PATTERNS.find(([, re]) => re.test(t))?.[0] ?? null,
     payment: pick(["tricare", "medicaid", "medicare", "self-pay"]) ?? (t.includes("insurance") ? "private" : null),
     va_vs_community: t.includes("not the va") || t.includes("community") || t.includes("civilian") || t.includes("private therapist")
         || /don'?t want (to deal with )?(the )?va/.test(t) || /no[n -]?va/.test(t) || /avoid (the )?va/.test(t)
         || /don'?t want (to deal with )?(the )?government/.test(t) || /no[n -]?government/.test(t) || /outside (the )?va/.test(t) ? "community"
       : t.includes("either") || t.includes("no preference") || t.includes("don't care") ? "either"
       : /\bva\b/.test(t) || t.includes("vet center") ? "va" : null,
-    urgency: CRISIS_RE.test(t) ? "crisis" : t.includes("soon") || t.includes("asap") ? "soon" : null,
+    urgency: CRISIS_RE.test(t) || HARM_OTHERS_RE.test(t) ? "crisis" : t.includes("soon") || t.includes("asap") ? "soon" : null,
   };
 }
 
@@ -107,13 +128,13 @@ export const navigate = createServerFn({ method: "POST" })
     const aiCfg = (aiRows as { provider: string; model: string | null }[] | null)?.[0];
 
     let reply = "";
-    let crisis = CRISIS_RE.test(userText);
+    let crisis = CRISIS_RE.test(userText) || HARM_OTHERS_RE.test(userText);
     let variables: Variables = fallbackExtract(userText);
     let aiError: string | null = null;
     let aiUsed = false;
 
     try {
-      const out = (await completeJson([{ role: "system", content: SYSTEM }, ...data.messages], aiCfg)) as
+      const out = (await completeJson([{ role: "system", content: SYSTEM + VOCAB }, ...data.messages], aiCfg)) as
         | { reply?: string; crisis?: boolean; variables?: Partial<Variables> }
         | null;
       if (out) {
@@ -198,13 +219,50 @@ export const navigate = createServerFn({ method: "POST" })
             : `${sympathy} I couldn't find a close match yet — could you share a bit more about what you're looking for?`;
     }
 
+    const danger: "self" | "others" | null = HARM_OTHERS_RE.test(userText) ? "others" : crisis ? "self" : null;
+    if (danger) crisis = true;
+    const community = results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center");
+    if (!needsMore && community.length) {
+      reply += ` Tap "See providers" on a community option to view its individual clinicians, the insurance they take${variables.payment ? ` (I'll put ${variables.payment} first)` : ""}, and their bios.`;
+    }
+
     return {
       reply,
       crisis,
+      danger,
       variables,
       results: needsMore ? [] : results,
       needsMore,
       connectorError: error ? "A data source is temporarily unavailable." : null,
       aiNote: aiUsed ? null : aiError ?? `No AI key configured for ${activeProvider(aiCfg).name}; using basic matching.`,
     };
+  });
+
+export type Provider = {
+  id: string; name: string; credentials: string | null; insurance: string[];
+  bio: string | null; source_url: string; is_sample: boolean; last_checked: string; matches: boolean;
+};
+
+export const getProviders = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ resourceId: z.string().uuid(), payment: z.string().max(40).nullable() }).parse(d))
+  .handler(async ({ data }): Promise<Provider[]> => {
+    const url = process.env["SUPABASE_URL"]!;
+    const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
+    const sb = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input, init) => {
+          const h = new Headers(init?.headers);
+          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+          h.set("apikey", key);
+          return fetch(input, { ...init, headers: h });
+        },
+      },
+    });
+    const { data: rows, error } = await sb.from("care_providers").select("*").eq("resource_id", data.resourceId).order("name");
+    if (error) throw new Error("Providers are temporarily unavailable.");
+    const pay = data.payment?.toLowerCase() ?? null;
+    return (rows ?? [])
+      .map((p) => ({ id: p.id, name: p.name, credentials: p.credentials, insurance: p.insurance, bio: p.bio, source_url: p.source_url, is_sample: p.is_sample, last_checked: p.last_checked, matches: !!pay && p.insurance.includes(pay) }))
+      .sort((a, b) => Number(b.matches) - Number(a.matches));
   });
