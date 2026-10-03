@@ -128,13 +128,13 @@ export const navigate = createServerFn({ method: "POST" })
     const aiCfg = (aiRows as { provider: string; model: string | null }[] | null)?.[0];
 
     let reply = "";
-    let crisis = CRISIS_RE.test(userText);
+    let crisis = CRISIS_RE.test(userText) || HARM_OTHERS_RE.test(userText);
     let variables: Variables = fallbackExtract(userText);
     let aiError: string | null = null;
     let aiUsed = false;
 
     try {
-      const out = (await completeJson([{ role: "system", content: SYSTEM }, ...data.messages], aiCfg)) as
+      const out = (await completeJson([{ role: "system", content: SYSTEM + VOCAB }, ...data.messages], aiCfg)) as
         | { reply?: string; crisis?: boolean; variables?: Partial<Variables> }
         | null;
       if (out) {
@@ -219,13 +219,50 @@ export const navigate = createServerFn({ method: "POST" })
             : `${sympathy} I couldn't find a close match yet — could you share a bit more about what you're looking for?`;
     }
 
+    const danger: "self" | "others" | null = HARM_OTHERS_RE.test(userText) ? "others" : crisis ? "self" : null;
+    if (danger) crisis = true;
+    const community = results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center");
+    if (!needsMore && community.length) {
+      reply += ` Tap "See providers" on a community option to view its individual clinicians, the insurance they take${variables.payment ? ` (I'll put ${variables.payment} first)` : ""}, and their bios.`;
+    }
+
     return {
       reply,
       crisis,
+      danger,
       variables,
       results: needsMore ? [] : results,
       needsMore,
       connectorError: error ? "A data source is temporarily unavailable." : null,
       aiNote: aiUsed ? null : aiError ?? `No AI key configured for ${activeProvider(aiCfg).name}; using basic matching.`,
     };
+  });
+
+export type Provider = {
+  id: string; name: string; credentials: string | null; insurance: string[];
+  bio: string | null; source_url: string; is_sample: boolean; last_checked: string; matches: boolean;
+};
+
+export const getProviders = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ resourceId: z.string().uuid(), payment: z.string().max(40).nullable() }).parse(d))
+  .handler(async ({ data }): Promise<Provider[]> => {
+    const url = process.env["SUPABASE_URL"]!;
+    const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
+    const sb = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input, init) => {
+          const h = new Headers(init?.headers);
+          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+          h.set("apikey", key);
+          return fetch(input, { ...init, headers: h });
+        },
+      },
+    });
+    const { data: rows, error } = await sb.from("care_providers").select("*").eq("resource_id", data.resourceId).order("name");
+    if (error) throw new Error("Providers are temporarily unavailable.");
+    const pay = data.payment?.toLowerCase() ?? null;
+    return (rows ?? [])
+      .map((p) => ({ id: p.id, name: p.name, credentials: p.credentials, insurance: p.insurance, bio: p.bio, source_url: p.source_url, is_sample: p.is_sample, last_checked: p.last_checked, matches: !!pay && p.insurance.includes(pay) }))
+      .sort((a, b) => Number(b.matches) - Number(a.matches));
   });
