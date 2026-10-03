@@ -291,7 +291,7 @@ function Home() {
           )}
           {results && results.some((r) => !r.kind.includes("VA") && r.kind !== "Vet Center") && (
             <ProviderMatcher
-              resourceIds={results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center").map((r) => r.id)}
+              candidates={results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center")}
               payment={vars?.payment ?? null}
             />
           )}
