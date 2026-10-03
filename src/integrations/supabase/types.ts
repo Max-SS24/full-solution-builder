@@ -68,6 +68,50 @@ export type Database = {
         }
         Relationships: []
       }
+      care_providers: {
+        Row: {
+          bio: string | null
+          credentials: string | null
+          id: string
+          insurance: string[]
+          is_sample: boolean
+          last_checked: string
+          name: string
+          resource_id: string
+          source_url: string
+        }
+        Insert: {
+          bio?: string | null
+          credentials?: string | null
+          id?: string
+          insurance?: string[]
+          is_sample?: boolean
+          last_checked?: string
+          name: string
+          resource_id: string
+          source_url: string
+        }
+        Update: {
+          bio?: string | null
+          credentials?: string | null
+          id?: string
+          insurance?: string[]
+          is_sample?: boolean
+          last_checked?: string
+          name?: string
+          resource_id?: string
+          source_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_providers_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "care_resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       care_resources: {
         Row: {
           care_types: string[]
