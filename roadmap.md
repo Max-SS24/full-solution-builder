@@ -11,3 +11,5 @@
 
 - [x] Built-in Lovable AI interprets typo-filled messages (provider "lovable" + automatic fallback)
 - [x] AI provider matcher compares priorities with bios/insurance
+- [ ] Live connectors: NPI Registry + FindTreatment.gov
+- [ ] Replace sample provider profiles with verified listings
