@@ -248,42 +248,33 @@ function Home() {
                   <div className="flex-1 space-y-2 p-5 text-sm font-medium text-ink/75">
                     <p>📍 {r.city}, {r.state} · {r.formats.join(" & ")}</p>
                     <p>🩺 {r.needs.join(", ")} · {r.care_types.join(", ")}</p>
-                    <p>💳 {r.payment.join(", ")}</p>
+                    <p>💳 {r.payment.length ? r.payment.join(", ") : "Insurance not listed by the source"}</p>
                     {r.veteran_focus && <p>🎖️ Veteran-experienced (per source)</p>}
                     {r.bio && <p className="text-ink/65">📝 {r.bio}</p>}
                     {r.phone && <p>📞 <a className="underline" href={`tel:${r.phone}`}>{r.phone}</a></p>}
                   </div>
-                  {!r.kind.includes("VA") && r.kind !== "Vet Center" && /^[0-9a-f-]{36}$/.test(r.id) && (
-                    <div className="border-t-[3px] border-ink p-5">
-                      <button onClick={() => void toggleProviders(r.id)} className="w-full rounded-full border-[3px] border-ink bg-sun px-4 py-2 text-sm font-bold shadow-hard">
-                        {openRes === r.id ? "Hide providers" : "👥 See providers"}
-                      </button>
-                      {openRes === r.id && (
-                        <div className="mt-4 space-y-3">
-                          {providers === null && <p className="text-sm text-ink/60">Loading providers…</p>}
-                          {providers?.length === 0 && <p className="text-sm text-ink/60">No individual providers listed yet.</p>}
-                          {providers?.map((p) => (
-                            <div key={p.id} className="rounded-2xl border-2 border-ink bg-cream p-3 text-sm">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="font-bold">{p.name}{p.credentials ? `, ${p.credentials}` : ""}</span>
-                                {p.matches && <span className="rounded-full border-2 border-ink bg-minttint px-2 py-0.5 text-[10px] font-bold uppercase">Takes your insurance</span>}
-                              </div>
-                              <p className="mt-1 text-xs font-semibold text-ink/70">💳 {p.insurance.join(", ")}</p>
-                              {p.bio && <p className="mt-2 text-ink/80">{p.bio}</p>}
-                              <a href={p.source_url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-bold underline">Source ↗</a>
-                              {p.is_sample && <span className="ml-2 text-[10px] font-semibold text-ink/50">Sample listing</span>}
-                            </div>
-                          ))}
-                        </div>
+                  {r.payment.length === 0 && (
+                    <div className="border-t-[3px] border-ink bg-sun/20 p-5 text-sm">
+                      <p className="font-bold">✅ How to confirm your insurance</p>
+                      <ol className="mt-2 list-decimal space-y-1 pl-5 text-ink/80">
+                        <li>Call {r.phone ? <a className="font-bold underline" href={`tel:${r.phone}`}>{r.phone}</a> : "the office"} and ask: “Are you in-network for my plan?” Have your member ID ready.</li>
+                        <li>Call the member-services number on the back of your insurance card, or use your plan’s online provider search.</li>
+                        <li>TRICARE: check <a className="font-bold underline" href="https://tricare.mil/FindDoctor" target="_blank" rel="noreferrer">tricare.mil/FindDoctor</a>. VA Community Care: ask the VA to confirm the provider is in the network.</li>
+                      </ol>
+                      {r.source_url.includes("npiregistry") && (
+                        <a className="mt-3 block rounded-full border-[3px] border-ink bg-paper px-4 py-2 text-center text-xs font-bold shadow-hard" target="_blank" rel="noreferrer"
+                          href={`https://www.google.com/search?q=${encodeURIComponent(`${r.name} ${r.city ?? ""} ${r.state ?? ""} insurance accepted`)}`}>
+                          🔎 Look up this clinician’s practice ↗
+                        </a>
                       )}
                     </div>
                   )}
                   <div className="border-t-[3px] border-ink p-5">
                     <a href={r.source_url} target="_blank" rel="noreferrer" className="block rounded-full bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">View original source ↗</a>
-                    <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-ink/50">
-                      <span>🔗 {r.source_name}</span>
-                      <span>checked {r.last_checked}</span>
-                    </div>
+                    <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[11px] font-semibold text-ink/60">
+                      <dt>Verified by:</dt><dd className="text-ink">{r.source_name}</dd>
+                      <dt>Last checked:</dt><dd className="text-ink">{new Date(r.last_checked + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</dd>
+                    </dl>
                   </div>
                 </article>
               ))}
