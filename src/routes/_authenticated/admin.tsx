@@ -310,9 +310,9 @@ function CareOptions() {
       </div>
       <p className="mt-3 text-xs font-semibold text-ink/60">{rows.length} options</p>
       <div className="mt-2 max-w-full overflow-x-auto rounded-[22px] border-[3px] border-ink bg-paper">
-        <table className="w-full min-w-[900px] text-left text-sm">
+        <table className="w-full min-w-[960px] text-left text-sm">
           <thead className="border-b-[3px] border-ink bg-soft"><tr>
-            <th className="p-3">Area</th><th className="p-3">Type</th><th className="p-3">Insurance</th><th className="p-3">Name</th><th className="p-3">Source</th><th className="p-3">Status</th><th className="p-3">Last validated</th>
+            <th className="p-3">Area</th><th className="p-3">Type</th><th className="p-3">Insurance</th><th className="p-3">Name</th><th className="p-3">Source</th><th className="min-w-[120px] whitespace-nowrap p-3">Status</th><th className="p-3">Last validated</th>
           </tr></thead>
           <tbody>
             {rows.map((r) => (
@@ -322,7 +322,7 @@ function CareOptions() {
                 <td className="p-3">{r.insurance.length ? r.insurance.join(", ") : "Not listed"}</td>
                 <td className="p-3"><a href={r.website} target="_blank" rel="noreferrer" className="underline">{r.name}</a>{r.phone && <div className="text-xs text-ink/60">{r.phone}</div>}</td>
                 <td className="p-3">{(r.data_sources as { name: string } | null)?.name}</td>
-                <td className="p-3"><span className={`rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase ${r.status === "active" ? "bg-minttint" : "bg-soft"}`}>{r.status.replace("_", " ")}</span></td>
+                <td className="min-w-[120px] whitespace-nowrap p-3"><span className={`inline-block whitespace-nowrap rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase ${r.status === "active" ? "bg-minttint" : "bg-soft"}`}>{r.status.replace("_", " ")}</span></td>
                 <td className="p-3 whitespace-nowrap">{r.last_validated}</td>
               </tr>
             ))}
