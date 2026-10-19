@@ -207,6 +207,12 @@ function Home() {
               />
                <button disabled={busy} className="shrink-0 rounded-full border-[3px] border-ink bg-mint px-4 py-2.5 text-sm font-bold text-paper shadow-hard disabled:opacity-60 sm:px-5">Send →</button>
             </form>
+            {user && (
+              <label className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold sm:px-6">
+                <input type="checkbox" checked={privateMode} onChange={(e) => setPrivate(e.target.checked)} className="h-4 w-4 accent-current" />
+                🕶️ Private search — don't save to my history
+              </label>
+            )}
           </div>
         </div>
       </section>
