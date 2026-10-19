@@ -54,8 +54,21 @@ Set "crisis": true for any sign of harming self (no point anymore, better off wi
 
 export const CRISIS_RE = /\b(suicid|kill(ing)? myself|end it|ending it|self[- ]harm|(hurt|hurting|harm|harming|cut|cutting) myself|don'?t want to (live|be here)|no point (in living|anymore)|better off without me|want to die|wanna die|not wake up|have a plan to|thoughts? (of|about) (dying|death|killing myself|hurting myself|harming myself))/i;
 export const HARM_OTHERS_RE = /\b((hurt|hurting|harm|harming|kill|killing|shoot|shooting|stab|stabbing|attack|attacking) (someone|somebody|him|her|them|people|others|my\b)|going to snap|gonna snap|lose it on (someone|somebody)|homicid)/i;
-export const SAFETY_SELF = "Your life is precious, and your safety is the priority right now. You don't have to go through this alone — please reach out to one of the emergency contacts above right now.";
-export const SAFETY_OTHERS = "Life is precious, and everyone's safety, including yours, is the priority right now. You don't have to go through this alone — please reach out to one of the emergency contacts above right now.";
+export const CRISIS_CONTACTS = [
+  "Veterans Crisis Line — call 988, then press 1",
+  "Text the Veterans Crisis Line — 838255",
+  "Veterans Crisis Line online chat — veteranscrisisline.net",
+  "988 Suicide & Crisis Lifeline — call or text 988",
+  "Crisis Text Line — text HOME to 741741",
+  "Emergency Services — call 911 or go to the nearest ER",
+];
+export const SAFETY_CHECK = "Are you in immediate danger, have you already hurt yourself, or do you have a plan or access to something you could use? If you've already acted or might act now, call 911 or go to the nearest emergency department. For now, move away from anything you could use to hurt yourself and ask someone you trust to stay with you.";
+export function crisisReply(danger: "self" | "others"): string {
+  const precious = danger === "others"
+    ? "Life is precious, and everyone's safety, including yours, is the priority right now."
+    : "Your life is precious, and your safety is the priority right now.";
+  return `${precious} I'm glad you told me. Please reach out to one of these right now — they're free, confidential and open 24/7:\n${CRISIS_CONTACTS.map((c) => `• ${c}`).join("\n")}\n${SAFETY_CHECK}`;
+}
 export function dangerOf(text: string): "self" | "others" | null {
   return HARM_OTHERS_RE.test(text) ? "others" : CRISIS_RE.test(text) ? "self" : null;
 }
@@ -263,7 +276,7 @@ export const navigate = createServerFn({ method: "POST" })
     const danger: "self" | "others" | null = dangerOf(userText) ?? (crisis ? "self" : null);
     if (danger) {
       crisis = true;
-      reply = `${danger === "others" ? SAFETY_OTHERS : SAFETY_SELF} ${reply}`.trim();
+      reply = crisisReply(danger);
     }
     const community = results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center");
     if (!needsMore && community.length) {
