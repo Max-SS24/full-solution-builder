@@ -8,18 +8,19 @@ Compare what the veteran says matters most (may contain typos — interpret gene
 Only use the listings given; never invent people, bios or insurance. If insurance is unlisted, say to call and confirm. Pick up to 3 best matches.
 Reply ONLY with JSON: {"summary": string (1-2 warm plain-language sentences), "matches": [{"id": string, "fit": "strong"|"good"|"partial", "why": string (1-2 sentences citing the listing)}]}`;
 
+// Lenient: real listings can have long names, bios or insurance lists — trim instead of rejecting.
+const str = (n: number) => z.string().nullish().transform((v) => (v ?? "").slice(0, n));
+const list = z.array(z.string()).nullish().transform((v) => (v ?? []).slice(0, 20).map((x) => x.slice(0, 60)));
 const Candidate = z.object({
-  id: z.string().max(200), name: z.string().max(200), kind: z.string().max(60),
-  payment: z.array(z.string().max(40)).max(20), bio: z.string().max(600).nullable().optional(),
-  needs: z.array(z.string().max(40)).max(20), care_types: z.array(z.string().max(40)).max(20),
-  veteran_focus: z.boolean(),
+  id: z.string().min(1).transform((v) => v.slice(0, 300)), name: str(300), kind: str(80),
+  payment: list, bio: str(800), needs: list, care_types: list, veteran_focus: z.boolean().nullish().transform((v) => !!v),
 });
 
 export const matchProviders = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
     priorities: z.string().trim().min(3).max(1500),
-    candidates: z.array(Candidate).min(1).max(10),
-    payment: z.string().max(40).nullable(),
+    candidates: z.array(Candidate).min(1).transform((v) => v.slice(0, 12)),
+    payment: z.string().nullish().transform((v) => (v ? v.slice(0, 60) : null)),
   }).parse(d))
   .handler(async ({ data }) => {
     const { gatewayText, parseJson } = await import("./ai/gateway.server");
