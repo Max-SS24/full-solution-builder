@@ -234,12 +234,6 @@ function Home() {
                 <Link to="/auth" className="rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-bold">Sign in to save preferences</Link>
               ))}
             </div>
-            {user && (
-              <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm font-semibold">
-                <input type="checkbox" checked={privateMode} onChange={(e) => setPrivate(e.target.checked)} className="h-4 w-4 accent-current" />
-                🕶️ Private search — don't save to my history
-              </label>
-            )}
           </div>
           {results && results.length > 0 && (
              <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
