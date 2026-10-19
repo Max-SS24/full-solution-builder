@@ -4,7 +4,8 @@ import { nextStatus, toOptionRow, type OptionStatus } from "./care-rules";
 
 /** Save newly found verified listings (privileged write, server only). */
 export async function saveOptions(rows: CareResult[], sourceIdByName: Record<string, string>) {
-  const items = rows.flatMap((r) => (sourceIdByName[r.source_name] ? [{ ...toOptionRow(r, sourceIdByName[r.source_name]!), status: "active", last_validated: new Date().toISOString().slice(0, 10), updated_at: new Date().toISOString() }] : []));
+  const uniq = [...new Map(rows.map((r) => [`${r.source_name}|${r.id}`, r])).values()];
+  const items = uniq.flatMap((r) => (sourceIdByName[r.source_name] ? [{ ...toOptionRow(r, sourceIdByName[r.source_name]!), status: "active", last_validated: new Date().toISOString().slice(0, 10), updated_at: new Date().toISOString() }] : []));
   if (!items.length) return;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { error } = await supabaseAdmin.from("care_options").upsert(items, { onConflict: "source_id,external_id" });
