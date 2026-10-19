@@ -23,11 +23,11 @@ async function geocode(city: string, state: string): Promise<{ lat: string; lon:
 
 type FtRow = { _irow: number; name1: string; name2?: string; street1?: string; city: string; state: string; zip?: string; phone?: string; website?: string; miles?: number; services?: { f2: string; f3: string }[] };
 
-export async function findTreatment(city: string, state: string, v: Variables, sourceName: string): Promise<CareResult[]> {
+export async function findTreatment(city: string, state: string, v: Variables, sourceName: string, pageSize = 25): Promise<CareResult[]> {
   const g = await geocode(city, state);
   if (!g) return [];
   const miles = Math.min(Math.max(v.distance_miles ?? 25, 5), 100);
-  const u = `https://findtreatment.gov/locator/exportsAsJson/v2?sAddr=${g.lat},${g.lon}&limitType=2&limitValue=${Math.round(miles * 1609)}&sType=${v.need === "substance use" ? "sa" : "mh"}&pageSize=25&page=1&sort=0`;
+  const u = `https://findtreatment.gov/locator/exportsAsJson/v2?sAddr=${g.lat},${g.lon}&limitType=2&limitValue=${Math.round(miles * 1609)}&sType=${v.need === "substance use" ? "sa" : "mh"}&pageSize=${pageSize}&page=1&sort=0`;
   const r = await fetch(u, { headers: UA });
   if (!r.ok) throw new Error(`FindTreatment ${r.status}`);
   const j = (await r.json()) as { rows?: FtRow[] };

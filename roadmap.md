@@ -13,3 +13,7 @@
 - [x] AI provider matcher compares priorities with bios/insurance
 - [x] Live connectors: NPI Registry + FindTreatment.gov
 - [x] Replace sample provider profiles with verified listings
+- [x] Admin Analytics tab (active/inactive users, searches)
+- [x] Care options sheet + weekly Sunday validation
+- [x] Data Storage & Security page
+- [x] Fix "What matters most" matcher

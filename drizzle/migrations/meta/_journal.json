@@ -50,6 +50,13 @@
       "when": 1790999367053,
       "tag": "0006_live_connectors",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792442819897,
+      "tag": "0007_care_options_and_analytics",
+      "breakpoints": true
     }
   ]
 }

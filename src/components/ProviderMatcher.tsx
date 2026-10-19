@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { matchProviders, type ProviderMatch } from "@/lib/match.functions";
 import type { CareResult } from "@/lib/navigator.functions";
@@ -11,12 +11,16 @@ export function ProviderMatcher({ candidates, payment }: { candidates: CareResul
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState<{ summary: string; matches: ProviderMatch[]; error: string | null } | null>(null);
 
+  // New search results → clear the old comparison.
+  const key = candidates.map((c) => c.id).join("|");
+  useEffect(() => { setOut(null); }, [key]);
+
   async function go(e: React.FormEvent) {
     e.preventDefault();
     if (text.trim().length < 3 || busy) return;
     setBusy(true);
-    try { setOut(await run({ data: { priorities: text, payment, candidates: candidates.map((c) => ({ id: c.id, name: c.name, kind: c.kind, payment: c.payment, bio: c.bio ?? null, needs: c.needs, care_types: c.care_types, veteran_focus: c.veteran_focus })) } })); }
-    catch { setOut({ summary: "", matches: [], error: "Something went wrong. Please try again." }); }
+    try { setOut(await run({ data: { priorities: text, payment, candidates: candidates.slice(0, 12).map((c) => ({ id: c.id, name: c.name, kind: c.kind, payment: c.payment ?? [], bio: c.bio ?? null, needs: c.needs ?? [], care_types: c.care_types ?? [], veteran_focus: !!c.veteran_focus })) } })); }
+    catch (err) { console.error("[matcher]", err); setOut({ summary: "", matches: [], error: "We couldn't compare providers just now. Please try again in a moment." }); }
     finally { setBusy(false); }
   }
 
@@ -29,7 +33,7 @@ export function ProviderMatcher({ candidates, payment }: { candidates: CareResul
         <textarea id="prio" rows={3} value={text} onChange={(e) => setText(e.target.value)} maxLength={1500}
           className="w-full resize-none rounded-[18px] border-[3px] border-ink bg-cream p-4 text-base focus:outline-none" />
         <button disabled={busy || text.trim().length < 3} className="justify-self-end rounded-full border-[3px] border-ink bg-mint px-6 py-2.5 text-sm font-bold text-paper shadow-hard disabled:opacity-60">
-          {busy ? "Comparing…" : "Find my best matches →"}
+          {busy ? "Comparing listings… (up to 30 seconds)" : "Find my best matches →"}
         </button>
       </form>
       {out?.error && <p className="mt-4 text-sm font-semibold text-coral">{out.error}</p>}

@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as SecurityRouteImport } from './routes/security'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
+import { Route as ApiPublicJobsValidateCareOptionsRouteImport } from './routes/api/public/jobs/validate-care-options'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,6 +30,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
@@ -45,49 +52,79 @@ const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicJobsValidateCareOptionsRoute =
+  ApiPublicJobsValidateCareOptionsRouteImport.update({
+    id: '/api/public/jobs/validate-care-options',
+    path: '/api/public/jobs/validate-care-options',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/security': typeof SecurityRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/api/public/jobs/validate-care-options': typeof ApiPublicJobsValidateCareOptionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/security': typeof SecurityRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/api/public/jobs/validate-care-options': typeof ApiPublicJobsValidateCareOptionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/security': typeof SecurityRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
+  '/api/public/jobs/validate-care-options': typeof ApiPublicJobsValidateCareOptionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/account' | '/admin' | '/history'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/security'
+    | '/account'
+    | '/admin'
+    | '/history'
+    | '/api/public/jobs/validate-care-options'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/account' | '/admin' | '/history'
+  to:
+    | '/'
+    | '/auth'
+    | '/security'
+    | '/account'
+    | '/admin'
+    | '/history'
+    | '/api/public/jobs/validate-care-options'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/security'
     | '/_authenticated/account'
     | '/_authenticated/admin'
     | '/_authenticated/history'
+    | '/api/public/jobs/validate-care-options'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  SecurityRoute: typeof SecurityRoute
+  ApiPublicJobsValidateCareOptionsRoute: typeof ApiPublicJobsValidateCareOptionsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -113,6 +150,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/account': {
       id: '/_authenticated/account'
       path: '/account'
@@ -133,6 +177,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/history'
       preLoaderRoute: typeof AuthenticatedHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/jobs/validate-care-options': {
+      id: '/api/public/jobs/validate-care-options'
+      path: '/api/public/jobs/validate-care-options'
+      fullPath: '/api/public/jobs/validate-care-options'
+      preLoaderRoute: typeof ApiPublicJobsValidateCareOptionsRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -156,6 +207,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  SecurityRoute: SecurityRoute,
+  ApiPublicJobsValidateCareOptionsRoute: ApiPublicJobsValidateCareOptionsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

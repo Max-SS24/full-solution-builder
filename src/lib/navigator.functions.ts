@@ -166,7 +166,7 @@ export const navigate = createServerFn({ method: "POST" })
       .eq("data_sources.enabled", true);
 
     // Live connectors for enabled sources (FindTreatment.gov, NPI Registry).
-    const { data: live } = await sb.from("data_sources").select("name, connector").eq("enabled", true).not("connector", "is", null);
+    const { data: live } = await sb.from("data_sources").select("id, name, connector").eq("enabled", true).not("connector", "is", null);
     const city0 = variables.location?.split(",")[0]?.trim() ?? "";
     const state0 = variables.location?.split(",")[1]?.trim().toUpperCase() ?? "";
     const { findTreatment, npiClinicians } = await import("./connectors.server");
@@ -179,6 +179,23 @@ export const navigate = createServerFn({ method: "POST" })
       return [] as CareResult[];
     }))).flat();
 
+    // Saved care options sheet for this area (only active rows of enabled sources are readable).
+    let stored: CareResult[] = [];
+    if (state0) {
+      let q = sb.from("care_options").select("*, data_sources(name)").eq("state", state0);
+      if (variables.va_vs_community === "community") q = q.eq("va_vs_community", "community");
+      const { data: opt } = await q.limit(200);
+      stored = (opt ?? []).map((o) => ({
+        id: o.external_id, name: o.name, kind: o.kind, city: o.city, state: o.state, formats: o.formats, needs: o.needs,
+        care_types: o.care_types, payment: o.insurance, veteran_focus: o.veteran_focus, phone: o.phone, source_url: o.website,
+        verified: true, last_checked: o.last_validated, source_name: (o.data_sources as { name: string } | null)?.name ?? "Saved listing", bio: o.bio,
+      }));
+    }
+    if (liveRows.length) {
+      const { saveOptions } = await import("./care-options.server");
+      await saveOptions(liveRows, Object.fromEntries((live ?? []).map((s) => [s.name, s.id])));
+    }
+
     let results: CareResult[] = [];
     void rows; void error;
     {
@@ -186,7 +203,8 @@ export const navigate = createServerFn({ method: "POST" })
       const city = v.location?.split(",")[0]?.trim().toLowerCase();
       const state = v.location?.split(",")[1]?.trim().toUpperCase();
       // Only verified live listings (FindTreatment.gov, NPI Registry) — made-up sample rows are excluded.
-      const all = [...liveRows];
+      const seen = new Set(liveRows.map((r) => r.id));
+      const all = [...liveRows, ...stored.filter((r) => !seen.has(r.id))];
       // Community-only seekers never see VA facilities or Vet Centers.
       const pool = v.va_vs_community === "community"
         ? all.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center")
@@ -241,7 +259,7 @@ export const navigate = createServerFn({ method: "POST" })
     if (danger) crisis = true;
     const community = results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center");
     if (!needsMore && community.length) {
-      reply += ` Tap "See providers" on a community option to view its individual clinicians, the insurance they take${variables.payment ? ` (I'll put ${variables.payment} first)` : ""}, and their bios.`;
+      reply += ` Scroll to "What matters most in a provider?" below to compare these options against what's important to you.`;
     }
 
     return {
