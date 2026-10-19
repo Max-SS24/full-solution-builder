@@ -53,7 +53,7 @@ mst = assaulted/harassed while serving, military sexual trauma;
 Set "crisis": true for any sign of harming self (no point anymore, better off without me, want to disappear, ending it, have a plan) OR harming others (want to hurt/kill someone, going to snap on someone, losing control and might hurt somebody).`;
 
 export const CRISIS_RE = /\b(suicid|kill(ing)? myself|end it|ending it|self[- ]harm|(hurt|hurting|harm|harming|cut|cutting) myself|don'?t want to (live|be here)|no point (in living|anymore)|better off without me|want to die|wanna die|not wake up|have a plan to|thoughts? (of|about) (dying|death|killing myself|hurting myself|harming myself))/i;
-export const HARM_OTHERS_RE = /\b((hurt|hurting|harm|harming|kill|killing|shoot|shooting|stab|stabbing|attack|attacking) (someone|somebody|him|her|them|people|others|my)|going to snap|gonna snap|lose it on (someone|somebody)|homicid)/i;
+export const HARM_OTHERS_RE = /\b((hurt|hurting|harm|harming|kill|killing|shoot|shooting|stab|stabbing|attack|attacking) (someone|somebody|him|her|them|people|others|my\b)|going to snap|gonna snap|lose it on (someone|somebody)|homicid)/i;
 export const SAFETY_SELF = "Your life is precious, and your safety is the priority right now. You don't have to go through this alone — please reach out to one of the emergency contacts above right now.";
 export const SAFETY_OTHERS = "Life is precious, and everyone's safety, including yours, is the priority right now. You don't have to go through this alone — please reach out to one of the emergency contacts above right now.";
 export function dangerOf(text: string): "self" | "others" | null {
