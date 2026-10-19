@@ -19,3 +19,6 @@
 - AI provider precedence: api_settings row (admin page) -> AI_PROVIDER secret -> grok; if the chosen provider has no key or fails, the built-in Lovable AI Gateway (src/lib/ai/gateway.server.ts) is used; keys always remain secrets.
 - Live data connectors (src/lib/connectors.server.ts) run per request for data_sources rows with a non-null connector that are enabled; listings are never copied from sites that forbid it.
 - Account erasure runs in src/lib/privacy.functions.ts (auth-checked server fn, admin client only for auth user deletion); private-search mode skips search_history inserts client-side.
+- Live search results are upserted into care_options (server-side admin client) and merged back into later searches by state; only active rows of enabled sources are readable.
+- care_options are re-validated weekly by a managed HTTP schedule calling /api/public/jobs/validate-care-options (cron-auth guarded); status rules live in src/lib/care-rules.ts (miss once → needs_review, twice → removed).
+- Admin analytics come only from the admin_analytics() security-definer RPC (has_role checked inside, totals only).
