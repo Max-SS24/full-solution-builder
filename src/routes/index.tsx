@@ -337,7 +337,7 @@ function Home() {
 
       <CrisisBar />
        <footer className="mx-auto max-w-6xl px-4 py-8 text-center text-xs font-semibold text-ink/40 sm:px-6">
-        Every option links to its source and verification date. Nothing here is a substitute for emergency care.
+        Every option links to its source and verification date. Nothing here is a substitute for emergency care. <Link to="/security" className="underline">How we store and protect your data</Link>
       </footer>
     </div>
   );

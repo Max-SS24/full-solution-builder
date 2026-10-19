@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Manage sources — VA Navigator admin" },
+      { title: "Admin — VA Navigator" },
       { name: "description", content: "Approve, add, and disable data sources used for care searches." },
       { property: "og:title", content: "Manage sources — VA Navigator" },
       { property: "og:description", content: "Admin panel for approved data sources." },
@@ -39,6 +39,7 @@ function Admin() {
       return data;
     },
   });
+  const [tab, setTab] = useState<"analytics" | "options" | "sources" | "admins" | "ai" | "audit">("analytics");
   const [form, setForm] = useState({ name: "", url: "", category: "community", description: "" });
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["sources"] });
@@ -110,7 +111,7 @@ function Admin() {
       <SiteHeader />
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-          <h1 className="min-w-0 font-display text-3xl font-bold sm:text-4xl">Approved data sources</h1>
+          <h1 className="min-w-0 font-display text-3xl font-bold sm:text-4xl">Admin</h1>
           <button onClick={signOut} className="shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Sign out</button>
         </div>
 
@@ -121,6 +122,15 @@ function Admin() {
 
         {isAdmin.data && (
           <>
+            <div role="tablist" className="mt-6 flex gap-2 overflow-x-auto pb-1">
+              {([["analytics", "Analytics"], ["options", "Care options"], ["sources", "Sources"], ["admins", "Admins"], ["ai", "AI service"], ["audit", "Audit log"]] as const).map(([k, l]) => (
+                <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+                  className={`shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-bold ${tab === k ? "bg-sun shadow-hard" : "bg-paper"}`}>{l}</button>
+              ))}
+            </div>
+            {tab === "analytics" && <Analytics />}
+            {tab === "options" && <CareOptions />}
+            {tab === "sources" && <>
              <form onSubmit={add} className="mt-8 grid min-w-0 gap-3 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:p-6 md:grid-cols-2 md:rounded-[26px]">
               <h2 className="font-display text-xl font-bold md:col-span-2">Add a source</h2>
                <input required placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
@@ -154,7 +164,9 @@ function Admin() {
               ))}
             </ul>
 
-            <AdminManager onChange={refresh} />
+            </>}
+            {tab === "admins" && <AdminManager onChange={refresh} />}
+            {tab === "ai" && (
 
              <section className="mt-12 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:rounded-[26px] sm:p-6">
               <h2 className="font-display text-2xl font-bold">AI service</h2>
@@ -177,7 +189,9 @@ function Admin() {
                 </form>
               )}
             </section>
+            )}
 
+            {tab === "audit" && (
             <section className="mt-12">
               <h2 className="font-display text-2xl font-bold">Audit log</h2>
               <p className="mt-1 text-sm text-ink/60">Every change to data sources and AI settings, with who made it and when.</p>
@@ -193,10 +207,130 @@ function Admin() {
                 </table>
               </div>
             </section>
+            )}
           </>
         )}
       </main>
     </div>
+  );
+}
+
+type Stats = {
+  total_users: number; active_users: number; new_7d: number; new_30d: number; searches_total: number; searches_7d: number;
+  users_with_prefs: number; care_options: number; care_options_review: number;
+  top_needs: { label: string; count: number }[]; top_locations: { label: string; count: number }[];
+};
+
+function Analytics() {
+  const q = useQuery({
+    queryKey: ["admin-analytics"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_analytics");
+      if (error) throw error;
+      return data as unknown as Stats;
+    },
+  });
+  if (q.isLoading) return <p className="mt-8">Loading numbers…</p>;
+  if (q.error || !q.data) return <p className="mt-8 font-semibold text-coral">Couldn't load analytics.</p>;
+  const d = q.data;
+  const cards: [string, number, string][] = [
+    ["Registered users", d.total_users, "bg-paper"],
+    ["Active users", d.active_users, "bg-minttint"],
+    ["Inactive users", d.total_users - d.active_users, "bg-soft"],
+    ["New sign-ups (7 days)", d.new_7d, "bg-skytint"],
+    ["New sign-ups (30 days)", d.new_30d, "bg-skytint"],
+    ["Saved searches", d.searches_total, "bg-paper"],
+    ["Searches (7 days)", d.searches_7d, "bg-paper"],
+    ["Users with saved preferences", d.users_with_prefs, "bg-paper"],
+    ["Care options on file", d.care_options, "bg-minttint"],
+    ["Options needing review", d.care_options_review, "bg-soft"],
+  ];
+  const List = ({ title, rows }: { title: string; rows: { label: string; count: number }[] }) => (
+    <div className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard">
+      <h3 className="font-display text-lg font-bold">{title}</h3>
+      {rows.length === 0 ? <p className="mt-2 text-sm text-ink/60">No data yet.</p> : (
+        <ol className="mt-2 space-y-1 text-sm">{rows.map((r) => <li key={r.label} className="flex justify-between gap-3"><span className="min-w-0 break-words capitalize">{r.label}</span><span className="font-bold">{r.count}</span></li>)}</ol>
+      )}
+    </div>
+  );
+  return (
+    <section className="mt-8">
+      <p className="text-sm text-ink/60">"Active" means signed in during the last 30 days. Only totals are shown — no names or emails.</p>
+      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
+        {cards.map(([l, n, bg]) => (
+          <div key={l} className={`rounded-[18px] border-[3px] border-ink p-4 shadow-hard ${bg}`}>
+            <div className="font-display text-3xl font-bold">{n}</div>
+            <div className="mt-1 text-xs font-bold text-ink/70">{l}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <List title="Most requested needs" rows={d.top_needs} />
+        <List title="Most searched locations" rows={d.top_locations} />
+      </div>
+    </section>
+  );
+}
+
+function CareOptions() {
+  const [area, setArea] = useState("");
+  const [type, setType] = useState("");
+  const [ins, setIns] = useState("");
+  const q = useQuery({
+    queryKey: ["care-options-admin"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("care_options").select("*, data_sources(name)")
+        .order("state").order("city").order("va_vs_community").order("name").limit(2000);
+      if (error) throw error;
+      return data;
+    },
+  });
+  const rows = (q.data ?? []).filter((r) =>
+    (!area || `${r.city ?? ""}, ${r.state ?? ""}`.toLowerCase().includes(area.toLowerCase())) &&
+    (!type || r.va_vs_community === type) &&
+    (!ins || r.insurance.some((i) => i.includes(ins.toLowerCase()))));
+  function exportCsv() {
+    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const head = ["State", "City", "VA or community", "Insurance", "Name", "Kind", "Phone", "Website", "Source", "Status", "Last validated"];
+    const body = rows.map((r) => [r.state, r.city, r.va_vs_community, r.insurance.join("; "), r.name, r.kind, r.phone, r.website, (r.data_sources as { name: string } | null)?.name, r.status, r.last_validated].map(esc).join(","));
+    const url = URL.createObjectURL(new Blob([[head.join(","), ...body].join("\n")], { type: "text/csv" }));
+    const a = document.createElement("a"); a.href = url; a.download = "care-options.csv"; a.click(); URL.revokeObjectURL(url);
+  }
+  const inputCls = "min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2 text-sm";
+  return (
+    <section className="mt-8">
+      <p className="text-sm text-ink/60">Verified listings saved from searches, sorted by area, then VA or community care, then insurance. Re-checked against their source every Sunday morning; listings that disappear are flagged for review, then removed.</p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto]">
+        <input placeholder="Area (e.g. Atlanta or GA)" value={area} onChange={(e) => setArea(e.target.value)} className={inputCls} />
+        <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
+          <option value="">VA & community</option><option value="va">VA</option><option value="community">Community</option>
+        </select>
+        <input placeholder="Insurance (e.g. tricare)" value={ins} onChange={(e) => setIns(e.target.value)} className={inputCls} />
+        <button onClick={exportCsv} disabled={!rows.length} className="rounded-full border-[3px] border-ink bg-mint px-4 py-2 text-sm font-bold text-paper shadow-hard disabled:opacity-60">Export CSV</button>
+      </div>
+      <p className="mt-3 text-xs font-semibold text-ink/60">{rows.length} options</p>
+      <div className="mt-2 max-w-full overflow-x-auto rounded-[22px] border-[3px] border-ink bg-paper">
+        <table className="w-full min-w-[900px] text-left text-sm">
+          <thead className="border-b-[3px] border-ink bg-soft"><tr>
+            <th className="p-3">Area</th><th className="p-3">Type</th><th className="p-3">Insurance</th><th className="p-3">Name</th><th className="p-3">Source</th><th className="p-3">Status</th><th className="p-3">Last validated</th>
+          </tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-b border-ink/15 align-top">
+                <td className="p-3 whitespace-nowrap">{r.city}, {r.state}</td>
+                <td className="p-3 font-bold uppercase">{r.va_vs_community}</td>
+                <td className="p-3">{r.insurance.length ? r.insurance.join(", ") : "Not listed"}</td>
+                <td className="p-3"><a href={r.website} target="_blank" rel="noreferrer" className="underline">{r.name}</a>{r.phone && <div className="text-xs text-ink/60">{r.phone}</div>}</td>
+                <td className="p-3">{(r.data_sources as { name: string } | null)?.name}</td>
+                <td className="p-3"><span className={`rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase ${r.status === "active" ? "bg-minttint" : "bg-soft"}`}>{r.status.replace("_", " ")}</span></td>
+                <td className="p-3 whitespace-nowrap">{r.last_validated}</td>
+              </tr>
+            ))}
+            {!q.isLoading && rows.length === 0 && <tr><td colSpan={7} className="p-4 text-ink/50">No saved options yet — they're added automatically as people search.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
