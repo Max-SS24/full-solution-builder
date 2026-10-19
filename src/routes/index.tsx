@@ -181,7 +181,7 @@ function Home() {
                 m.role === "user" ? (
                   <div key={i} className="ml-auto max-w-[85%] rounded-[22px] rounded-br-md border-[3px] border-ink bg-sky px-4 py-3 text-[15px] font-medium text-paper shadow-hard">{m.content}</div>
                 ) : (
-                  <div key={i} className="max-w-[88%] rounded-[22px] rounded-bl-md border-[3px] border-ink bg-soft px-4 py-3 text-[15px] font-medium shadow-hard">
+                  <div key={i} className="max-w-[88%] whitespace-pre-line rounded-[22px] rounded-bl-md border-[3px] border-ink bg-soft px-4 py-3 text-[15px] font-medium shadow-hard">
                     {m.content}
                     {i === messages.length - 1 && vars && (
                       <div className="mt-3 flex flex-wrap gap-2">
