@@ -68,6 +68,83 @@ export type Database = {
         }
         Relationships: []
       }
+      care_options: {
+        Row: {
+          bio: string | null
+          care_types: string[]
+          city: string | null
+          external_id: string
+          first_seen: string
+          formats: string[]
+          id: string
+          insurance: string[]
+          kind: string
+          last_validated: string
+          name: string
+          needs: string[]
+          phone: string | null
+          source_id: string
+          state: string | null
+          status: string
+          updated_at: string
+          va_vs_community: string
+          veteran_focus: boolean
+          website: string
+        }
+        Insert: {
+          bio?: string | null
+          care_types?: string[]
+          city?: string | null
+          external_id: string
+          first_seen?: string
+          formats?: string[]
+          id?: string
+          insurance?: string[]
+          kind: string
+          last_validated?: string
+          name: string
+          needs?: string[]
+          phone?: string | null
+          source_id: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+          va_vs_community?: string
+          veteran_focus?: boolean
+          website: string
+        }
+        Update: {
+          bio?: string | null
+          care_types?: string[]
+          city?: string | null
+          external_id?: string
+          first_seen?: string
+          formats?: string[]
+          id?: string
+          insurance?: string[]
+          kind?: string
+          last_validated?: string
+          name?: string
+          needs?: string[]
+          phone?: string | null
+          source_id?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+          va_vs_community?: string
+          veteran_focus?: boolean
+          website?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_options_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       care_providers: {
         Row: {
           bio: string | null
@@ -284,6 +361,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_analytics: { Args: never; Returns: Json }
       claim_first_admin: { Args: never; Returns: boolean }
       get_ai_settings: {
         Args: never
@@ -309,6 +387,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      log_validation_run: { Args: { _details: Json }; Returns: undefined }
       revoke_admin: { Args: { _user_id: string }; Returns: undefined }
     }
     Enums: {
