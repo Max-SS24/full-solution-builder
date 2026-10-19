@@ -128,11 +128,19 @@ function Home() {
       {crisis && (
         <div role="alert" className="border-b-[3px] border-ink bg-coral px-4 py-5 text-paper sm:px-6">
           <div className="mx-auto max-w-4xl">
-            <p className="font-display text-xl font-bold">You don't have to go through this alone — help is available right now, 24/7.</p>
-            <div className="mt-3 grid gap-2 text-sm font-bold sm:grid-cols-3">
+            <p className="font-display text-xl font-bold">
+              {danger === "others"
+                ? "Life is precious, and everyone's safety, including yours, is the priority right now."
+                : "Your life is precious, and your safety is the priority right now."}
+            </p>
+            <p className="mt-1 font-semibold">You don't have to go through this alone — please reach out to one of these right now. They're free, confidential and open 24/7.</p>
+            <div className="mt-3 grid gap-2 text-sm font-bold sm:grid-cols-2 lg:grid-cols-3">
               <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">📞 Veterans Crisis Line<br />Call 988, then press 1</a>
-              <a href="sms:838255" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">💬 Text the Crisis Line<br />838255</a>
-              <a href="tel:911" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">🚨 Emergency Services<br />Call 911 {danger === "others" ? "if anyone is in danger" : "if you're in immediate danger"}</a>
+              <a href="sms:838255" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">💬 Text the Veterans Crisis Line<br />838255</a>
+              <a href="https://www.veteranscrisisline.net/get-help-now/chat/" target="_blank" rel="noreferrer" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">🖥️ Veterans Crisis Line chat<br />Chat online now</a>
+              <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">☎️ 988 Suicide &amp; Crisis Lifeline<br />Call or text 988</a>
+              <a href="sms:741741?&body=HOME" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">✉️ Crisis Text Line<br />Text HOME to 741741</a>
+              <a href="tel:911" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">🚨 Emergency Services<br />Call 911 or go to the nearest ER{danger === "others" ? " if anyone is in danger" : ""}</a>
             </div>
             <p className="mt-3 text-sm font-semibold">Your closest care matches are listed below too.</p>
           </div>

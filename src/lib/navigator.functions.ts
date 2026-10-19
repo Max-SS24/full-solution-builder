@@ -52,8 +52,13 @@ mst = assaulted/harassed while serving, military sexual trauma;
 "substance use" = drinking too much, can't stop drinking, using, pills, high, addicted, need a drink to cope.
 Set "crisis": true for any sign of harming self (no point anymore, better off without me, want to disappear, ending it, have a plan) OR harming others (want to hurt/kill someone, going to snap on someone, losing control and might hurt somebody).`;
 
-const CRISIS_RE = /\b(suicid|kill myself|end it|ending it|self[- ]harm|hurt myself|don'?t want to (live|be here)|no point (in living|anymore)|better off without me|want to die|wanna die|not wake up|have a plan to)/i;
-const HARM_OTHERS_RE = /\b((hurt|kill|shoot|stab|attack) (someone|somebody|him|her|them|people|my)|going to snap|gonna snap|lose it on (someone|somebody)|homicid)/i;
+export const CRISIS_RE = /\b(suicid|kill(ing)? myself|end it|ending it|self[- ]harm|(hurt|hurting|harm|harming|cut|cutting) myself|don'?t want to (live|be here)|no point (in living|anymore)|better off without me|want to die|wanna die|not wake up|have a plan to|thoughts? (of|about) (dying|death|killing myself|hurting myself|harming myself))/i;
+export const HARM_OTHERS_RE = /\b((hurt|hurting|harm|harming|kill|killing|shoot|shooting|stab|stabbing|attack|attacking) (someone|somebody|him|her|them|people|others|my)|going to snap|gonna snap|lose it on (someone|somebody)|homicid)/i;
+export const SAFETY_SELF = "Your life is precious, and your safety is the priority right now. You don't have to go through this alone — please reach out to one of the emergency contacts above right now.";
+export const SAFETY_OTHERS = "Life is precious, and everyone's safety, including yours, is the priority right now. You don't have to go through this alone — please reach out to one of the emergency contacts above right now.";
+export function dangerOf(text: string): "self" | "others" | null {
+  return HARM_OTHERS_RE.test(text) ? "others" : CRISIS_RE.test(text) ? "self" : null;
+}
 
 const NEED_PATTERNS: [string, RegExp][] = [
   ["ptsd", /\b(ptsd|flashback|nightmare|hypervigil|always scanning|triggered|startl|sandbox|combat memor|reliving)/],
@@ -255,8 +260,11 @@ export const navigate = createServerFn({ method: "POST" })
             : `${sympathy} I couldn't find a close match yet — could you share a bit more about what you're looking for?`;
     }
 
-    const danger: "self" | "others" | null = HARM_OTHERS_RE.test(userText) ? "others" : crisis ? "self" : null;
-    if (danger) crisis = true;
+    const danger: "self" | "others" | null = dangerOf(userText) ?? (crisis ? "self" : null);
+    if (danger) {
+      crisis = true;
+      reply = `${danger === "others" ? SAFETY_OTHERS : SAFETY_SELF} ${reply}`.trim();
+    }
     const community = results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center");
     if (!needsMore && community.length) {
       reply += ` Scroll to "What matters most in a provider?" below to compare these options against what's important to you.`;
