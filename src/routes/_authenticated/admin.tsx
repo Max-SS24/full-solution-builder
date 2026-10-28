@@ -385,19 +385,30 @@ function AdminManager({ onChange }: { onChange: () => void }) {
   );
 }
 
+function resetErrorMessage(msg: string): string {
+  if (/no account/i.test(msg)) return "No account uses that email. Check the spelling, or ask the person to sign up first.";
+  if (/forbidden/i.test(msg)) return "Only admins can send reset links. Sign in again with an admin account.";
+  if (/rate limit|429|too many/i.test(msg)) return "Too many reset emails were sent recently. Wait a few minutes, then try again.";
+  return `The reset email could not be sent: ${msg}`;
+}
+
 function PasswordReset() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
   async function send(e: React.FormEvent) {
     e.preventDefault();
     const clean = email.trim().toLowerCase();
+    setStatus(null);
     setBusy(true);
     const { error: logErr } = await supabase.rpc("log_password_reset", { _email: clean });
-    if (logErr) { setBusy(false); toast.error(logErr.message); return; }
+    if (logErr) { setBusy(false); const t = resetErrorMessage(logErr.message); setStatus({ ok: false, text: t }); toast.error(t); return; }
     const { error } = await supabase.auth.resetPasswordForEmail(clean, { redirectTo: `${window.location.origin}/reset-password` });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`Reset link sent to ${clean}`);
+    if (error) { const t = resetErrorMessage(error.message); setStatus({ ok: false, text: t }); toast.error(t); return; }
+    const t = `Reset email sent to ${clean} at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}. Ask them to check their inbox and spam folder. The link expires after about an hour.`;
+    setStatus({ ok: true, text: t });
+    toast.success(`Reset email sent to ${clean}`);
     setEmail("");
   }
   return (
@@ -405,9 +416,14 @@ function PasswordReset() {
       <h3 className="font-display text-xl font-bold">Password reset</h3>
       <p className="mt-1 text-sm text-ink/60">Email a user a link to set a new password. You never see or choose their password. Each reset is recorded in the audit log.</p>
       <form onSubmit={send} className="mt-4 grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-        <input type="email" required maxLength={255} placeholder="user@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
-        <button disabled={busy} className="rounded-full border-[3px] border-ink bg-sun px-5 py-2.5 font-bold shadow-hard disabled:opacity-60">Send reset link</button>
+        <input type="email" required maxLength={255} placeholder="user@email.com" value={email} onChange={(e) => { setEmail(e.target.value); setStatus(null); }} className="min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
+        <button disabled={busy} className="rounded-full border-[3px] border-ink bg-sun px-5 py-2.5 font-bold shadow-hard disabled:opacity-60">{busy ? "Sending…" : "Send reset link"}</button>
       </form>
+      {status && (
+        <p role={status.ok ? "status" : "alert"} className={`mt-3 rounded-2xl border-[3px] border-ink px-4 py-3 text-sm font-semibold ${status.ok ? "bg-minttint" : "bg-coral/20"}`}>
+          {status.ok ? "✅ " : "⚠️ "}{status.text}
+        </p>
+      )}
     </div>
   );
 }

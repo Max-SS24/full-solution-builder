@@ -263,7 +263,11 @@ function Home() {
                     <div className="min-w-0">
                       <p className="font-bold">{s.title}</p>
                       <p className="mt-1 text-sm text-ink/75">{s.detail}</p>
-                      <a href={s.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm font-bold underline">{s.linkLabel} on VA.gov ↗</a>
+                      <p className="mt-2 rounded-xl border-2 border-ink/20 bg-cream px-3 py-2 text-xs text-ink/70">
+                        <span className="font-bold text-ink">Source:</span>{" "}
+                        <a href={s.url} target="_blank" rel="noreferrer" className="break-all font-bold underline">{s.linkLabel}, {s.url.replace("https://www.", "")} ↗</a>
+                        <span className="block sm:inline sm:before:content-['_·_']">Last verified {new Date(s.checked + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>
+                      </p>
                     </div>
                   </li>
                 ))}

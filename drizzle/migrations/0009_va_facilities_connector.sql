@@ -1,0 +1,1 @@
+UPDATE public.data_sources SET connector = 'va_facilities' WHERE name = 'VA Facilities API';

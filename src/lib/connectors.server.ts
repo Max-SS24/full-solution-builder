@@ -100,3 +100,59 @@ export async function npiClinicians(city: string, state: string, v: Variables, s
     };
   });
 }
+
+// VA Lighthouse Facilities API (official VA.gov data). Needs the VA_API_KEY secret;
+// VA_API_BASE defaults to the sandbox host and can be switched to production.
+type VaFacility = {
+  id: string;
+  attributes: {
+    name: string; facilityType?: string; classification?: string; website?: string | null;
+    address?: { physical?: { address1?: string; city?: string; state?: string; zip?: string } };
+    phone?: { main?: string; mentalHealthClinic?: string };
+    services?: { health?: ({ name?: string; serviceId?: string } | string)[] };
+  };
+};
+
+export async function vaFacilities(city: string, state: string, v: Variables, sourceName: string): Promise<CareResult[]> {
+  const key = process.env["VA_API_KEY"];
+  if (!key) return [];
+  const g = await geocode(city, state);
+  if (!g) return [];
+  const base = process.env["VA_API_BASE"] || "https://sandbox-api.va.gov/services/va_facilities/v1";
+  const radius = Math.min(Math.max(v.distance_miles ?? 50, 10), 100);
+  const get = async (type: string) => {
+    const u = `${base}/facilities?lat=${g.lat}&long=${g.lon}&radius=${radius}&type=${type}&per_page=10`;
+    const r = await fetch(u, { headers: { apikey: key, Accept: "application/json" } });
+    if (!r.ok) throw new Error(`VA Facilities ${r.status}`);
+    const j = (await r.json()) as { data?: VaFacility[]; meta?: { distances?: { id: string; distance: number }[] } };
+    const dist = new Map((j.meta?.distances ?? []).map((d) => [d.id, d.distance]));
+    return (j.data ?? []).map((f) => ({ f, miles: dist.get(f.id) }));
+  };
+  const rows = (await Promise.all([get("health"), get("vet_center")])).flat();
+  return rows.map(({ f, miles }) => {
+    const a = f.attributes;
+    const p = a.address?.physical ?? {};
+    const services = (a.services?.health ?? []).map((s) => (typeof s === "string" ? s : s.name ?? s.serviceId ?? "")).filter(Boolean);
+    const isVet = a.facilityType === "vet_center";
+    const mental = services.some((s) => /mental|ptsd|psych/i.test(s)) || isVet;
+    const address = [p.address1, p.city, p.state, p.zip].filter(Boolean).join(", ");
+    return {
+      id: `va-${f.id}`,
+      name: a.name,
+      kind: isVet ? "Vet Center" : "VA Medical Center",
+      city: p.city ?? null, state: p.state ?? null,
+      formats: ["in-person", "phone"],
+      needs: mental ? ["ptsd", "depression", "anxiety", "grief", "trauma"] : [],
+      care_types: isVet ? ["counseling", "group"] : ["therapy", "group"],
+      payment: ["va"],
+      veteran_focus: true,
+      phone: a.phone?.mentalHealthClinic || a.phone?.main || null,
+      source_url: a.website || `https://www.va.gov/find-locations/facility/${f.id}`,
+      verified: true,
+      last_checked: today(),
+      source_name: sourceName,
+      bio: [address && `Address: ${address}`, miles != null && `${miles.toFixed(1)} miles away`, services.length && `Services: ${services.slice(0, 12).join(", ")}`]
+        .filter(Boolean).join(". ").slice(0, 500) || null,
+    } satisfies CareResult;
+  });
+}

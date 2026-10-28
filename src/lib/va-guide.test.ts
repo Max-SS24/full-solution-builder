@@ -17,3 +17,9 @@ describe("VA guide", () => {
     expect(all).toContain("988");
   });
 });
+
+describe("VA guide citations", () => {
+  it("every step has a last-verified date", () => {
+    for (const s of VA_GUIDE) expect(s.checked).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});

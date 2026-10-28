@@ -187,12 +187,13 @@ export const navigate = createServerFn({ method: "POST" })
     const { data: live } = await sb.from("data_sources").select("id, name, connector").eq("enabled", true).not("connector", "is", null);
     const city0 = variables.location?.split(",")[0]?.trim() ?? "";
     const state0 = variables.location?.split(",")[1]?.trim().toUpperCase() ?? "";
-    const { findTreatment, npiClinicians } = await import("./connectors.server");
+    const { findTreatment, npiClinicians, vaFacilities } = await import("./connectors.server");
     let liveError = false;
     const liveRows = (await Promise.all((live ?? []).map(async (s) => {
       try {
         if (s.connector === "findtreatment") return await findTreatment(city0, state0, variables, s.name);
         if (s.connector === "npi" && variables.va_vs_community !== "va") return await npiClinicians(city0, state0, variables, s.name);
+        if (s.connector === "va_facilities" && variables.va_vs_community !== "community") return await vaFacilities(city0, state0, variables, s.name);
       } catch (e) { console.error("[connector]", s.connector, e); liveError = true; }
       return [] as CareResult[];
     }))).flat();
