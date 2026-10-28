@@ -42,7 +42,7 @@ export function CrisisBar() {
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-7 text-center sm:px-6 md:flex-row md:justify-between md:text-left">
         <div>
           <div className="font-display text-2xl font-bold">In a crisis right now?</div>
-          <div className="text-sm text-paper/85">Veterans Crisis Line — reach a real person instantly, any hour.</div>
+          <div className="text-sm text-paper/85">Veterans Crisis Line, reach a real person instantly, any hour.</div>
         </div>
         <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
           <a href="tel:988" className="rounded-full border-[3px] border-ink bg-paper px-5 py-3 text-center text-sm font-bold text-ink shadow-hard">📞 Dial 988 · press 1</a>

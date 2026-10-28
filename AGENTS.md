@@ -23,3 +23,4 @@
 - care_options are re-validated weekly by a managed HTTP schedule calling /api/public/jobs/validate-care-options (cron-auth guarded); status rules live in src/lib/care-rules.ts (miss once → needs_review, twice → removed).
 - Admin analytics come only from the admin_analytics() security-definer RPC (has_role checked inside, totals only).
 - Sign-up password rules live in src/lib/password-rules.ts (sign-in unchanged); DB access is parameterized client/RPC calls only — never build raw SQL from user input.
+- VA care guide text is fixed, VA.gov-verified content in src/lib/va-guide.ts (never AI-generated); shown when va_vs_community === 'va'. Admin password resets are logged via log_password_reset() RPC before the email is sent.

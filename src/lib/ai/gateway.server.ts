@@ -1,4 +1,4 @@
-// Lovable AI Gateway (built in; uses the LOVABLE_API_KEY secret — never paste keys here).
+// Lovable AI Gateway (built in; uses the LOVABLE_API_KEY secret, never paste keys here).
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/responses";
 export const GATEWAY_MODEL = "openai/gpt-6-astra";
 
@@ -26,8 +26,8 @@ export async function gatewayText(system: string, input: { role: "user" | "assis
   if (!res.ok || !res.body) {
     const body = await res.text().catch(() => "");
     console.error("[ai:gateway]", res.status, body.slice(0, 500));
-    const msg = res.status === 402 ? "AI credits are used up — add credits in workspace settings."
-      : res.status === 429 ? "The AI is busy right now — please try again in a minute."
+    const msg = res.status === 402 ? "AI credits are used up, add credits in workspace settings."
+      : res.status === 429 ? "The AI is busy right now, please try again in a minute."
       : `AI service error (${res.status})`;
     throw new GatewayError(res.status, msg);
   }

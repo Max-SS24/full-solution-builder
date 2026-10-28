@@ -48,7 +48,7 @@ export function ProviderMatcher({ candidates, payment }: { candidates: CareResul
                 <span className={`rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase ${FIT[m.fit]}`}>{m.fit} fit</span>
               </div>
               <p className="mt-2 text-ink/80">{m.why}</p>
-              <p className="mt-1 text-xs font-semibold text-ink/60">💳 {m.insurance.length ? m.insurance.join(", ") : "Insurance not listed — call to confirm"}</p>
+              <p className="mt-1 text-xs font-semibold text-ink/60">💳 {m.insurance.length ? m.insurance.join(", ") : "Insurance not listed, call to confirm"}</p>
             </div>
           ))}
           <p className="text-[11px] font-semibold text-ink/50">AI-generated comparison of verified public listings. Always confirm details with the provider.</p>

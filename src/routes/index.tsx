@@ -8,13 +8,14 @@ import { useAccount } from "@/hooks/useAccount";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { ProviderMatcher } from "@/components/ProviderMatcher";
+import { VA_GUIDE, VA_GUIDE_CHECKED } from "@/lib/va-guide";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "VA Navigator — Find Veteran mental-health care" },
+      { title: "VA Navigator | Find Veteran mental-health care" },
       { name: "description", content: "Describe what you need in plain words and get source-linked VA and community care options." },
-      { property: "og:title", content: "VA Navigator — Veteran Mental Health Navigator" },
+      { property: "og:title", content: "VA Navigator | Veteran Mental Health Navigator" },
       { property: "og:description", content: "Plain-language search for VA and community mental-health care, with sources shown." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -43,7 +44,7 @@ function Home() {
   const { user, prefs, savePrefs } = useAccount();
   const [focused, setFocused] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
-    { role: "assistant", content: "Hi, I'm here to help you find care. Tell me what's going on and where you are — in your own words." },
+    { role: "assistant", content: "Hi, I'm here to help you find care. Tell me what's going on and where you are, in your own words." },
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -51,6 +52,7 @@ function Home() {
   const [results, setResults] = useState<CareResult[] | null>(null);
   const [crisis, setCrisis] = useState(false);
   const [danger, setDanger] = useState<"self" | "others" | null>(null);
+  const [vaGuide, setVaGuide] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [privateMode, setPrivateMode] = useState(false);
   useEffect(() => { setPrivateMode(localStorage.getItem("van_private") === "1"); }, []);
@@ -100,6 +102,7 @@ function Home() {
       setResults(out.results);
       setCrisis(out.crisis);
       setDanger(out.danger);
+      setVaGuide(out.vaGuide);
       if (out.crisis) window.scrollTo({ top: 0, behavior: "smooth" });
       setNote(out.connectorError ?? out.aiNote);
       // Stay enlarged until we have suitable results (or a crisis needs the full page).
@@ -115,7 +118,7 @@ function Home() {
         });
       }
     } catch {
-      setMessages([...next, { role: "assistant", content: "Sorry — something went wrong. Please try again." }]);
+      setMessages([...next, { role: "assistant", content: "Sorry, something went wrong. Please try again." }]);
     } finally {
       setBusy(false);
     }
@@ -133,7 +136,7 @@ function Home() {
                 ? "Life is precious, and everyone's safety, including yours, is the priority right now."
                 : "Your life is precious, and your safety is the priority right now."}
             </p>
-            <p className="mt-1 font-semibold">You don't have to go through this alone — please reach out to one of these right now. They're free, confidential and open 24/7.</p>
+            <p className="mt-1 font-semibold">You don't have to go through this alone, please reach out to one of these right now. They're free, confidential and open 24/7.</p>
             <div className="mt-3 grid gap-2 text-sm font-bold sm:grid-cols-2 lg:grid-cols-3">
               <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">📞 Veterans Crisis Line<br />Call 988, then press 1</a>
               <a href="sms:838255" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">💬 Text the Veterans Crisis Line<br />838255</a>
@@ -155,7 +158,7 @@ function Home() {
               Tell us what you need.<br /><span className="text-coral">We'll find your care.</span>
             </h1>
             <p className="mt-5 max-w-md text-lg leading-relaxed text-ink/70">
-              Describe your situation in plain words. We turn it into a clear search — then show you real, source-linked options near you.
+              Describe your situation in plain words. We turn it into a clear search, then show you real, source-linked options near you.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <span className="rounded-full border-[3px] border-ink bg-minttint px-4 py-2 text-sm font-semibold">📍 Location &amp; distance</span>
@@ -218,7 +221,7 @@ function Home() {
             {user && (
               <label className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold sm:px-6">
                 <input type="checkbox" checked={privateMode} onChange={(e) => setPrivate(e.target.checked)} className="h-4 w-4 accent-current" />
-                🕶️ Private search — don't save to my history
+                🕶️ Private search, don't save to my history
               </label>
             )}
           </div>
@@ -239,7 +242,7 @@ function Home() {
                     try {
                       const { urgency: _u, ...keep } = vars;
                       await savePrefs({ ...(prefs ?? {}), ...keep });
-                      toast.success("Saved — we'll use these next time.");
+                      toast.success("Saved, we'll use these next time.");
                     } catch { toast.error("Couldn't save preferences."); }
                   }}
                   className="rounded-full border-[3px] border-ink bg-sun px-4 py-1.5 text-sm font-bold shadow-hard"
@@ -249,6 +252,31 @@ function Home() {
               ))}
             </div>
           </div>
+          {vaGuide && (
+            <section aria-label="VA care step-by-step guide" className="mt-8 rounded-[26px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:p-7">
+              <h3 className="font-display text-2xl font-bold">🇺🇸 Your step-by-step guide to VA care</h3>
+              <p className="mt-1 text-sm text-ink/65">Every step comes from official VA.gov pages. Tap a link to read the full details.</p>
+              <ol className="mt-5 space-y-4">
+                {VA_GUIDE.map((s, i) => (
+                  <li key={s.title} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-bold">{i + 1}</span>
+                    <div className="min-w-0">
+                      <p className="font-bold">{s.title}</p>
+                      <p className="mt-1 text-sm text-ink/75">{s.detail}</p>
+                      <a href={s.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm font-bold underline">{s.linkLabel} on VA.gov ↗</a>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              {!(results ?? []).some((r) => r.kind.includes("VA") || r.kind === "Vet Center") && (
+                <a href={`https://www.va.gov/find-locations/?address=${encodeURIComponent(vars?.location ?? "")}&facilityType=health`} target="_blank" rel="noreferrer"
+                  className="mt-6 block rounded-full border-[3px] border-ink bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">
+                  Find VA locations near {vars?.location ?? "you"} on VA.gov ↗
+                </a>
+              )}
+              <p className="mt-4 text-xs font-semibold text-ink/55">Source: VA.gov, checked {new Date(VA_GUIDE_CHECKED + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
+            </section>
+          )}
           {results && results.length > 0 && (
              <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {results.map((r) => (

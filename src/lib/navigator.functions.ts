@@ -34,13 +34,13 @@ export type CareResult = {
 
 const SYSTEM = `You are a Veteran mental-health care NAVIGATOR (not a clinician). Never diagnose.
 Extract search variables from the whole conversation. Reply ONLY with JSON:
-{"reply": string (open with one or two sincere, sympathetic sentences ONLY when the latest message shares feelings, struggles or a hard situation — NOT when they just give practical details like location, format or insurance (then simply say thanks/got it); then gently ask for what is still missing — what they need help with (need), their preferred care format, whether they want VA care or a community/civilian provider (va_vs_community), and whether they prefer one-on-one therapy or a support group (care_type) — at most two short questions per reply; plain language),
+{"reply": string (open with one or two sincere, sympathetic sentences ONLY when the latest message shares feelings, struggles or a hard situation, NOT when they just give practical details like location, format or insurance (then simply say thanks/got it); then gently ask for what is still missing, what they need help with (need), their preferred care format, whether they want VA care or a community/civilian provider (va_vs_community), and whether they prefer one-on-one therapy or a support group (care_type), at most two short questions per reply; plain language),
  "crisis": boolean (true if any sign of immediate danger, suicide, self-harm),
  "variables": {"location": string|null (city, ST), "distance_miles": number|null, "care_format": "in-person"|"telehealth"|"phone"|null,
   "care_type": "therapy"|"counseling"|"psychiatry"|"group"|"iop"|"residential"|null (use "group" for support groups/group therapy; "therapy" or "counseling" for one-on-one),
   "need": "ptsd"|"depression"|"anxiety"|"mst"|"grief"|"trauma"|"substance use"|null,
   "payment": "va"|"tricare"|"medicaid"|"medicare"|"private"|"self-pay"|null,
-  "va_vs_community": "va"|"community"|"either"|null ("va" = VA facility/Vet Center, "community" = civilian therapist or non-VA provider — ALSO use "community" whenever they say they don't want the VA, don't want to deal with the VA or government, or want to avoid VA/government care, "either" = no preference), "urgency": "routine"|"soon"|"urgent"|"crisis"|null}}`;
+  "va_vs_community": "va"|"community"|"either"|null ("va" = VA facility/Vet Center, "community" = civilian therapist or non-VA provider, ALSO use "community" whenever they say they don't want the VA, don't want to deal with the VA or government, or want to avoid VA/government care, "either" = no preference), "urgency": "routine"|"soon"|"urgent"|"crisis"|null}}`;
 
 const VOCAB = `
 Map everyday language to "need": depression = feeling down, empty, numb, hopeless, heavy, unmotivated, can't get out of bed, nothing matters, lost interest, dark place, burden, stuck in a rut, no purpose/mission;
@@ -55,19 +55,19 @@ Set "crisis": true for any sign of harming self (no point anymore, better off wi
 export const CRISIS_RE = /\b(suicid|kill(ing)? myself|end it|ending it|self[- ]harm|(hurt|hurting|harm|harming|cut|cutting) myself|don'?t want to (live|be here)|no point (in living|anymore)|better off without me|want to die|wanna die|not wake up|have a plan to|thoughts? (of|about) (dying|death|killing myself|hurting myself|harming myself))/i;
 export const HARM_OTHERS_RE = /\b((hurt|hurting|harm|harming|kill|killing|shoot|shooting|stab|stabbing|attack|attacking) (someone|somebody|him|her|them|people|others|my\b)|going to snap|gonna snap|lose it on (someone|somebody)|homicid)/i;
 export const CRISIS_CONTACTS = [
-  "Veterans Crisis Line — call 988, then press 1",
-  "Text the Veterans Crisis Line — 838255",
-  "Veterans Crisis Line online chat — veteranscrisisline.net",
-  "988 Suicide & Crisis Lifeline — call or text 988",
-  "Crisis Text Line — text HOME to 741741",
-  "Emergency Services — call 911 or go to the nearest ER",
+  "Veterans Crisis Line, call 988, then press 1",
+  "Text the Veterans Crisis Line, 838255",
+  "Veterans Crisis Line online chat, veteranscrisisline.net",
+  "988 Suicide & Crisis Lifeline, call or text 988",
+  "Crisis Text Line, text HOME to 741741",
+  "Emergency Services, call 911 or go to the nearest ER",
 ];
 export const SAFETY_CHECK = "Are you in immediate danger, have you already hurt yourself, or do you have a plan or access to something you could use? If you've already acted or might act now, call 911 or go to the nearest emergency department. For now, move away from anything you could use to hurt yourself and ask someone you trust to stay with you.";
 export function crisisReply(danger: "self" | "others"): string {
   const precious = danger === "others"
     ? "Life is precious, and everyone's safety, including yours, is the priority right now."
     : "Your life is precious, and your safety is the priority right now.";
-  return `${precious} I'm glad you told me. Please reach out to one of these right now — they're free, confidential and open 24/7:\n${CRISIS_CONTACTS.map((c) => `• ${c}`).join("\n")}\n${SAFETY_CHECK}`;
+  return `${precious} I'm glad you told me. Please reach out to one of these right now, they're free, confidential and open 24/7:\n${CRISIS_CONTACTS.map((c) => `• ${c}`).join("\n")}\n${SAFETY_CHECK}`;
 }
 export function dangerOf(text: string): "self" | "others" | null {
   return HARM_OTHERS_RE.test(text) ? "others" : CRISIS_RE.test(text) ? "self" : null;
@@ -220,7 +220,7 @@ export const navigate = createServerFn({ method: "POST" })
       const v = variables;
       const city = v.location?.split(",")[0]?.trim().toLowerCase();
       const state = v.location?.split(",")[1]?.trim().toUpperCase();
-      // Only verified live listings (FindTreatment.gov, NPI Registry) — made-up sample rows are excluded.
+      // Only verified live listings (FindTreatment.gov, NPI Registry), made-up sample rows are excluded.
       const seen = new Set(liveRows.map((r) => r.id));
       const all = [...liveRows, ...stored.filter((r) => !seen.has(r.id))];
       // Community-only seekers never see VA facilities or Vet Centers.
@@ -262,15 +262,15 @@ export const navigate = createServerFn({ method: "POST" })
       const firstTurn = data.messages.filter((m) => m.role === "user").length === 1;
       const emotional = /\b(struggl|hard|tough|lost|alone|sad|depress|anxi|ptsd|trauma|scared|hurt|can'?t sleep|nightmare|grief|griev|overwhelm|help)/i.test(last);
       const sympathy = firstTurn || emotional
-        ? "I'm really sorry you're dealing with this, and thank you for reaching out — that takes strength."
+        ? "I'm really sorry you're dealing with this, and thank you for reaching out. That takes strength."
         : "Got it, thanks.";
       reply = needsMore
         ? `${sympathy} To find the right fit, could you tell me ${missing.slice(0, 2).join(" and ")}?`
         : results.length
-          ? `${sympathy} Here's what I found from approved sources — each one links back so you can verify.`
+          ? `${sympathy} Here's what I found from approved sources, each one links back so you can verify.`
           : variables.va_vs_community === "community"
-            ? `${sympathy} I couldn't find a community (non-VA) option that fits yet — I've left out all VA facilities as you asked. If you'd ever reconsider, VA options can be included too.`
-            : `${sympathy} I couldn't find a close match yet — could you share a bit more about what you're looking for?`;
+            ? `${sympathy} I couldn't find a community (non-VA) option that fits yet, I've left out all VA facilities as you asked. If you'd ever reconsider, VA options can be included too.`
+            : `${sympathy} I couldn't find a close match yet, could you share a bit more about what you're looking for?`;
     }
 
     const danger: "self" | "others" | null = dangerOf(userText) ?? (crisis ? "self" : null);
@@ -283,10 +283,16 @@ export const navigate = createServerFn({ method: "POST" })
       reply += ` Scroll to "What matters most in a provider?" below to compare these options against what's important to you.`;
     }
 
+    const vaGuide = !needsMore && variables.va_vs_community === "va";
+    if (vaGuide && !danger) {
+      reply += " Below is a step-by-step guide to getting care through the VA, taken from VA.gov.";
+    }
+
     return {
       reply,
       crisis,
       danger,
+      vaGuide,
       variables,
       results: needsMore ? [] : results,
       needsMore,

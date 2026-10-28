@@ -4,11 +4,11 @@ import { z } from "zod";
 export type ProviderMatch = { name: string; credentials: string | null; facility: string; insurance: string[]; why: string; fit: "strong" | "good" | "partial" };
 
 const SYSTEM = `You help a veteran choose among LISTED mental-health providers from verified public registries. You are a navigator, never a clinician; never diagnose.
-Compare what the veteran says matters most (may contain typos — interpret generously) with each listing's posted description, specialties and accepted insurance.
+Compare what the veteran says matters most (may contain typos, interpret generously) with each listing's posted description, specialties and accepted insurance.
 Only use the listings given; never invent people, bios or insurance. If insurance is unlisted, say to call and confirm. Pick up to 3 best matches.
 Reply ONLY with JSON: {"summary": string (1-2 warm plain-language sentences), "matches": [{"id": string, "fit": "strong"|"good"|"partial", "why": string (1-2 sentences citing the listing)}]}`;
 
-// Lenient: real listings can have long names, bios or insurance lists — trim instead of rejecting.
+// Lenient: real listings can have long names, bios or insurance lists, trim instead of rejecting.
 const str = (n: number) => z.string().nullish().transform((v) => (v ?? "").slice(0, n));
 const list = z.array(z.string()).nullish().transform((v) => (v ?? []).slice(0, 20).map((x) => x.slice(0, 60)));
 const Candidate = z.object({

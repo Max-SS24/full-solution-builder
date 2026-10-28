@@ -1,5 +1,5 @@
 // =====================================================================
-// AI PROVIDER SETTINGS  (server-only — never shipped to the browser)
+// AI PROVIDER SETTINGS  (server-only, never shipped to the browser)
 // =====================================================================
 // WHERE THE API KEY GOES:
 //   Do NOT paste keys into this file or any other file. Keys are stored as
@@ -59,7 +59,7 @@ async function viaGateway(messages: ChatMsg[]): Promise<unknown | null> {
   const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n");
   const rest = messages.filter((m) => m.role !== "system") as { role: "user" | "assistant"; content: string }[];
   const text = await gatewayText(
-    system + "\nMessages may contain typos, slang, missing punctuation or irregular wording — interpret the intended meaning generously. Reply with JSON only.",
+    system + "\nMessages may contain typos, slang, missing punctuation or irregular wording, interpret the intended meaning generously. Reply with JSON only.",
     rest,
   );
   return text == null ? null : parseJson(text);
