@@ -24,3 +24,4 @@
 - Admin analytics come only from the admin_analytics() security-definer RPC (has_role checked inside, totals only).
 - Sign-up password rules live in src/lib/password-rules.ts (sign-in unchanged); DB access is parameterized client/RPC calls only — never build raw SQL from user input.
 - VA care guide text is fixed, VA.gov-verified content in src/lib/va-guide.ts (never AI-generated); shown when va_vs_community === 'va'. Admin password resets are logged via log_password_reset() RPC before the email is sent.
+- VA facility search uses the VA Lighthouse Facilities API (connector 'va_facilities', VA_API_KEY secret, optional VA_API_BASE); without the key it returns nothing and the guide falls back to the VA.gov locator link.
