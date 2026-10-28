@@ -30,7 +30,11 @@ export type CareResult = {
   last_checked: string;
   source_name: string;
   bio?: string | null;
+  freshness?: "live" | "saved";
 };
+
+/** live = VA service answered now; unavailable = it failed; not_configured = no VA key; null = VA search not used. */
+export type VaStatus = "live" | "unavailable" | "not_configured" | null;
 
 const SYSTEM = `You are a Veteran mental-health care NAVIGATOR (not a clinician). Never diagnose.
 Extract search variables from the whole conversation. Reply ONLY with JSON:
@@ -189,11 +193,16 @@ export const navigate = createServerFn({ method: "POST" })
     const state0 = variables.location?.split(",")[1]?.trim().toUpperCase() ?? "";
     const { findTreatment, npiClinicians, vaFacilities } = await import("./connectors.server");
     let liveError = false;
+    let vaStatus: VaStatus = null;
     const liveRows = (await Promise.all((live ?? []).map(async (s) => {
       try {
         if (s.connector === "findtreatment") return await findTreatment(city0, state0, variables, s.name);
         if (s.connector === "npi" && variables.va_vs_community !== "va") return await npiClinicians(city0, state0, variables, s.name);
-        if (s.connector === "va_facilities" && variables.va_vs_community !== "community") return await vaFacilities(city0, state0, variables, s.name);
+        if (s.connector === "va_facilities" && variables.va_vs_community !== "community") {
+          if (!process.env["VA_API_KEY"]) { vaStatus = "not_configured"; return [] as CareResult[]; }
+          try { const r = await vaFacilities(city0, state0, variables, s.name); vaStatus = "live"; return r; }
+          catch (e) { vaStatus = "unavailable"; throw e; }
+        }
       } catch (e) { console.error("[connector]", s.connector, e); liveError = true; }
       return [] as CareResult[];
     }))).flat();
@@ -207,7 +216,7 @@ export const navigate = createServerFn({ method: "POST" })
       stored = (opt ?? []).map((o) => ({
         id: o.external_id, name: o.name, kind: o.kind, city: o.city, state: o.state, formats: o.formats, needs: o.needs,
         care_types: o.care_types, payment: o.insurance, veteran_focus: o.veteran_focus, phone: o.phone, source_url: o.website,
-        verified: true, last_checked: o.last_validated, source_name: (o.data_sources as { name: string } | null)?.name ?? "Saved listing", bio: o.bio,
+        verified: true, last_checked: o.last_validated, source_name: (o.data_sources as { name: string } | null)?.name ?? "Saved listing", bio: o.bio, freshness: "saved" as const,
       }));
     }
     if (liveRows.length) {
@@ -223,7 +232,7 @@ export const navigate = createServerFn({ method: "POST" })
       const state = v.location?.split(",")[1]?.trim().toUpperCase();
       // Only verified live listings (FindTreatment.gov, NPI Registry), made-up sample rows are excluded.
       const seen = new Set(liveRows.map((r) => r.id));
-      const all = [...liveRows, ...stored.filter((r) => !seen.has(r.id))];
+      const all = [...liveRows.map((r) => ({ ...r, freshness: "live" as const })), ...stored.filter((r) => !seen.has(r.id))];
       // Community-only seekers never see VA facilities or Vet Centers.
       const pool = v.va_vs_community === "community"
         ? all.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center")
@@ -294,6 +303,8 @@ export const navigate = createServerFn({ method: "POST" })
       crisis,
       danger,
       vaGuide,
+      vaStatus: vaGuide && !vaStatus ? ("not_configured" as VaStatus) : vaStatus,
+      vaCheckedAt: new Date().toISOString(),
       variables,
       results: needsMore ? [] : results,
       needsMore,
