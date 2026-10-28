@@ -26,3 +26,4 @@
 - VA care guide text is fixed, VA.gov-verified content in src/lib/va-guide.ts (never AI-generated); shown when va_vs_community === 'va'. Admin password resets are logged via log_password_reset() RPC before the email is sent.
 - VA facilities come keyless from VA.gov: listings saved in care_options (source "VA Mental Health Services", website on www.va.gov) are re-checked each Sunday by fetching their VA.gov page; the optional Lighthouse connector stays dormant without VA_API_KEY and the UI never asks for a key.
 - link_checks table is filled by the Sunday validate-care-options job (link-checks.server.ts); /helpful-links reads it to show each link's verified date.
+- Supported areas (50 states, DC, PR, GU, VI, AS, MP) live in src/lib/us-areas.ts; territories are geocoded by name because OpenStreetMap treats them as separate countries.
