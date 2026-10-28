@@ -12,14 +12,14 @@ export async function saveOptions(rows: CareResult[], sourceIdByName: Record<str
   if (error) console.error("[care_options] save", error.message);
 }
 
-type Row = { id: string; source_id: string; external_id: string; city: string | null; state: string | null; status: string; data_sources: { name: string; connector: string | null } | null };
+type Row = { id: string; source_id: string; external_id: string; city: string | null; state: string | null; status: string; website: string; data_sources: { name: string; connector: string | null } | null };
 
 /** Weekly check every Sunday: re-confirm each saved option against its source. */
 export async function validateAll() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { findTreatment } = await import("./connectors.server");
   const { data, error } = await supabaseAdmin.from("care_options")
-    .select("id, source_id, external_id, city, state, status, data_sources(name, connector)")
+    .select("id, source_id, external_id, city, state, status, website, data_sources(name, connector)")
     .in("status", ["active", "needs_review"]);
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as unknown as Row[];
@@ -58,6 +58,15 @@ export async function validateAll() {
       if (res.status === 404) continue;
       found.add(r.id);
     } catch { found.add(r.id); }
+  }
+
+  // Keyless VA.gov directory listings: confirm each facility's official VA.gov page still exists.
+  for (const r of rows) if (!r.data_sources?.connector && /^https:\/\/www\.va\.gov\//.test(r.website)) {
+    try {
+      const res = await fetch(r.website, { redirect: "follow", headers: { "user-agent": "VA-Navigator-link-check" } });
+      if (res.status === 404 || res.status === 410) continue;
+      found.add(r.id);
+    } catch { found.add(r.id); /* VA.gov unreachable: don't penalize */ }
   }
 
   const today = new Date().toISOString().slice(0, 10);
