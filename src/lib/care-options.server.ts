@@ -48,6 +48,17 @@ export async function validateAll() {
       if ((j.result_count ?? 0) > 0) found.add(r.id);
     } catch { found.add(r.id); }
   }
+  // VA Facilities API: look each facility up by its VA id.
+  const vaKey = process.env["VA_API_KEY"];
+  const vaBase = process.env["VA_API_BASE"] || "https://sandbox-api.va.gov/services/va_facilities/v1";
+  for (const r of rows) if (r.data_sources?.connector === "va_facilities") {
+    if (!vaKey) { found.add(r.id); continue; }
+    try {
+      const res = await fetch(`${vaBase}/facilities/${encodeURIComponent(r.external_id.replace(/^va-/, ""))}`, { headers: { apikey: vaKey } });
+      if (res.status === 404) continue;
+      found.add(r.id);
+    } catch { found.add(r.id); }
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const counts = { active: 0, needs_review: 0, removed: 0 };
