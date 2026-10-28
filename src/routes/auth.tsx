@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
+import { checkPassword, emailSchema } from "@/lib/password-rules";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -25,16 +26,23 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const pw = checkPassword(password, email);
+  const canSubmit = mode === "in" || pw.valid;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    const cleanEmail = parsed.data;
+    if (mode === "up" && !checkPassword(password, cleanEmail).valid) { toast.error("Your password doesn't meet all the rules yet."); return; }
     setBusy(true);
     if (mode === "in") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
       setBusy(false);
       if (error) { toast.error(error.message); return; }
       nav({ to: "/" });
     } else {
-      const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
+      const { error } = await supabase.auth.signUp({ email: cleanEmail, password, options: { emailRedirectTo: window.location.origin } });
       setBusy(false);
       if (error) { toast.error(error.message); return; }
       toast.success("Check your email to confirm your account, then sign in.");
@@ -50,10 +58,19 @@ function AuthPage() {
           <h1 className="font-display text-3xl font-bold">{mode === "in" ? "Sign in" : "Create your account"}</h1>
           <p className="mt-2 text-sm text-ink/60">Save your search preferences for next time. Admins sign in here too.</p>
           <label className="mt-6 block text-sm font-bold" htmlFor="email">Email</label>
-          <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full rounded-full border-[3px] border-ink bg-cream px-4 py-2.5" />
+          <input id="email" type="email" required maxLength={255} value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full rounded-full border-[3px] border-ink bg-cream px-4 py-2.5" />
           <label className="mt-4 block text-sm font-bold" htmlFor="pw">Password</label>
-          <input id="pw" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 w-full rounded-full border-[3px] border-ink bg-cream px-4 py-2.5" />
-          <button disabled={busy} className="mt-6 w-full rounded-full border-[3px] border-ink bg-navy py-3 font-bold text-cream shadow-hard disabled:opacity-60">
+          <input id="pw" type="password" required maxLength={72} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 w-full rounded-full border-[3px] border-ink bg-cream px-4 py-2.5" />
+          {mode === "up" && (
+            <ul className="mt-3 space-y-1 text-sm" aria-label="Password rules">
+              {pw.results.map((r) => (
+                <li key={r.id} className={r.ok ? "font-semibold text-navy" : "text-ink/60"}>
+                  {r.ok ? "✓" : "○"} {r.label}
+                </li>
+              ))}
+            </ul>
+          )}
+          <button disabled={busy || !canSubmit} className="mt-6 w-full rounded-full border-[3px] border-ink bg-navy py-3 font-bold text-cream shadow-hard disabled:opacity-60">
             {mode === "in" ? "Sign in" : "Sign up"}
           </button>
           <button type="button" onClick={() => setMode(mode === "in" ? "up" : "in")} className="mt-4 w-full text-sm font-semibold underline">

@@ -66,6 +66,14 @@ function Security() {
         </section>
 
         <section className={`mt-6 ${card}`}>
+          <h2 className="font-display text-2xl font-bold">Passwords and safe searching</h2>
+          <ul className="mt-3 list-disc space-y-2 pl-5">
+            <li><strong>Strong passwords.</strong> New accounts need 12+ characters with upper and lowercase letters, a number and a symbol. Passwords found in known data breaches are rejected.</li>
+            <li><strong>Protected from SQL injection.</strong> Anything you type is always sent separately from database commands, so it can never run as one. Passwords are scrambled (hashed) and never placed in a query.</li>
+          </ul>
+        </section>
+
+        <section className={`mt-6 ${card}`}>
           <h2 className="font-display text-2xl font-bold">Your privacy controls</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-ink/80">
             <li><strong>Private search:</strong> tick it under the chat and nothing gets saved to your history.</li>
