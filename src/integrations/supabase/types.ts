@@ -287,6 +287,27 @@ export type Database = {
         }
         Relationships: []
       }
+      link_checks: {
+        Row: {
+          checked_at: string
+          http_status: number | null
+          ok: boolean
+          url: string
+        }
+        Insert: {
+          checked_at?: string
+          http_status?: number | null
+          ok?: boolean
+          url: string
+        }
+        Update: {
+          checked_at?: string
+          http_status?: number | null
+          ok?: boolean
+          url?: string
+        }
+        Relationships: []
+      }
       search_history: {
         Row: {
           created_at: string
