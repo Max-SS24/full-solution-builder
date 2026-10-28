@@ -10,7 +10,7 @@ export const PASSWORD_RULES = [
 ] as const;
 
 export function checkPassword(password: string, email = "") {
-  const results = PASSWORD_RULES.map((r) => ({ id: r.id, label: r.label, ok: r.test(password) }));
+  const results: { id: string; label: string; ok: boolean }[] = PASSWORD_RULES.map((r) => ({ id: r.id, label: r.label, ok: r.test(password) }));
   const e = email.trim().toLowerCase();
   results.push({
     id: "email",

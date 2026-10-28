@@ -32,7 +32,7 @@ function AuthPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = emailSchema.safeParse(email);
-    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Enter a valid email address"); return; }
     const cleanEmail = parsed.data;
     if (mode === "up" && !checkPassword(password, cleanEmail).valid) { toast.error("Your password doesn't meet all the rules yet."); return; }
     setBusy(true);
