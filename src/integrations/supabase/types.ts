@@ -387,6 +387,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      log_password_reset: { Args: { _email: string }; Returns: string }
       log_validation_run: { Args: { _details: Json }; Returns: undefined }
       revoke_admin: { Args: { _user_id: string }; Returns: undefined }
     }
