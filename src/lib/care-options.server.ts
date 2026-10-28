@@ -1,6 +1,6 @@
 // Stored "care options sheet": verified listings saved by area → VA/community → insurance.
 import type { CareResult, Variables } from "./navigator.functions";
-import { nextStatus, toOptionRow, type OptionStatus } from "./care-rules";
+import { nextStatus, toOptionRow, newFacilityUrls, type OptionStatus } from "./care-rules";
 
 /** Save newly found verified listings (privileged write, server only). */
 export async function saveOptions(rows: CareResult[], sourceIdByName: Record<string, string>) {
@@ -73,15 +73,15 @@ export async function validateAll() {
 }
 
 
-type VaRow = { id: string; status: string; website: string; name: string; phone: string | null; city: string | null; state: string | null; bio: string | null };
+type VaRow = { id: string; status: string; website: string; name: string; phone: string | null; city: string | null; state: string | null; bio: string | null; lat: number | null; lon: number | null };
 
 /** Read the address/phone a VA.gov facility page publishes in its structured data. */
 export function parseVaPage(html: string) {
   for (const m of html.matchAll(/<script type="application\/ld\+json">([^<]*)<\/script>/g)) {
     try {
-      const ld = JSON.parse(m[1]!) as { name?: string; telephone?: string; address?: { streetAddress?: string; addressLocality?: string; addressRegion?: string; postalCode?: string } };
+      const ld = JSON.parse(m[1]!) as { name?: string; telephone?: string; geo?: { latitude?: number; longitude?: number }; address?: { streetAddress?: string; addressLocality?: string; addressRegion?: string; postalCode?: string } };
       const a = ld.address;
-      if (a?.streetAddress && a.addressLocality && a.addressRegion) return { name: ld.name?.trim(), phone: ld.telephone?.trim() || null, street: a.streetAddress.trim(), city: a.addressLocality.trim(), state: a.addressRegion.trim().toUpperCase(), zip: (a.postalCode ?? "").trim() };
+      if (a?.streetAddress && a.addressLocality && a.addressRegion) return { name: ld.name?.trim(), phone: ld.telephone?.trim() || null, street: a.streetAddress.trim(), city: a.addressLocality.trim(), state: a.addressRegion.trim().toUpperCase(), zip: (a.postalCode ?? "").trim(), lat: typeof ld.geo?.latitude === "number" ? ld.geo.latitude : null, lon: typeof ld.geo?.longitude === "number" ? ld.geo.longitude : null };
     } catch { /* skip */ }
   }
   return null;
@@ -95,7 +95,7 @@ export async function validateVaBatch(limit = 40) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const cutoff = new Date(Date.now() - 3 * 86400_000).toISOString();
   const { data, error } = await supabaseAdmin.from("care_options")
-    .select("id, status, website, name, phone, city, state, bio")
+    .select("id, status, website, name, phone, city, state, bio, lat, lon")
     .in("status", ["active", "needs_review"]).like("website", "https://www.va.gov/%").lt("updated_at", cutoff)
     .order("updated_at").limit(limit);
   if (error) throw new Error(error.message);
@@ -111,11 +111,13 @@ export async function validateVaBatch(limit = 40) {
     } catch { /* VA.gov unreachable: don't penalize */ }
     const status = nextStatus(ok, r.status as OptionStatus);
     counts[status]++;
-    const patch: import("@/integrations/supabase/types").TablesUpdate<"care_options"> = { status, updated_at: new Date().toISOString(), ...(status === "active" ? { last_validated: today } : {}) };
+    const patch: import("@/integrations/supabase/types").TablesUpdate<"care_options"> = { status, updated_at: new Date().toISOString(), review_reason: status === "needs_review" ? "page_missing" : null, ...(status === "active" ? { last_validated: today } : {}) };
     if (page) {
+      if (page.lat != null && page.lon != null && (page.lat !== r.lat || page.lon !== r.lon)) Object.assign(patch, { lat: page.lat, lon: page.lon });
       const bio = `${page.street}, ${page.city}, ${page.state} ${page.zip}. Address and phone from this facility's official VA.gov page; re-checked every Sunday.`;
       if (page.phone !== r.phone || page.city !== r.city || page.state !== r.state || bio !== r.bio || (page.name && page.name !== r.name)) {
-        Object.assign(patch, { phone: page.phone, city: page.city, state: page.state, bio, ...(page.name ? { name: page.name } : {}) });
+        const contactChanged = page.phone !== r.phone || page.city !== r.city || page.state !== r.state || bio !== r.bio;
+        Object.assign(patch, { phone: page.phone, city: page.city, state: page.state, bio, ...(page.name ? { name: page.name } : {}), ...(contactChanged ? { contact_changed_at: new Date().toISOString(), review_reason: "contact_changed" } : {}) });
         counts.refreshed++;
       }
     }
@@ -123,4 +125,49 @@ export async function validateVaBatch(limit = 40) {
   }));
   if (rows.length) await supabaseAdmin.rpc("log_validation_run", { _details: { va_directory_batch: rows.length, ...counts } });
   return { checked: rows.length, ...counts };
+}
+
+
+const VA_SOURCE_NAME = "VA Mental Health Services";
+
+/** Sunday: read VA.gov's official sitemaps and add any facility / Vet Center page not saved yet (capped per run). */
+export async function discoverVaFacilities(cap = 60) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const ua = { "user-agent": "Mozilla/5.0 (VA-Navigator weekly check)" };
+  const xml = (await Promise.all(["https://www.va.gov/sitemap-nb.xml", "https://www.va.gov/sitemap-cb.xml"].map(async (u) => {
+    try { const r = await fetch(u, { headers: ua }); return r.ok ? await r.text() : ""; } catch { return ""; }
+  }))).join("\n");
+  if (!xml) return { discovered: 0, candidates: 0 };
+  const known = new Set<string>();
+  for (let from = 0; ; from += 1000) {
+    const { data } = await supabaseAdmin.from("care_options").select("website").like("website", "https://www.va.gov/%").range(from, from + 999);
+    for (const d of data ?? []) known.add(d.website.replace(/\/?$/, "/"));
+    if (!data || data.length < 1000) break;
+  }
+  const candidates = newFacilityUrls(xml, known);
+  const { data: src } = await supabaseAdmin.from("data_sources").select("id").eq("name", VA_SOURCE_NAME).maybeSingle();
+  if (!src || !candidates.length) return { discovered: 0, candidates: candidates.length };
+  const today = new Date().toISOString().slice(0, 10);
+  const added: string[] = [];
+  await Promise.all(candidates.slice(0, cap).map(async (url) => {
+    try {
+      const res = await fetch(url, { headers: ua });
+      if (!res.ok) return;
+      const p = parseVaPage(await res.text());
+      if (!p?.name) return;
+      const vet = url.includes("vet-center");
+      const kind = vet ? "Vet Center" : /medical center|campus|health care system|hospital/i.test(p.name) ? "VA Medical Center" : "VA Clinic";
+      const slug = url.replace(/^https:\/\/www\.va\.gov\/|\/$/g, "").replace("/locations/", "-").replace(/\//g, "-");
+      const { error } = await supabaseAdmin.from("care_options").upsert({
+        source_id: src.id, external_id: `vagov-${slug}`, name: p.name, kind, city: p.city, state: p.state,
+        formats: ["in-person", "telehealth"], needs: ["ptsd", "depression", "anxiety", "trauma", "grief", ...(vet ? [] : ["substance use"])],
+        care_types: ["counseling", "group", "therapy", ...(vet ? [] : ["psychiatry"])], insurance: ["va"], veteran_focus: true,
+        phone: p.phone, website: url, lat: p.lat, lon: p.lon, va_vs_community: "va", status: "active", last_validated: today,
+        bio: `${p.street}, ${p.city}, ${p.state} ${p.zip}. Address and phone from this facility's official VA.gov page; re-checked every Sunday.`,
+      }, { onConflict: "source_id,external_id" });
+      if (!error) added.push(p.name);
+    } catch { /* skip */ }
+  }));
+  await supabaseAdmin.rpc("log_validation_run", { _details: { va_discovery: true, candidates: candidates.length, discovered: added.length, added: added.slice(0, 50) } });
+  return { discovered: added.length, candidates: candidates.length };
 }

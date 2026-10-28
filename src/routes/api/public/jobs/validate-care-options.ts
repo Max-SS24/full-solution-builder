@@ -8,6 +8,10 @@ export const Route = createFileRoute("/api/public/jobs/validate-care-options")({
         const authFailure = await authenticateCronRequest(request);
         if (authFailure) return authFailure;
         const body = (await request.json().catch(() => ({}))) as { part?: string };
+        if (body.part === "va-discover") {
+          const { discoverVaFacilities } = await import("@/lib/care-options.server");
+          return Response.json({ success: true, ...(await discoverVaFacilities()) });
+        }
         if (body.part === "va") {
           const { validateVaBatch } = await import("@/lib/care-options.server");
           return Response.json({ success: true, ...(await validateVaBatch()) });

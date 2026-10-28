@@ -32,6 +32,8 @@ export type CareResult = {
   source_name: string;
   bio?: string | null;
   freshness?: "live" | "saved";
+  distance_miles?: number | null;
+  review?: "page_missing" | "contact_changed" | null;
 };
 
 /** live = optional VA service answered; unavailable = it failed; directory = official VA.gov directory + verified saved listings (default, no key); null = VA search not used. */
@@ -213,13 +215,35 @@ export const navigate = createServerFn({ method: "POST" })
       return [] as CareResult[];
     }))).flat();
 
-    // Saved care options sheet for this area (only active rows of enabled sources are readable).
+    // Where the person is: a ZIP they typed wins, otherwise their city/state.
+    const { geocode, geocodeZip } = await import("./connectors.server");
+    const { milesBetween, sortByDistance, reviewReason } = await import("./care-rules");
+    const zip = data.messages.filter((m) => m.role === "user").map((m) => m.content.match(/\b(\d{5})(?:-\d{4})?\b/)?.[1]).filter(Boolean).at(-1);
+    let origin: { lat: number; lon: number } | null = null;
+    try {
+      const g = zip ? await geocodeZip(zip) : state0 ? await geocode(city0, state0) : null;
+      if (g) origin = { lat: Number(g.lat), lon: Number(g.lon) };
+    } catch { /* distance just won't show */ }
+    const radius = Math.min(Math.max(variables.distance_miles ?? 50, 5), 150);
+
+    // Saved care options sheet for this area (active and needs-review rows of enabled sources are readable).
     let stored: CareResult[] = [];
     if (state0) {
       let q = sb.from("care_options").select("*, data_sources(name)").eq("state", state0);
       if (variables.va_vs_community === "community") q = q.eq("va_vs_community", "community");
-      const { data: opt } = await q.limit(200);
-      stored = (opt ?? []).map((o) => ({
+      const { data: opt0 } = await q.limit(400);
+      let opt = opt0 ?? [];
+      // Nearby VA locations across state lines (within the search distance).
+      if (origin && variables.va_vs_community !== "community") {
+        const dLat = radius / 69, dLon = radius / (69 * Math.max(Math.cos((origin.lat * Math.PI) / 180), 0.2));
+        const { data: near } = await sb.from("care_options").select("*, data_sources(name)").eq("va_vs_community", "va")
+          .gte("lat", origin.lat - dLat).lte("lat", origin.lat + dLat).gte("lon", origin.lon - dLon).lte("lon", origin.lon + dLon).limit(200);
+        const ids = new Set(opt.map((o) => o.id));
+        opt = [...opt, ...(near ?? []).filter((o) => !ids.has(o.id))];
+      }
+      stored = opt.map((o) => ({
+        distance_miles: origin && o.lat != null && o.lon != null ? Math.round(milesBetween(origin, { lat: o.lat, lon: o.lon }) * 10) / 10 : null,
+        review: o.va_vs_community === "va" ? reviewReason(o.status, o.contact_changed_at) : null,
         id: o.external_id, name: o.name, kind: o.kind, city: o.city, state: o.state, formats: o.formats, needs: o.needs,
         care_types: o.care_types, payment: o.insurance, veteran_focus: o.veteran_focus, phone: o.phone, source_url: o.website,
         verified: true, last_checked: o.last_validated, source_name: (o.data_sources as { name: string } | null)?.name ?? "Saved listing", bio: o.bio, freshness: "saved" as const,
@@ -246,7 +270,9 @@ export const navigate = createServerFn({ method: "POST" })
       results = pool
         .map((r) => {
           let score = 0;
-          if (state && r.state !== state) return null;
+          const nearby = r.distance_miles != null && r.distance_miles <= radius;
+          if (state && r.state !== state && !nearby) return null;
+          if (v.va_vs_community === "va" && r.distance_miles != null && r.distance_miles <= radius) score += 2;
           if (city && r.city?.toLowerCase() === city) score += 3;
           if (v.need && r.needs.includes(v.need)) score += 3;
           if (v.care_format && r.formats.includes(v.care_format)) score += 2;
@@ -260,8 +286,10 @@ export const navigate = createServerFn({ method: "POST" })
         })
         .filter((x): x is { score: number; item: CareResult } => !!x && x.score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 6)
+        .slice(0, v.va_vs_community === "va" ? 12 : 6)
         .map((x) => x.item);
+      // VA care: nearest locations first, with the distance shown on each listing.
+      if (v.va_vs_community === "va") results = sortByDistance(results).slice(0, 6);
     }
 
     if (!locationGiven) variables.location = null;
