@@ -14,7 +14,12 @@ const NEED_WORDS: [string, RegExp][] = [
 const needsFrom = (t: string) => NEED_WORDS.filter(([, re]) => re.test(t)).map(([n]) => n);
 
 async function geocode(city: string, state: string): Promise<{ lat: string; lon: string } | null> {
-  const u = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}&country=US&format=json&limit=1`;
+  const { US_TERRITORIES } = await import("./us-areas");
+  const terr = US_TERRITORIES[state.toUpperCase()];
+  // Territories are their own country codes in OpenStreetMap, so search them by name.
+  const u = terr
+    ? `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent([city, terr].filter(Boolean).join(", "))}&countrycodes=${state.toLowerCase()},us&format=json&limit=1`
+    : `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}&country=US&format=json&limit=1`;
   const r = await fetch(u, { headers: UA });
   if (!r.ok) return null;
   const j = (await r.json()) as { lat: string; lon: string }[];
