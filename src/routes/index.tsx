@@ -8,6 +8,7 @@ import { useAccount } from "@/hooks/useAccount";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { ProviderMatcher } from "@/components/ProviderMatcher";
+import { VA_GUIDE, VA_GUIDE_CHECKED } from "@/lib/va-guide";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,6 +52,7 @@ function Home() {
   const [results, setResults] = useState<CareResult[] | null>(null);
   const [crisis, setCrisis] = useState(false);
   const [danger, setDanger] = useState<"self" | "others" | null>(null);
+  const [vaGuide, setVaGuide] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [privateMode, setPrivateMode] = useState(false);
   useEffect(() => { setPrivateMode(localStorage.getItem("van_private") === "1"); }, []);
@@ -100,6 +102,7 @@ function Home() {
       setResults(out.results);
       setCrisis(out.crisis);
       setDanger(out.danger);
+      setVaGuide(out.vaGuide);
       if (out.crisis) window.scrollTo({ top: 0, behavior: "smooth" });
       setNote(out.connectorError ?? out.aiNote);
       // Stay enlarged until we have suitable results (or a crisis needs the full page).
@@ -249,6 +252,31 @@ function Home() {
               ))}
             </div>
           </div>
+          {vaGuide && (
+            <section aria-label="VA care step-by-step guide" className="mt-8 rounded-[26px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:p-7">
+              <h3 className="font-display text-2xl font-bold">🇺🇸 Your step-by-step guide to VA care</h3>
+              <p className="mt-1 text-sm text-ink/65">Every step comes from official VA.gov pages. Tap a link to read the full details.</p>
+              <ol className="mt-5 space-y-4">
+                {VA_GUIDE.map((s, i) => (
+                  <li key={s.title} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-bold">{i + 1}</span>
+                    <div className="min-w-0">
+                      <p className="font-bold">{s.title}</p>
+                      <p className="mt-1 text-sm text-ink/75">{s.detail}</p>
+                      <a href={s.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm font-bold underline">{s.linkLabel} on VA.gov ↗</a>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              {!(results ?? []).some((r) => r.kind.includes("VA") || r.kind === "Vet Center") && (
+                <a href={`https://www.va.gov/find-locations/?address=${encodeURIComponent(vars?.location ?? "")}&facilityType=health`} target="_blank" rel="noreferrer"
+                  className="mt-6 block rounded-full border-[3px] border-ink bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">
+                  Find VA locations near {vars?.location ?? "you"} on VA.gov ↗
+                </a>
+              )}
+              <p className="mt-4 text-xs font-semibold text-ink/55">Source: VA.gov, checked {new Date(VA_GUIDE_CHECKED + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
+            </section>
+          )}
           {results && results.length > 0 && (
              <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {results.map((r) => (
