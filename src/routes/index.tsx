@@ -13,9 +13,9 @@ import { VA_GUIDE, VA_GUIDE_CHECKED } from "@/lib/va-guide";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "VA Navigator — Find Veteran mental-health care" },
+      { title: "VA Navigator | Find Veteran mental-health care" },
       { name: "description", content: "Describe what you need in plain words and get source-linked VA and community care options." },
-      { property: "og:title", content: "VA Navigator — Veteran Mental Health Navigator" },
+      { property: "og:title", content: "VA Navigator | Veteran Mental Health Navigator" },
       { property: "og:description", content: "Plain-language search for VA and community mental-health care, with sources shown." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -44,7 +44,7 @@ function Home() {
   const { user, prefs, savePrefs } = useAccount();
   const [focused, setFocused] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
-    { role: "assistant", content: "Hi, I'm here to help you find care. Tell me what's going on and where you are — in your own words." },
+    { role: "assistant", content: "Hi, I'm here to help you find care. Tell me what's going on and where you are, in your own words." },
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -118,7 +118,7 @@ function Home() {
         });
       }
     } catch {
-      setMessages([...next, { role: "assistant", content: "Sorry — something went wrong. Please try again." }]);
+      setMessages([...next, { role: "assistant", content: "Sorry, something went wrong. Please try again." }]);
     } finally {
       setBusy(false);
     }
@@ -136,7 +136,7 @@ function Home() {
                 ? "Life is precious, and everyone's safety, including yours, is the priority right now."
                 : "Your life is precious, and your safety is the priority right now."}
             </p>
-            <p className="mt-1 font-semibold">You don't have to go through this alone — please reach out to one of these right now. They're free, confidential and open 24/7.</p>
+            <p className="mt-1 font-semibold">You don't have to go through this alone, please reach out to one of these right now. They're free, confidential and open 24/7.</p>
             <div className="mt-3 grid gap-2 text-sm font-bold sm:grid-cols-2 lg:grid-cols-3">
               <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">📞 Veterans Crisis Line<br />Call 988, then press 1</a>
               <a href="sms:838255" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">💬 Text the Veterans Crisis Line<br />838255</a>
@@ -158,7 +158,7 @@ function Home() {
               Tell us what you need.<br /><span className="text-coral">We'll find your care.</span>
             </h1>
             <p className="mt-5 max-w-md text-lg leading-relaxed text-ink/70">
-              Describe your situation in plain words. We turn it into a clear search — then show you real, source-linked options near you.
+              Describe your situation in plain words. We turn it into a clear search, then show you real, source-linked options near you.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <span className="rounded-full border-[3px] border-ink bg-minttint px-4 py-2 text-sm font-semibold">📍 Location &amp; distance</span>
@@ -221,7 +221,7 @@ function Home() {
             {user && (
               <label className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold sm:px-6">
                 <input type="checkbox" checked={privateMode} onChange={(e) => setPrivate(e.target.checked)} className="h-4 w-4 accent-current" />
-                🕶️ Private search — don't save to my history
+                🕶️ Private search, don't save to my history
               </label>
             )}
           </div>
@@ -242,7 +242,7 @@ function Home() {
                     try {
                       const { urgency: _u, ...keep } = vars;
                       await savePrefs({ ...(prefs ?? {}), ...keep });
-                      toast.success("Saved — we'll use these next time.");
+                      toast.success("Saved, we'll use these next time.");
                     } catch { toast.error("Couldn't save preferences."); }
                   }}
                   className="rounded-full border-[3px] border-ink bg-sun px-4 py-1.5 text-sm font-bold shadow-hard"

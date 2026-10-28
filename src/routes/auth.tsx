@@ -8,9 +8,9 @@ import { checkPassword, emailSchema } from "@/lib/password-rules";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — VA Navigator" },
+      { title: "Sign in | VA Navigator" },
       { name: "description", content: "Sign in to save your care search preferences." },
-      { property: "og:title", content: "Sign in — VA Navigator" },
+      { property: "og:title", content: "Sign in | VA Navigator" },
       { property: "og:description", content: "Sign in or create a VA Navigator account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

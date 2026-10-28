@@ -4,9 +4,9 @@ import { SiteHeader, CrisisBar } from "@/components/SiteHeader";
 export const Route = createFileRoute("/security")({
   head: () => ({
     meta: [
-      { title: "Data storage & security — VA Navigator" },
+      { title: "Data storage & security | VA Navigator" },
       { name: "description", content: "How VA Navigator stores your login, preferences and search history, and how that data is protected." },
-      { property: "og:title", content: "Data storage & security — VA Navigator" },
+      { property: "og:title", content: "Data storage & security | VA Navigator" },
       { property: "og:description", content: "Where VA Navigator keeps your data, who can see it, and the privacy controls you have." },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary" },
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/security")({
 const STORED: [string, string, string][] = [
   ["Login", "Secure sign-in system", "Your password is scrambled (hashed) before it's saved and is never stored as plain text."],
   ["Saved preferences", "Database, locked to your account", "Only you can read or change them."],
-  ["Search history", "Database, locked to your account", "Only you can read it — admins can't. Skip it entirely with Private search."],
+  ["Search history", "Database, locked to your account", "Only you can read it, admins can't. Skip it entirely with Private search."],
   ["Admin roles", "Separate protected list", "Can only be changed by an existing admin, and every change is logged."],
   ["Change log", "Database", "Written automatically. No one can edit or delete entries."],
   ["Care listings", "Database", "Public information from verified government sources, re-checked every Sunday."],

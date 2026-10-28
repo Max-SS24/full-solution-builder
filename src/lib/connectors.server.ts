@@ -44,7 +44,7 @@ export async function findTreatment(city: string, state: string, v: Variables, s
     const tap = svc("TAP").toLowerCase();
     return {
       id: `ft-${row.name1}-${row.zip ?? row._irow}`.replace(/\s+/g, "-").toLowerCase(),
-      name: row.name2 ? `${row.name1} — ${row.name2}` : row.name1,
+      name: row.name2 ? `${row.name1}, ${row.name2}` : row.name1,
       kind: "Treatment center",
       city: row.city, state: row.state,
       formats: ["in-person", ...(tap.includes("telehealth") ? ["telehealth"] : [])],
@@ -96,7 +96,7 @@ export async function npiClinicians(city: string, state: string, v: Variables, s
       verified: true,
       last_checked: today(),
       source_name: sourceName,
-      bio: `Licensed ${tax?.desc ?? "clinician"} (NPI ${p.number}). Insurance not listed in the registry — call to confirm.`,
+      bio: `Licensed ${tax?.desc ?? "clinician"} (NPI ${p.number}). Insurance not listed in the registry, call to confirm.`,
     };
   });
 }

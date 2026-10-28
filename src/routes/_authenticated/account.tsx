@@ -10,9 +10,9 @@ import { deleteMyAccount } from "@/lib/privacy.functions";
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
     meta: [
-      { title: "My account — VA Navigator" },
+      { title: "My account | VA Navigator" },
       { name: "description", content: "View and manage your saved care search preferences." },
-      { property: "og:title", content: "My account — VA Navigator" },
+      { property: "og:title", content: "My account | VA Navigator" },
       { property: "og:description", content: "Your saved VA Navigator preferences." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -59,7 +59,7 @@ function Account() {
           <h2 className="font-display text-xl font-bold">Saved preferences</h2>
           <p className="mt-1 text-sm text-ink/60">These fill in automatically on your next search. Anything you say in the chat overrides them.</p>
           {entries.length === 0 ? (
-            <p className="mt-4 text-sm font-semibold">Nothing saved yet — after a search, tap "Save as my preferences".</p>
+            <p className="mt-4 text-sm font-semibold">Nothing saved yet, after a search, tap "Save as my preferences".</p>
           ) : (
             <div className="mt-4 flex flex-wrap gap-2">
               {entries.map(([k, v]) => (
@@ -77,7 +77,7 @@ function Account() {
         <section className="mt-8 rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[26px] sm:p-6">
           <h2 className="font-display text-xl font-bold">🔒 Data security & privacy</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink/70">
-            <li>Your searches and preferences are locked to your account — no one else, including admins, can read them.</li>
+            <li>Your searches and preferences are locked to your account, no one else, including admins, can read them.</li>
             <li>We never sell or share your information.</li>
             <li>Turn on "Private search" in the chat to search without saving anything.</li>
             <li>You can erase everything at any time below.</li>

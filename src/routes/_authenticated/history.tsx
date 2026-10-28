@@ -7,9 +7,9 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const Route = createFileRoute("/_authenticated/history")({
   head: () => ({
     meta: [
-      { title: "My search history — VA Navigator" },
+      { title: "My search history | VA Navigator" },
       { name: "description", content: "Reopen your previous private VA Navigator searches and guidance." },
-      { property: "og:title", content: "My search history — VA Navigator" },
+      { property: "og:title", content: "My search history | VA Navigator" },
       { property: "og:description", content: "Your private history of care searches." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -54,7 +54,7 @@ function History() {
       <SiteHeader />
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
         <h1 className="font-display text-3xl font-bold sm:text-4xl">My search history</h1>
-        <p className="mt-2 text-sm text-ink/60">🔒 Private — only you can see these. Delete any entry at any time.</p>
+        <p className="mt-2 text-sm text-ink/60">🔒 Private, only you can see these. Delete any entry at any time.</p>
         {!!q.data?.length && (
           <button onClick={clearAll} className="mt-4 rounded-full border-[3px] border-ink bg-coral px-4 py-1.5 text-sm font-bold text-paper">Clear all history</button>
         )}

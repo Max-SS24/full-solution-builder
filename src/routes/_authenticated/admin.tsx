@@ -8,9 +8,9 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Admin — VA Navigator" },
+      { title: "Admin | VA Navigator" },
       { name: "description", content: "Approve, add, and disable data sources used for care searches." },
-      { property: "og:title", content: "Manage sources — VA Navigator" },
+      { property: "og:title", content: "Manage sources | VA Navigator" },
       { property: "og:description", content: "Admin panel for approved data sources." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -170,7 +170,7 @@ function Admin() {
 
              <section className="mt-12 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:rounded-[26px] sm:p-6">
               <h2 className="font-display text-2xl font-bold">AI service</h2>
-              <p className="mt-1 text-sm text-ink/60">Visitors never see this. API keys stay in protected secrets — only the provider choice is set here.</p>
+              <p className="mt-1 text-sm text-ink/60">Visitors never see this. API keys stay in protected secrets, only the provider choice is set here.</p>
               {api.data && (
                  <form onSubmit={saveApi} key={api.data.updated_at} className="mt-4 grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
                    <label className="min-w-0 text-sm font-bold">Provider
@@ -255,7 +255,7 @@ function Analytics() {
   );
   return (
     <section className="mt-8">
-      <p className="text-sm text-ink/60">"Active" means signed in during the last 30 days. Only totals are shown — no names or emails.</p>
+      <p className="text-sm text-ink/60">"Active" means signed in during the last 30 days. Only totals are shown, no names or emails.</p>
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
         {cards.map(([l, n, bg]) => (
           <div key={l} className={`rounded-[18px] border-[3px] border-ink p-4 shadow-hard ${bg}`}>
@@ -326,7 +326,7 @@ function CareOptions() {
                 <td className="p-3 whitespace-nowrap">{r.last_validated}</td>
               </tr>
             ))}
-            {!q.isLoading && rows.length === 0 && <tr><td colSpan={7} className="p-4 text-ink/50">No saved options yet — they're added automatically as people search.</td></tr>}
+            {!q.isLoading && rows.length === 0 && <tr><td colSpan={7} className="p-4 text-ink/50">No saved options yet, they're added automatically as people search.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -424,7 +424,7 @@ function AuditRow({ a }: { a: AuditEntry }) {
     oldValues && newValues
       ? Object.keys(newValues)
           .filter((k) => k !== "updated_at" && JSON.stringify(oldValues[k]) !== JSON.stringify(newValues[k]))
-          .map((k) => `${k}: ${String(oldValues[k] ?? "—")} → ${String(newValues[k] ?? "—")}`)
+          .map((k) => `${k}: ${String(oldValues[k] ?? ", ")} → ${String(newValues[k] ?? ", ")}`)
           .join("; ")
       : a.action === "insert" ? "added" : "removed";
   return (
@@ -433,7 +433,7 @@ function AuditRow({ a }: { a: AuditEntry }) {
       <td className="p-3">{a.actor_email ?? "system"}</td>
       <td className="p-3 font-bold uppercase">{a.action}</td>
       <td className="p-3">{label}</td>
-      <td className="p-3 text-ink/70">{changed || "—"}</td>
+      <td className="p-3 text-ink/70">{changed || ", "}</td>
     </tr>
   );
 }
