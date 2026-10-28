@@ -73,6 +73,7 @@ export type Database = {
           bio: string | null
           care_types: string[]
           city: string | null
+          contact_changed_at: string | null
           external_id: string
           first_seen: string
           formats: string[]
@@ -80,9 +81,12 @@ export type Database = {
           insurance: string[]
           kind: string
           last_validated: string
+          lat: number | null
+          lon: number | null
           name: string
           needs: string[]
           phone: string | null
+          review_reason: string | null
           source_id: string
           state: string | null
           status: string
@@ -95,6 +99,7 @@ export type Database = {
           bio?: string | null
           care_types?: string[]
           city?: string | null
+          contact_changed_at?: string | null
           external_id: string
           first_seen?: string
           formats?: string[]
@@ -102,9 +107,12 @@ export type Database = {
           insurance?: string[]
           kind: string
           last_validated?: string
+          lat?: number | null
+          lon?: number | null
           name: string
           needs?: string[]
           phone?: string | null
+          review_reason?: string | null
           source_id: string
           state?: string | null
           status?: string
@@ -117,6 +125,7 @@ export type Database = {
           bio?: string | null
           care_types?: string[]
           city?: string | null
+          contact_changed_at?: string | null
           external_id?: string
           first_seen?: string
           formats?: string[]
@@ -124,9 +133,12 @@ export type Database = {
           insurance?: string[]
           kind?: string
           last_validated?: string
+          lat?: number | null
+          lon?: number | null
           name?: string
           needs?: string[]
           phone?: string | null
+          review_reason?: string | null
           source_id?: string
           state?: string | null
           status?: string
