@@ -283,10 +283,16 @@ export const navigate = createServerFn({ method: "POST" })
       reply += ` Scroll to "What matters most in a provider?" below to compare these options against what's important to you.`;
     }
 
+    const vaGuide = !needsMore && variables.va_vs_community === "va";
+    if (vaGuide && !danger) {
+      reply += " Below is a step-by-step guide to getting care through the VA, taken from VA.gov.";
+    }
+
     return {
       reply,
       crisis,
       danger,
+      vaGuide,
       variables,
       results: needsMore ? [] : results,
       needsMore,
