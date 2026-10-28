@@ -380,7 +380,35 @@ function AdminManager({ onChange }: { onChange: () => void }) {
           </li>
         ))}
       </ul>
+      <PasswordReset />
     </section>
+  );
+}
+
+function PasswordReset() {
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function send(e: React.FormEvent) {
+    e.preventDefault();
+    const clean = email.trim().toLowerCase();
+    setBusy(true);
+    const { error: logErr } = await supabase.rpc("log_password_reset", { _email: clean });
+    if (logErr) { setBusy(false); toast.error(logErr.message); return; }
+    const { error } = await supabase.auth.resetPasswordForEmail(clean, { redirectTo: `${window.location.origin}/reset-password` });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Reset link sent to ${clean}`);
+    setEmail("");
+  }
+  return (
+    <div className="mt-8 border-t-[3px] border-ink pt-6">
+      <h3 className="font-display text-xl font-bold">Password reset</h3>
+      <p className="mt-1 text-sm text-ink/60">Email a user a link to set a new password. You never see or choose their password. Each reset is recorded in the audit log.</p>
+      <form onSubmit={send} className="mt-4 grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <input type="email" required maxLength={255} placeholder="user@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2" />
+        <button disabled={busy} className="rounded-full border-[3px] border-ink bg-sun px-5 py-2.5 font-bold shadow-hard disabled:opacity-60">Send reset link</button>
+      </form>
+    </div>
   );
 }
 
@@ -391,7 +419,7 @@ function AuditRow({ a }: { a: AuditEntry }) {
   const rec = d.new ?? d.old ?? {};
   const oldValues = d.old;
   const newValues = d.new;
-  const label = a.entity === "api_settings" ? "AI settings" : a.entity === "admin_roles" ? `Admin: ${String(rec["name"] ?? "")}` : String(rec["name"] ?? "Data source");
+  const label = a.entity === "api_settings" ? "AI settings" : a.entity === "admin_roles" ? `Admin: ${String(rec["name"] ?? "")}` : a.entity === "password_reset" ? `Password reset sent: ${String(rec["name"] ?? "")}` : String(rec["name"] ?? "Data source");
   const changed =
     oldValues && newValues
       ? Object.keys(newValues)
