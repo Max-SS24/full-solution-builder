@@ -13,7 +13,7 @@ const NEED_WORDS: [string, RegExp][] = [
 ];
 const needsFrom = (t: string) => NEED_WORDS.filter(([, re]) => re.test(t)).map(([n]) => n);
 
-async function geocode(city: string, state: string): Promise<{ lat: string; lon: string } | null> {
+export async function geocode(city: string, state: string): Promise<{ lat: string; lon: string } | null> {
   const { US_TERRITORIES } = await import("./us-areas");
   const terr = US_TERRITORIES[state.toUpperCase()];
   // Territories are their own country codes in OpenStreetMap, so search them by name.
@@ -24,6 +24,13 @@ async function geocode(city: string, state: string): Promise<{ lat: string; lon:
   if (!r.ok) return null;
   const j = (await r.json()) as { lat: string; lon: string }[];
   return j[0] ?? null;
+}
+
+/** Geocode a 5-digit U.S. ZIP code. */
+export async function geocodeZip(zip: string): Promise<{ lat: string; lon: string } | null> {
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${zip}&country=US&format=json&limit=1`, { headers: UA });
+  if (!r.ok) return null;
+  return ((await r.json()) as { lat: string; lon: string }[])[0] ?? null;
 }
 
 type FtRow = { _irow: number; name1: string; name2?: string; street1?: string; city: string; state: string; zip?: string; phone?: string; website?: string; miles?: number; services?: { f2: string; f3: string }[] };
