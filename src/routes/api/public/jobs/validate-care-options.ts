@@ -8,8 +8,9 @@ export const Route = createFileRoute("/api/public/jobs/validate-care-options")({
         const authFailure = await authenticateCronRequest(request);
         if (authFailure) return authFailure;
         const { validateAll } = await import("@/lib/care-options.server");
-        const result = await validateAll();
-        return Response.json({ success: true, ...result });
+        const { checkHelpfulLinks } = await import("@/lib/link-checks.server");
+        const [result, links] = await Promise.all([validateAll(), checkHelpfulLinks()]);
+        return Response.json({ success: true, ...result, ...links });
       },
     },
   },
