@@ -111,7 +111,7 @@ export async function validateVaBatch(limit = 40) {
     } catch { /* VA.gov unreachable: don't penalize */ }
     const status = nextStatus(ok, r.status as OptionStatus);
     counts[status]++;
-    const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString(), ...(status === "active" ? { last_validated: today } : {}) };
+    const patch: import("@/integrations/supabase/types").TablesUpdate<"care_options"> = { status, updated_at: new Date().toISOString(), ...(status === "active" ? { last_validated: today } : {}) };
     if (page) {
       const bio = `${page.street}, ${page.city}, ${page.state} ${page.zip}. Address and phone from this facility's official VA.gov page; re-checked every Sunday.`;
       if (page.phone !== r.phone || page.city !== r.city || page.state !== r.state || bio !== r.bio || (page.name && page.name !== r.name)) {
