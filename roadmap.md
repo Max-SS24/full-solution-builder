@@ -17,3 +17,5 @@
 - [x] Care options sheet + weekly Sunday validation
 - [x] Data Storage & Security page
 - [x] Fix "What matters most" matcher
+- [x] Helpful links tab (VA locators + forms), verified every Sunday
+- [ ] VHA directory with per-use verification (waiting on VA_API_KEY; public copies are stale)
