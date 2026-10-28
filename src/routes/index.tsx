@@ -406,16 +406,17 @@ function VaAvailability({ status, checkedAt, location, vaResults }: { status: Va
   const oldest = saved.map((r) => r.last_checked).sort()[0];
   const locator = `https://www.va.gov/find-locations/?address=${encodeURIComponent(location ?? "")}&facilityType=health`;
   const time = checkedAt ? new Date(checkedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
-  const ok = status === "live";
-  const msg = ok
+  const ok = status === "live" || (status === "directory" && saved.length > 0);
+  const msg = status === "live"
     ? live ? `Live VA facility data: ${live} result${live === 1 ? "" : "s"} confirmed with VA just now (${time}).` : `VA's facility service answered at ${time} but found no VA locations near ${location ?? "you"}.`
     : status === "unavailable" ? "The live VA facility service isn't responding right now, so we couldn't confirm nearby VA locations."
-    : "Live VA facility search isn't turned on yet, so we can't show nearby VA locations here.";
+    : saved.length ? `Official VA.gov directory active: ${saved.length} VA location${saved.length === 1 ? "" : "s"} near ${location ?? "you"}, each checked against its VA.gov page every Sunday.`
+    : `Official VA.gov directory active. We don't have verified VA locations saved for ${location ?? "your area"} yet, so use VA.gov's locator below.`;
   return (
     <div role="status" aria-label="VA facility availability" className={`mt-6 rounded-2xl border-[3px] border-ink p-4 text-sm ${ok ? "bg-minttint" : "bg-sun/30"}`}>
       <p className="font-bold">{ok ? "🟢" : "🟠"} {msg}</p>
-      {!ok && saved.length > 0 && <p className="mt-1 text-ink/75">Showing {saved.length} saved VA listing{saved.length === 1 ? "" : "s"}, last verified {oldest ? fmtDay(oldest) : "recently"}. Call before you go to confirm hours and services.</p>}
-      {(!ok || live === 0) && (
+      {saved.length > 0 && <p className="mt-1 text-ink/75">{saved.length} VA listing{saved.length === 1 ? "" : "s"} from VA.gov, last verified {oldest ? fmtDay(oldest) : "recently"}. Call before you go to confirm hours and services.</p>}
+      {(status !== "live" || live === 0) && (
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <a href={locator} target="_blank" rel="noreferrer" className="rounded-full border-[3px] border-ink bg-navy px-4 py-2.5 text-center font-bold text-cream shadow-hard">
             Find VA locations near {location ?? "you"} on VA.gov ↗
