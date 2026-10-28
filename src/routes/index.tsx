@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { navigate, getProviders, type CareResult, type Variables, type Provider } from "@/lib/navigator.functions";
+import { navigate, getProviders, type VaStatus, type CareResult, type Variables, type Provider } from "@/lib/navigator.functions";
 import { SiteHeader, CrisisBar } from "@/components/SiteHeader";
 import { useAccount } from "@/hooks/useAccount";
 import { toast } from "sonner";
@@ -53,6 +53,8 @@ function Home() {
   const [crisis, setCrisis] = useState(false);
   const [danger, setDanger] = useState<"self" | "others" | null>(null);
   const [vaGuide, setVaGuide] = useState(false);
+  const [vaStatus, setVaStatus] = useState<VaStatus>(null);
+  const [vaCheckedAt, setVaCheckedAt] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [privateMode, setPrivateMode] = useState(false);
   useEffect(() => { setPrivateMode(localStorage.getItem("van_private") === "1"); }, []);
@@ -103,6 +105,8 @@ function Home() {
       setCrisis(out.crisis);
       setDanger(out.danger);
       setVaGuide(out.vaGuide);
+      setVaStatus(out.vaStatus);
+      setVaCheckedAt(out.vaCheckedAt);
       if (out.crisis) window.scrollTo({ top: 0, behavior: "smooth" });
       setNote(out.connectorError ?? out.aiNote);
       // Stay enlarged until we have suitable results (or a crisis needs the full page).
@@ -272,12 +276,8 @@ function Home() {
                   </li>
                 ))}
               </ol>
-              {!(results ?? []).some((r) => r.kind.includes("VA") || r.kind === "Vet Center") && (
-                <a href={`https://www.va.gov/find-locations/?address=${encodeURIComponent(vars?.location ?? "")}&facilityType=health`} target="_blank" rel="noreferrer"
-                  className="mt-6 block rounded-full border-[3px] border-ink bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">
-                  Find VA locations near {vars?.location ?? "you"} on VA.gov ↗
-                </a>
-              )}
+              <VaAvailability status={vaStatus} checkedAt={vaCheckedAt} location={vars?.location ?? null}
+                vaResults={(results ?? []).filter((r) => r.kind.includes("VA") || r.kind === "Vet Center")} />
               <p className="mt-4 text-xs font-semibold text-ink/55">Source: VA.gov, checked {new Date(VA_GUIDE_CHECKED + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
             </section>
           )}
@@ -288,8 +288,11 @@ function Home() {
                   <div className="border-b-[3px] border-ink p-5">
                     <div className="flex items-center justify-between gap-2">
                       <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${KIND_TINT[r.kind] ?? "bg-plumtint"}`}>{r.kind}</span>
-                      <span className={`rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase ${r.verified ? "bg-minttint" : "bg-soft"}`}>
-                        {r.verified ? "Verified" : "Unverified"}
+                      <span className="flex flex-wrap justify-end gap-1">
+                        {r.freshness && <FreshnessBadge freshness={r.freshness} lastChecked={r.last_checked} />}
+                        <span className={`rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase ${r.verified ? "bg-minttint" : "bg-soft"}`}>
+                          {r.verified ? "Verified" : "Unverified"}
+                        </span>
                       </span>
                     </div>
                     <h3 className="mt-3 font-display text-xl font-bold leading-tight">{r.name}</h3>
@@ -379,6 +382,47 @@ function Home() {
        <footer className="mx-auto max-w-6xl px-4 py-8 text-center text-xs font-semibold text-ink/40 sm:px-6">
         Every option links to its source and verification date. Nothing here is a substitute for emergency care. <Link to="/security" className="underline">How we store and protect your data</Link>
       </footer>
+    </div>
+  );
+}
+
+const fmtDay = (d: string) => new Date(d.length === 10 ? d + "T12:00:00" : d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+/** Days since a listing was last verified (date-only or ISO string). */
+function ageDays(d: string) { return Math.floor((Date.now() - new Date(d.length === 10 ? d + "T12:00:00" : d).getTime()) / 86400000); }
+
+function FreshnessBadge({ freshness, lastChecked }: { freshness: "live" | "saved"; lastChecked: string }) {
+  if (freshness === "live") return <span className="rounded-full border-2 border-ink bg-minttint px-2 py-0.5 text-[10px] font-bold uppercase">Live · checked today</span>;
+  const old = ageDays(lastChecked) > 7;
+  return (
+    <span className={`rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase ${old ? "bg-sun" : "bg-soft"}`}>
+      {old ? "May be out of date" : "Saved"} · {fmtDay(lastChecked)}
+    </span>
+  );
+}
+
+function VaAvailability({ status, checkedAt, location, vaResults }: { status: VaStatus; checkedAt: string | null; location: string | null; vaResults: CareResult[] }) {
+  const live = vaResults.filter((r) => r.freshness === "live").length;
+  const saved = vaResults.filter((r) => r.freshness === "saved");
+  const oldest = saved.map((r) => r.last_checked).sort()[0];
+  const locator = `https://www.va.gov/find-locations/?address=${encodeURIComponent(location ?? "")}&facilityType=health`;
+  const time = checkedAt ? new Date(checkedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+  const ok = status === "live";
+  const msg = ok
+    ? live ? `Live VA facility data: ${live} result${live === 1 ? "" : "s"} confirmed with VA just now (${time}).` : `VA's facility service answered at ${time} but found no VA locations near ${location ?? "you"}.`
+    : status === "unavailable" ? "The live VA facility service isn't responding right now, so we couldn't confirm nearby VA locations."
+    : "Live VA facility search isn't turned on yet, so we can't show nearby VA locations here.";
+  return (
+    <div role="status" aria-label="VA facility availability" className={`mt-6 rounded-2xl border-[3px] border-ink p-4 text-sm ${ok ? "bg-minttint" : "bg-sun/30"}`}>
+      <p className="font-bold">{ok ? "🟢" : "🟠"} {msg}</p>
+      {!ok && saved.length > 0 && <p className="mt-1 text-ink/75">Showing {saved.length} saved VA listing{saved.length === 1 ? "" : "s"}, last verified {oldest ? fmtDay(oldest) : "recently"}. Call before you go to confirm hours and services.</p>}
+      {(!ok || live === 0) && (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <a href={locator} target="_blank" rel="noreferrer" className="rounded-full border-[3px] border-ink bg-navy px-4 py-2.5 text-center font-bold text-cream shadow-hard">
+            Find VA locations near {location ?? "you"} on VA.gov ↗
+          </a>
+          <a href="tel:8772228387" className="rounded-full border-[3px] border-ink bg-paper px-4 py-2.5 text-center font-bold shadow-hard">📞 Call VA: 877-222-8387</a>
+        </div>
+      )}
     </div>
   );
 }
