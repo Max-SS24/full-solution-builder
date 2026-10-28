@@ -33,8 +33,8 @@ export type CareResult = {
   freshness?: "live" | "saved";
 };
 
-/** live = VA service answered now; unavailable = it failed; not_configured = no VA key; null = VA search not used. */
-export type VaStatus = "live" | "unavailable" | "not_configured" | null;
+/** live = optional VA service answered; unavailable = it failed; directory = official VA.gov directory + verified saved listings (default, no key); null = VA search not used. */
+export type VaStatus = "live" | "unavailable" | "directory" | null;
 
 const SYSTEM = `You are a Veteran mental-health care NAVIGATOR (not a clinician). Never diagnose.
 Extract search variables from the whole conversation. Reply ONLY with JSON:
@@ -199,7 +199,7 @@ export const navigate = createServerFn({ method: "POST" })
         if (s.connector === "findtreatment") return await findTreatment(city0, state0, variables, s.name);
         if (s.connector === "npi" && variables.va_vs_community !== "va") return await npiClinicians(city0, state0, variables, s.name);
         if (s.connector === "va_facilities" && variables.va_vs_community !== "community") {
-          if (!process.env["VA_API_KEY"]) { vaStatus = "not_configured"; return [] as CareResult[]; }
+          if (!process.env["VA_API_KEY"]) { vaStatus = "directory"; return [] as CareResult[]; }
           try { const r = await vaFacilities(city0, state0, variables, s.name); vaStatus = "live"; return r; }
           catch (e) { vaStatus = "unavailable"; throw e; }
         }
@@ -303,7 +303,7 @@ export const navigate = createServerFn({ method: "POST" })
       crisis,
       danger,
       vaGuide,
-      vaStatus: vaGuide && !vaStatus ? ("not_configured" as VaStatus) : vaStatus,
+      vaStatus: vaGuide && !vaStatus ? ("directory" as VaStatus) : vaStatus,
       vaCheckedAt: new Date().toISOString(),
       variables,
       results: needsMore ? [] : results,
