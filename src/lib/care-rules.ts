@@ -60,5 +60,5 @@ export function reviewReason(status: string, contactChangedAt: string | null, no
 /** VA.gov facility / Vet Center page URLs in a sitemap that aren't saved yet. */
 export function newFacilityUrls(sitemapXml: string, known: Set<string>): string[] {
   const urls = [...sitemapXml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!.trim().replace(/\/?$/, "/"));
-  return [...new Set(urls)].filter((u) => /^https:\/\/www\.va\.gov\/[^/]+\/locations\/[^/]+\/$/.test(u) && !known.has(u));
+  return [...new Set(urls)].filter((u) => /^https:\/\/www\.va\.gov\/([^/]+\/locations\/[^/]+|[^/]+-vet-center)\/$/.test(u) && !known.has(u));
 }
