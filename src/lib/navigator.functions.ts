@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { AREA_CODES, US_AREAS, findNamedArea } from "./us-areas";
 
 export type Variables = {
   location: string | null;
@@ -40,7 +41,7 @@ const SYSTEM = `You are a Veteran mental-health care NAVIGATOR (not a clinician)
 Extract search variables from the whole conversation. Reply ONLY with JSON:
 {"reply": string (open with one or two sincere, sympathetic sentences ONLY when the latest message shares feelings, struggles or a hard situation, NOT when they just give practical details like location, format or insurance (then simply say thanks/got it); then gently ask for what is still missing, what they need help with (need), their preferred care format, whether they want VA care or a community/civilian provider (va_vs_community), and whether they prefer one-on-one therapy or a support group (care_type), at most two short questions per reply; plain language),
  "crisis": boolean (true if any sign of immediate danger, suicide, self-harm),
- "variables": {"location": string|null (city, ST), "distance_miles": number|null, "care_format": "in-person"|"telehealth"|"phone"|null,
+ "variables": {"location": string|null ("City, ST" using the 2-letter USPS code; U.S. territories count too: PR Puerto Rico, GU Guam, VI U.S. Virgin Islands, AS American Samoa, MP Northern Mariana Islands; if only a territory is named use e.g. "Guam, GU"), "distance_miles": number|null, "care_format": "in-person"|"telehealth"|"phone"|null,
   "care_type": "therapy"|"counseling"|"psychiatry"|"group"|"iop"|"residential"|null (use "group" for support groups/group therapy; "therapy" or "counseling" for one-on-one),
   "need": "ptsd"|"depression"|"anxiety"|"mst"|"grief"|"trauma"|"substance use"|null,
   "payment": "va"|"tricare"|"medicaid"|"medicare"|"private"|"self-pay"|null,
@@ -90,7 +91,7 @@ const NEED_PATTERNS: [string, RegExp][] = [
 function fallbackExtract(text: string): Variables {
   const t = text.toLowerCase();
   const pick = <T extends string>(opts: T[]) => opts.find((o) => t.includes(o)) ?? null;
-  const ST = "AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC";
+  const ST = AREA_CODES.join("|");
   const re = new RegExp(`([A-Za-z][A-Za-z.]*(?:\\s[A-Za-z][A-Za-z.]*){0,2}),?\\s+(${ST})\\b`, "gi");
   const stop = /^(in|near|around|at|from|live|i|am|im|i'm|the|a|with|and|to|of|for|by|is|me|my)$/i;
   let loc: [string, string] | null = null;
@@ -99,13 +100,16 @@ function fallbackExtract(text: string): Variables {
     let cut = -1;
     all.forEach((w, i) => { if (stop.test(w)) cut = i; });
     const words = all.slice(cut + 1);
-    if (!words.length || ((m[2] ?? "").toUpperCase() === "VA" && !m[0].includes(","))) continue;
+    const code = (m[2] ?? "").toUpperCase();
+    // Short codes that are also common words (VA, AS, IN, ME...) need a comma, e.g. "Pago Pago, AS".
+    if (!words.length || (["VA", "AS", "IN", "ME", "OR", "OK", "HI", "GU", "MP", "VI", "PR"].includes(code) && !m[0].includes(",") && m[2] !== code)) continue;
     const city = words.map((w) => (w[0] ?? "").toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-    loc = [city, (m[2] ?? "").toUpperCase()];
+    loc = [city, code];
   }
+  if (!loc) loc = findNamedArea(text);
   const dist = t.match(/(\d+)\s*(?:mi|miles)/);
   return {
-    location: loc ? `${loc[0]}, ${loc[1]}` : null,
+    location: loc ? `${loc[0] || US_AREAS[loc[1]]}, ${loc[1]}` : null,
     distance_miles: dist ? Number(dist[1]) : null,
     care_format: t.includes("tele") || t.includes("video") || t.includes("online") ? "telehealth" : t.includes("in person") ? "in-person" : null,
     care_type: t.includes("group") || t.includes("support group") || t.includes("peer") ? "group"
@@ -189,8 +193,10 @@ export const navigate = createServerFn({ method: "POST" })
 
     // Live connectors for enabled sources (FindTreatment.gov, NPI Registry).
     const { data: live } = await sb.from("data_sources").select("id, name, connector").eq("enabled", true).not("connector", "is", null);
-    const city0 = variables.location?.split(",")[0]?.trim() ?? "";
     const state0 = variables.location?.split(",")[1]?.trim().toUpperCase() ?? "";
+    const rawCity = variables.location?.split(",")[0]?.trim() ?? "";
+    // "Guam, GU" means the whole territory: search area-wide instead of by city.
+    const city0 = rawCity.toLowerCase() === (US_AREAS[state0] ?? "").toLowerCase() ? "" : rawCity;
     const { findTreatment, npiClinicians, vaFacilities } = await import("./connectors.server");
     let liveError = false;
     let vaStatus: VaStatus = null;
@@ -228,7 +234,7 @@ export const navigate = createServerFn({ method: "POST" })
     void rows; void error;
     {
       const v = variables;
-      const city = v.location?.split(",")[0]?.trim().toLowerCase();
+      const city = city0.toLowerCase() || undefined;
       const state = v.location?.split(",")[1]?.trim().toUpperCase();
       // Only verified live listings (FindTreatment.gov, NPI Registry), made-up sample rows are excluded.
       const seen = new Set(liveRows.map((r) => r.id));
