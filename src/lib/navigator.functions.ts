@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { AREA_CODES, findNamedArea } from "./us-areas";
 
 export type Variables = {
   location: string | null;
@@ -90,7 +91,7 @@ const NEED_PATTERNS: [string, RegExp][] = [
 function fallbackExtract(text: string): Variables {
   const t = text.toLowerCase();
   const pick = <T extends string>(opts: T[]) => opts.find((o) => t.includes(o)) ?? null;
-  const ST = "AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC";
+  const ST = AREA_CODES.join("|");
   const re = new RegExp(`([A-Za-z][A-Za-z.]*(?:\\s[A-Za-z][A-Za-z.]*){0,2}),?\\s+(${ST})\\b`, "gi");
   const stop = /^(in|near|around|at|from|live|i|am|im|i'm|the|a|with|and|to|of|for|by|is|me|my)$/i;
   let loc: [string, string] | null = null;
@@ -99,10 +100,13 @@ function fallbackExtract(text: string): Variables {
     let cut = -1;
     all.forEach((w, i) => { if (stop.test(w)) cut = i; });
     const words = all.slice(cut + 1);
-    if (!words.length || ((m[2] ?? "").toUpperCase() === "VA" && !m[0].includes(","))) continue;
+    const code = (m[2] ?? "").toUpperCase();
+    // Short codes that are also common words (VA, AS, IN, ME...) need a comma, e.g. "Pago Pago, AS".
+    if (!words.length || (["VA", "AS", "IN", "ME", "OR", "OK", "HI", "GU", "MP", "VI", "PR"].includes(code) && !m[0].includes(",") && m[2] !== code)) continue;
     const city = words.map((w) => (w[0] ?? "").toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-    loc = [city, (m[2] ?? "").toUpperCase()];
+    loc = [city, code];
   }
+  if (!loc) loc = findNamedArea(text);
   const dist = t.match(/(\d+)\s*(?:mi|miles)/);
   return {
     location: loc ? `${loc[0]}, ${loc[1]}` : null,
