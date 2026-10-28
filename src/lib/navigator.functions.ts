@@ -262,7 +262,7 @@ export const navigate = createServerFn({ method: "POST" })
       const firstTurn = data.messages.filter((m) => m.role === "user").length === 1;
       const emotional = /\b(struggl|hard|tough|lost|alone|sad|depress|anxi|ptsd|trauma|scared|hurt|can'?t sleep|nightmare|grief|griev|overwhelm|help)/i.test(last);
       const sympathy = firstTurn || emotional
-        ? "I'm really sorry you're dealing with this, and thank you for reaching out, that takes strength."
+        ? "I'm really sorry you're dealing with this, and thank you for reaching out. That takes strength."
         : "Got it, thanks.";
       reply = needsMore
         ? `${sympathy} To find the right fit, could you tell me ${missing.slice(0, 2).join(" and ")}?`
