@@ -20,7 +20,8 @@ export async function validateAll() {
   const { findTreatment } = await import("./connectors.server");
   const { data, error } = await supabaseAdmin.from("care_options")
     .select("id, source_id, external_id, city, state, status, website, data_sources(name, connector)")
-    .in("status", ["active", "needs_review"]);
+    .in("status", ["active", "needs_review"])
+    .not("website", "like", "https://www.va.gov/%"); // VA.gov directory rows are checked in batches by validateVaBatch
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as unknown as Row[];
   const found = new Set<string>();
@@ -60,15 +61,6 @@ export async function validateAll() {
     } catch { found.add(r.id); }
   }
 
-  // Keyless VA.gov directory listings: confirm each facility's official VA.gov page still exists.
-  for (const r of rows) if (!r.data_sources?.connector && /^https:\/\/www\.va\.gov\//.test(r.website)) {
-    try {
-      const res = await fetch(r.website, { redirect: "follow", headers: { "user-agent": "VA-Navigator-link-check" } });
-      if (res.status === 404 || res.status === 410) continue;
-      found.add(r.id);
-    } catch { found.add(r.id); /* VA.gov unreachable: don't penalize */ }
-  }
-
   const today = new Date().toISOString().slice(0, 10);
   const counts = { active: 0, needs_review: 0, removed: 0 };
   for (const r of rows) {
@@ -77,5 +69,58 @@ export async function validateAll() {
     await supabaseAdmin.from("care_options").update({ status, updated_at: new Date().toISOString(), ...(status === "active" ? { last_validated: today } : {}) }).eq("id", r.id);
   }
   await supabaseAdmin.rpc("log_validation_run", { _details: { checked: rows.length, ...counts } });
+  return { checked: rows.length, ...counts };
+}
+
+
+type VaRow = { id: string; status: string; website: string; name: string; phone: string | null; city: string | null; state: string | null; bio: string | null };
+
+/** Read the address/phone a VA.gov facility page publishes in its structured data. */
+export function parseVaPage(html: string) {
+  for (const m of html.matchAll(/<script type="application\/ld\+json">([^<]*)<\/script>/g)) {
+    try {
+      const ld = JSON.parse(m[1]!) as { name?: string; telephone?: string; address?: { streetAddress?: string; addressLocality?: string; addressRegion?: string; postalCode?: string } };
+      const a = ld.address;
+      if (a?.streetAddress && a.addressLocality && a.addressRegion) return { name: ld.name?.trim(), phone: ld.telephone?.trim() || null, street: a.streetAddress.trim(), city: a.addressLocality.trim(), state: a.addressRegion.trim().toUpperCase(), zip: (a.postalCode ?? "").trim() };
+    } catch { /* skip */ }
+  }
+  return null;
+}
+
+/**
+ * Sunday VA.gov directory check, run in small batches (the schedule calls this many times on Sunday morning).
+ * Each facility's official VA.gov page is re-read; address/phone are refreshed from it, missing pages follow care-rules.
+ */
+export async function validateVaBatch(limit = 40) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const cutoff = new Date(Date.now() - 3 * 86400_000).toISOString();
+  const { data, error } = await supabaseAdmin.from("care_options")
+    .select("id, status, website, name, phone, city, state, bio")
+    .in("status", ["active", "needs_review"]).like("website", "https://www.va.gov/%").lt("updated_at", cutoff)
+    .order("updated_at").limit(limit);
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as VaRow[];
+  const today = new Date().toISOString().slice(0, 10);
+  const counts = { active: 0, needs_review: 0, removed: 0, refreshed: 0 };
+  await Promise.all(rows.map(async (r) => {
+    let ok = true; let page: ReturnType<typeof parseVaPage> = null;
+    try {
+      const res = await fetch(r.website, { redirect: "follow", headers: { "user-agent": "Mozilla/5.0 (VA-Navigator weekly check)" } });
+      if (res.status === 404 || res.status === 410) ok = false;
+      else if (res.ok) page = parseVaPage(await res.text());
+    } catch { /* VA.gov unreachable: don't penalize */ }
+    const status = nextStatus(ok, r.status as OptionStatus);
+    counts[status]++;
+    const patch: import("@/integrations/supabase/types").TablesUpdate<"care_options"> = { status, updated_at: new Date().toISOString(), ...(status === "active" ? { last_validated: today } : {}) };
+    if (page) {
+      const bio = `${page.street}, ${page.city}, ${page.state} ${page.zip}. Address and phone from this facility's official VA.gov page; re-checked every Sunday.`;
+      if (page.phone !== r.phone || page.city !== r.city || page.state !== r.state || bio !== r.bio || (page.name && page.name !== r.name)) {
+        Object.assign(patch, { phone: page.phone, city: page.city, state: page.state, bio, ...(page.name ? { name: page.name } : {}) });
+        counts.refreshed++;
+      }
+    }
+    await supabaseAdmin.from("care_options").update(patch).eq("id", r.id);
+  }));
+  if (rows.length) await supabaseAdmin.rpc("log_validation_run", { _details: { va_directory_batch: rows.length, ...counts } });
   return { checked: rows.length, ...counts };
 }

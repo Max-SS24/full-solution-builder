@@ -304,8 +304,13 @@ export const navigate = createServerFn({ method: "POST" })
       reply += " Below is a step-by-step guide to getting care through the VA, taken from VA.gov.";
     }
 
+    const { territoryHelp } = await import("./territory-guidance");
+    const tHelp = !needsMore && !results.length && state0 ? territoryHelp(state0, variables.va_vs_community === "community") : null;
+    if (tHelp && !danger) reply += ` Providers are limited in ${tHelp.area}, so below are trusted next steps that serve the area.`;
+
     return {
       reply,
+      territoryHelp: tHelp,
       crisis,
       danger,
       vaGuide,

@@ -7,6 +7,11 @@ export const Route = createFileRoute("/api/public/jobs/validate-care-options")({
       POST: async ({ request }) => {
         const authFailure = await authenticateCronRequest(request);
         if (authFailure) return authFailure;
+        const body = (await request.json().catch(() => ({}))) as { part?: string };
+        if (body.part === "va") {
+          const { validateVaBatch } = await import("@/lib/care-options.server");
+          return Response.json({ success: true, ...(await validateVaBatch()) });
+        }
         const { validateAll } = await import("@/lib/care-options.server");
         const { checkHelpfulLinks } = await import("@/lib/link-checks.server");
         const [result, links] = await Promise.all([validateAll(), checkHelpfulLinks()]);

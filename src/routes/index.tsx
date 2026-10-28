@@ -1,3 +1,4 @@
+import type { TerritoryHelp } from "@/lib/territory-guidance";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState, useEffect } from "react";
@@ -53,6 +54,7 @@ function Home() {
   const [crisis, setCrisis] = useState(false);
   const [danger, setDanger] = useState<"self" | "others" | null>(null);
   const [vaGuide, setVaGuide] = useState(false);
+  const [tHelp, setTHelp] = useState<TerritoryHelp | null>(null);
   const [vaStatus, setVaStatus] = useState<VaStatus>(null);
   const [vaCheckedAt, setVaCheckedAt] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -106,11 +108,12 @@ function Home() {
       setDanger(out.danger);
       setVaGuide(out.vaGuide);
       setVaStatus(out.vaStatus);
+      setTHelp(out.territoryHelp ?? null);
       setVaCheckedAt(out.vaCheckedAt);
       if (out.crisis) window.scrollTo({ top: 0, behavior: "smooth" });
       setNote(out.connectorError ?? out.aiNote);
       // Stay enlarged until we have suitable results (or a crisis needs the full page).
-      if (out.crisis || (!out.needsMore && out.results.length > 0)) setFocused(false);
+      if (out.crisis || (!out.needsMore && (out.results.length > 0 || out.territoryHelp))) setFocused(false);
       if (user && !privateMode) {
         await supabase.from("search_history").insert({
           user_id: user.id,
@@ -279,6 +282,21 @@ function Home() {
               <VaAvailability status={vaStatus} checkedAt={vaCheckedAt} location={vars?.location ?? null}
                 vaResults={(results ?? []).filter((r) => r.kind.includes("VA") || r.kind === "Vet Center")} />
               <p className="mt-4 text-xs font-semibold text-ink/55">Source: VA.gov, checked {new Date(VA_GUIDE_CHECKED + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
+            </section>
+          )}
+          {tHelp && (
+            <section className="mt-8 rounded-2xl border-2 border-ink bg-card p-5">
+              <h2 className="font-display text-xl font-bold">Next steps for {tHelp.area}</h2>
+              <p className="mt-1 text-sm text-ink/70">We couldn't find listed providers here yet. These official services serve the area:</p>
+              <ul className="mt-3 space-y-2 text-sm">
+                {tHelp.steps.map((s) => (
+                  <li key={s.text} className="flex flex-wrap gap-x-2">
+                    <span>• {s.text}</span>
+                    {s.phone && <a className="font-semibold underline" href={`tel:${s.phone}`}>{s.phone}</a>}
+                    {s.url && <a className="underline text-ink/70" href={s.url} target="_blank" rel="noreferrer">Official page</a>}
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
           {results && results.length > 0 && (
