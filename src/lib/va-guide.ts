@@ -96,10 +96,22 @@ export function vaStageOf(applied: string | null | undefined, registered: string
   return null;
 }
 
-export function guideFor(stage: VaStage | null): VaStep[] {
+export function guideFor(stage: VaStage | null, facilityUnknown = false): VaStep[] {
   if (!stage) return VA_GUIDE.filter((s) => !s.stages || s.stages.includes("not_applied"));
-  return VA_GUIDE.filter((s) => (s.stages ?? ALL).includes(stage));
+  const steps = VA_GUIDE.filter((s) => (s.stages ?? ALL).includes(stage));
+  // Registered but unsure where: show how to find out, right after the crisis step.
+  if (stage === "registered" && facilityUnknown) steps.splice(1, 0, FIND_FACILITY_STEP);
+  return steps;
 }
+
+/** Shown only to registered patients who don't know which facility they're registered at. */
+export const FIND_FACILITY_STEP: VaStep = {
+  title: "Find out which VA facility you're registered at",
+  detail: "Sign in on VA.gov and open your appointments, each visit lists its facility. Or call VA at 877-222-8387 (TTY: 711), Monday to Friday, 8:00 a.m. to 8:00 p.m. ET, and ask which facility you're registered with.",
+  url: "https://www.va.gov/my-health/appointments",
+  checked: VA_GUIDE_CHECKED,
+  linkLabel: "Your VA appointments",
+};
 
 /** Official VA.gov ways to find out which facility you're registered at. */
 export const FIND_MY_FACILITY = "Not sure which VA facility you're registered at? Call VA at 877-222-8387 (TTY: 711, Monday to Friday, 8:00 a.m. to 8:00 p.m. ET), or sign in on VA.gov and open your appointments (va.gov/my-health/appointments), which lists the facility for each visit.";

@@ -428,6 +428,7 @@ export const navigate = createServerFn({ method: "POST" })
       reply,
       territoryHelp: tHelp,
       vaStage,
+      facilityUnknown: variables.va_facility === "unknown",
       readyToShow,
       crisis,
       danger,

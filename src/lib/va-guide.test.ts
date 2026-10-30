@@ -49,3 +49,11 @@ describe("VA guide by stage", () => {
     expect(showVaGuide("community")).toBe(false);
   });
 });
+import { FIND_FACILITY_STEP } from "./va-guide";
+describe("find my facility step", () => {
+  it("shows only for registered patients who don't know their facility", () => {
+    expect(guideFor("registered", true)).toContain(FIND_FACILITY_STEP);
+    expect(guideFor("registered", false)).not.toContain(FIND_FACILITY_STEP);
+    expect(guideFor("applied", true)).not.toContain(FIND_FACILITY_STEP);
+  });
+});
