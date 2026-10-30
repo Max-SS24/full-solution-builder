@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as HelpfulLinksRouteImport } from './routes/helpful-links'
+import { Route as QuestionnaireRouteImport } from './routes/questionnaire'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
@@ -37,6 +38,11 @@ const AuthRoute = AuthRouteImport.update({
 const HelpfulLinksRoute = HelpfulLinksRouteImport.update({
   id: '/helpful-links',
   path: '/helpful-links',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuestionnaireRoute = QuestionnaireRouteImport.update({
+  id: '/questionnaire',
+  path: '/questionnaire',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/helpful-links': typeof HelpfulLinksRoute
+  '/questionnaire': typeof QuestionnaireRoute
   '/reset-password': typeof ResetPasswordRoute
   '/security': typeof SecurityRoute
   '/account': typeof AuthenticatedAccountRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/helpful-links': typeof HelpfulLinksRoute
+  '/questionnaire': typeof QuestionnaireRoute
   '/reset-password': typeof ResetPasswordRoute
   '/security': typeof SecurityRoute
   '/account': typeof AuthenticatedAccountRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/helpful-links': typeof HelpfulLinksRoute
+  '/questionnaire': typeof QuestionnaireRoute
   '/reset-password': typeof ResetPasswordRoute
   '/security': typeof SecurityRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/helpful-links'
+    | '/questionnaire'
     | '/reset-password'
     | '/security'
     | '/account'
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/helpful-links'
+    | '/questionnaire'
     | '/reset-password'
     | '/security'
     | '/account'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/helpful-links'
+    | '/questionnaire'
     | '/reset-password'
     | '/security'
     | '/_authenticated/account'
@@ -148,6 +160,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   HelpfulLinksRoute: typeof HelpfulLinksRoute
+  QuestionnaireRoute: typeof QuestionnaireRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SecurityRoute: typeof SecurityRoute
   ApiPublicJobsValidateCareOptionsRoute: typeof ApiPublicJobsValidateCareOptionsRoute
@@ -181,6 +194,13 @@ declare module '@tanstack/react-router' {
       path: '/helpful-links'
       fullPath: '/helpful-links'
       preLoaderRoute: typeof HelpfulLinksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/questionnaire': {
+      id: '/questionnaire'
+      path: '/questionnaire'
+      fullPath: '/questionnaire'
+      preLoaderRoute: typeof QuestionnaireRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -248,6 +268,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   HelpfulLinksRoute: HelpfulLinksRoute,
+  QuestionnaireRoute: QuestionnaireRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SecurityRoute: SecurityRoute,
   ApiPublicJobsValidateCareOptionsRoute: ApiPublicJobsValidateCareOptionsRoute,
