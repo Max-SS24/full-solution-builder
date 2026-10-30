@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useAccount } from "@/hooks/useAccount";
+import { useAccount, type Prefs } from "@/hooks/useAccount";
 import { useServerFn } from "@tanstack/react-start";
 import { deleteMyAccount } from "@/lib/privacy.functions";
 import { visibleQuestions } from "@/lib/questionnaire";
@@ -103,11 +103,11 @@ function Account() {
   );
 }
 
-function QuizAnswers({ prefs, savePrefs }: { prefs: Record<string, unknown>; savePrefs: (p: Record<string, unknown>) => Promise<unknown> }) {
+function QuizAnswers({ prefs, savePrefs }: { prefs: Prefs; savePrefs: (p: Prefs) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
   async function save(k: string, v: string) {
-    const next: Record<string, unknown> = { ...prefs };
+    const next: Prefs = { ...prefs };
     if (v) next[k] = v; else delete next[k];
     // Drop VA follow-ups that no longer apply.
     const keys = new Set(visibleQuestions(next).map((q) => q.key));
