@@ -345,9 +345,11 @@ export const navigate = createServerFn({ method: "POST" })
         const comBest = results.filter((r) => !isVa(r)).slice(0, 6 - vaBest.length);
         results = [...vaBest, ...comBest];
       }
-      // Their own VA facility first, when it's in the results.
-      const fac = v.va_facility && v.va_facility !== "unknown" ? v.va_facility.toLowerCase() : null;
-      if (fac) results = [...results.filter((r) => r.name.toLowerCase().includes(fac)), ...results.filter((r) => !r.name.toLowerCase().includes(fac))];
+      // Their own VA facility first, matched loosely by name ("James A. Haley in Tampa").
+      if (v.va_facility && v.va_facility !== "unknown") {
+        const own = pool.find((r) => (r.kind.includes("VA") || r.kind === "Vet Center") && facilityMatches(v.va_facility!, r.name, city));
+        if (own) results = [own, ...results.filter((r) => r.id !== own.id)].slice(0, 6);
+      }
     }
 
     if (!locationGiven) variables.location = null;
@@ -505,4 +507,15 @@ export function askedTopics(messages: { role: string; content: string }[]): Set<
   const out = new Set<string>();
   for (const m of messages) if (m.role === "assistant") for (const [k, re] of TOPIC_RE) if (re.test(m.content)) out.add(k);
   return out;
+}
+
+const FAC_STOP = new Set(["va", "the", "in", "at", "of", "and", "medical", "center", "clinic", "hospital", "veterans", "veteran", "health", "care", "system", "outpatient", "community", "vamc", "cboc"]);
+/** True when every distinctive word the person gave appears in the facility name. */
+export function facilityMatches(said: string, name: string, city = ""): boolean {
+  const words = (t: string) => t.toLowerCase().replace(/['’]s\b/g, "").split(/[^a-z0-9]+/).filter(Boolean);
+  const cityWords = new Set(words(city));
+  const key = words(said).filter((w) => w.length > 1 && !FAC_STOP.has(w) && !cityWords.has(w));
+  if (!key.length) return false;
+  const have = new Set(words(name));
+  return key.every((w) => have.has(w));
 }

@@ -30,3 +30,10 @@ describe("no repeated questions", () => {
     expect(WANTS_RESULTS_RE.test("Phoenix AZ")).toBe(false);
   });
 });
+import { facilityMatches } from "./navigator.functions";
+describe("registered VA facility", () => {
+  it("matches a loosely typed facility name", () => {
+    expect(facilityMatches("James A. Haley in Tampa", "James A. Haley Veterans' Hospital", "tampa")).toBe(true);
+    expect(facilityMatches("James A. Haley in Tampa", "Sabal Park VA Clinic", "tampa")).toBe(false);
+  });
+});
