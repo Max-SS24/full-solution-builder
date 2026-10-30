@@ -63,6 +63,7 @@ function Home() {
   const [danger, setDanger] = useState<"self" | "others" | null>(null);
   const [vaGuide, setVaGuide] = useState(false);
   const [vaStage, setVaStage] = useState<VaStage | null>(null);
+  const [facilityUnknown, setFacilityUnknown] = useState(false);
   const [pending, setPending] = useState<NavOut | null>(null);
   const [quiz, setQuiz] = useState<Record<string, string>>({});
   useEffect(() => { try { setQuiz(JSON.parse(sessionStorage.getItem("van_quiz") ?? "{}")); } catch { /* none */ } }, []);
@@ -109,6 +110,7 @@ function Home() {
     setDanger(out.danger);
     setVaGuide(out.vaGuide);
     setVaStage((out.vaStage ?? null) as VaStage | null);
+    setFacilityUnknown(!!out.facilityUnknown);
     setVaStatus(out.vaStatus);
     setTHelp(out.territoryHelp ?? null);
     setVaCheckedAt(out.vaCheckedAt);
@@ -311,7 +313,7 @@ function Home() {
               <h3 className="font-display text-2xl font-bold">🇺🇸 Your step-by-step guide to VA care</h3>
               <p className="mt-1 text-sm text-ink/65">{vaStage === "registered" ? "Since you're already a VA patient, we skipped the application steps. " : vaStage === "applied" ? "Since you've already applied, we skipped the application step. " : ""}Every step comes from official VA.gov pages. Tap a link to read the full details.</p>
               <ol className="mt-5 space-y-4">
-                {guideFor(vaStage).map((s, i) => (
+                {guideFor(vaStage, facilityUnknown).map((s, i) => (
                   <li key={s.title} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
                     <span className="flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-bold">{i + 1}</span>
                     <div className="min-w-0">
