@@ -67,7 +67,7 @@ Extract search variables from the whole conversation. Reply ONLY with JSON:
   "payment": "va"|"tricare"|"medicaid"|"medicare"|"private"|"self-pay"|null,
   "va_vs_community": "va"|"community"|"both"|null ("va" = VA facility/Vet Center, "community" = civilian therapist or non-VA provider, ALSO use "community" whenever they say they don't want the VA, don't want to deal with the VA or government, or want to avoid VA/government care, "both" = wants to compare VA and community options or has no preference), "urgency": "routine"|"soon"|"urgent"|"crisis"|null,
   "va_applied": "yes"|"no"|null (have they applied for VA health care), "va_registered": "yes"|"no"|"unsure"|null (registered/enrolled as a patient at a VA facility), "va_facility": string|null (name of the VA facility they're registered at, or "unknown" if they don't know)}}
-Use the LATEST message to decide va_vs_community if it changes their earlier choice. Only ask the VA questions (applied, registered, which facility) when they want VA care or both.`;
+Use the LATEST message to decide va_vs_community if it changes their earlier choice. If they correct their VA facility, va_facility is the newest one they named (null if they only said it's wrong). Only ask the VA questions (applied, registered, which facility) when they want VA care or both.`;
 
 const VOCAB = `
 Map everyday language to "need": depression = feeling down, empty, numb, hopeless, heavy, unmotivated, can't get out of bed, nothing matters, lost interest, dark place, burden, stuck in a rut, no purpose/mission;
@@ -220,7 +220,7 @@ export const navigate = createServerFn({ method: "POST" })
       : /(not sure|don'?t know|dunno|no idea|unsure)/i.test(lastUser) ? "unsure" : null;
     if (yn && /applied for VA health care/i.test(prevBot) && !variables.va_applied) variables.va_applied = yn === "unsure" ? "no" : yn;
     else if (yn && /(registered|enrolled) as a patient/i.test(prevBot) && !variables.va_registered) variables.va_registered = yn;
-    else if (/which VA facility/i.test(prevBot) && !variables.va_facility) variables.va_facility = yn === "unsure" ? "unknown" : yn ? null : lastUser.trim().slice(0, 120);
+    else if (/which VA facility/i.test(prevBot) && (!variables.va_facility || !yn)) variables.va_facility = yn === "unsure" ? "unknown" : yn ? null : lastUser.trim().slice(0, 120);
     // Corrections: "my facility is actually X", "that's not my facility", "wrong facility".
     const fix = correctFacility(lastUser);
     if (fix) variables.va_facility = fix === "ask" ? null : fix;
@@ -254,6 +254,7 @@ export const navigate = createServerFn({ method: "POST" })
     const { findTreatment, npiClinicians, vaFacilities } = await import("./connectors.server");
     let liveError = false;
     let vaStatus: VaStatus = null;
+    let myFacility: { name: string; address: string | null; phone: string | null; url: string | null; found: boolean } | null = null;
     const liveRows = (await Promise.all((live ?? []).map(async (s) => {
       try {
         if (s.connector === "findtreatment") return await findTreatment(city0, state0, variables, s.name);
