@@ -42,9 +42,22 @@ export type CareResult = {
 /** live = optional VA service answered; unavailable = it failed; directory = official VA.gov directory + verified saved listings (default, no key); null = VA search not used. */
 export type VaStatus = "live" | "unavailable" | "directory" | null;
 
-const SYSTEM = `You are a Veteran mental-health care NAVIGATOR (not a clinician). Never diagnose.
+const SYSTEM = `You are the VA Navigator: a warm, steady, plain-spoken peer who knows the VA and community mental-health system well. You are a navigator, not a clinician: never diagnose, never give medication or dosing advice, never give legal advice.
+
+How you talk:
+- Sound like a thoughtful person, not a form. Let the length of your reply fit the moment: a line or two for quick details, a few sentences when someone opens up or asks a real question.
+- Answer what they actually said first. Greetings, thanks, small talk, jokes, venting, frustration with the VA, confusion, typos, slang or military shorthand, "who are you?", "is this private?", "are you a real person?" (you're an AI helper; their searches stay private to their account), general questions about VA benefits, eligibility, Vet Centers, telehealth or costs: give a brief, honest, plain answer, pointing to VA.gov or 877-222-8387 for specifics instead of inventing them.
+- Keep compassion in mind without overdoing it: acknowledge feelings sincerely and briefly when they share something hard; when they give practical details, just keep things moving naturally. Never lecture, never gush, never repeat the same empathy phrase.
+- If someone just wants to talk or vent, listen first; don't rush them into a search.
+- Politely say when something is outside what you can help with (legal, medical dosing, unrelated topics) and offer what you can do.
+- Mirror their tone and words. No jargon. Never re-ask something already answered (see "Known so far").
+- Ask at most ONE gentle question per reply, and only when the answer would really help. Things that help the search: what they'd like support with (need), VA care vs a community/civilian provider (va_vs_community), one-on-one vs a group (care_type), in person/video/phone (care_format), and city/state or ZIP. When they want VA care or both, also learn whether they've applied for VA health care, whether they're registered as a patient, and at which VA facility.
+- After results were already offered, treat follow-ups as conversational refinement ("Want me to look closer to home?", "Would a group feel easier?") rather than restarting questions.
+
 Extract search variables from the whole conversation. Reply ONLY with JSON:
-{"reply": string (open with one or two sincere, sympathetic sentences ONLY when the latest message shares feelings, struggles or a hard situation, NOT when they just give practical details like location, format or insurance (then simply say thanks/got it); then gently ask for what is still missing, what they need help with (need), their preferred care format, whether they want VA care or a community/civilian provider (va_vs_community), and whether they prefer one-on-one therapy or a support group (care_type), at most two short questions per reply; plain language),
+{"reply": string,
+ "intent": "search"|"refine"|"question"|"chat" ("search" = giving details to find care, "refine" = changing/narrowing a search, "question" = asking a general question, "chat" = greeting, thanks, venting, small talk or anything else),
+ "asks": boolean (true if your reply ends by asking them something),
  "crisis": boolean (true if any sign of immediate danger, suicide, self-harm),
  "variables": {"location": string|null ("City, ST" using the 2-letter USPS code; U.S. territories count too: PR Puerto Rico, GU Guam, VI U.S. Virgin Islands, AS American Samoa, MP Northern Mariana Islands; if only a territory is named use e.g. "Guam, GU"), "distance_miles": number|null, "care_format": "in-person"|"telehealth"|"phone"|null,
   "care_type": "therapy"|"counseling"|"psychiatry"|"group"|"iop"|"residential"|null (use "group" for support groups/group therapy; "therapy" or "counseling" for one-on-one),
@@ -172,14 +185,21 @@ export const navigate = createServerFn({ method: "POST" })
     let variables: Variables = fallbackExtract(userText);
     let aiError: string | null = null;
     let aiUsed = false;
+    let intent = "search";
+    let aiAsks = false;
 
     try {
-      const out = (await completeJson([{ role: "system", content: SYSTEM + VOCAB }, ...data.messages], aiCfg)) as
-        | { reply?: string; crisis?: boolean; variables?: Partial<Variables> }
+      const offered = data.messages.some((m) => m.role === "assistant" && /see your results/i.test(m.content));
+      const known = Object.entries({ ...(data.prefs ?? {}), ...variables }).filter(([, v]) => v != null && v !== "");
+      const note = `Known so far: ${known.length ? JSON.stringify(Object.fromEntries(known)) : "nothing yet"}. Results already offered: ${offered ? "yes" : "no"}.`;
+      const out = (await completeJson([{ role: "system", content: SYSTEM + VOCAB + "\n" + note }, ...data.messages], aiCfg)) as
+        | { reply?: string; crisis?: boolean; intent?: string; asks?: boolean; variables?: Partial<Variables> }
         | null;
       if (out) {
         aiUsed = true;
         reply = out.reply ?? "";
+        if (out.intent) intent = out.intent;
+        aiAsks = !!out.asks || /\?\s*$/.test(reply);
         crisis = crisis || !!out.crisis;
         for (const [k, val] of Object.entries(out.variables ?? {})) {
           if (val != null && val !== "") (variables as Record<string, unknown>)[k] = val;
@@ -346,11 +366,11 @@ export const navigate = createServerFn({ method: "POST" })
       const firstTurn = data.messages.filter((m) => m.role === "user").length === 1;
       const emotional = /\b(struggl|hard|tough|lost|alone|sad|depress|anxi|ptsd|trauma|scared|hurt|can'?t sleep|nightmare|grief|griev|overwhelm|help)/i.test(last);
       const sympathy = firstTurn || emotional
-        ? "I'm really sorry you're dealing with this, and thank you for reaching out. That takes strength."
-        : "Got it, thanks.";
+        ? "I'm sorry you're carrying this, and I'm glad you reached out."
+        : "Got it.";
       reply = needsMore
         ? missing.length
-          ? `${sympathy} To find the right fit, could you tell me ${missing.slice(0, 2).join(" and ")}?`
+          ? `${sympathy} Could you tell me ${missing[0]}?`
           : `${sympathy} ${vaQuestion}`
         : results.length
           ? `${sympathy} I found options from approved sources, each one links back so you can verify.`
@@ -359,30 +379,32 @@ export const navigate = createServerFn({ method: "POST" })
             : `${sympathy} I couldn't find a close match yet, could you share a bit more about what you're looking for?`;
     }
 
-    // The AI may forget the VA questions; make sure the next one is asked.
-    if (aiUsed && needsMore && !missing.length && vaQuestion && !/applied|registered|facility/i.test(reply)) reply += ` ${vaQuestion}`;
+    // Chat / general questions get a natural reply with no checklist text appended.
+    const conversational = aiUsed && isConversational(intent);
+    // The AI may forget the VA questions; ask the next one only on search turns where it asked nothing.
+    if (!conversational && needsMore && !missing.length && vaQuestion && (!aiUsed || !aiAsks)) reply += ` ${vaQuestion}`;
     const { FIND_MY_FACILITY, vaStageOf } = await import("./va-guide");
-    if (wantsVa && variables.va_facility === "unknown") reply += ` ${FIND_MY_FACILITY}`;
+    if (!conversational && wantsVa && variables.va_facility === "unknown" && !/877-222-8387/.test(reply)) reply += ` ${FIND_MY_FACILITY}`;
     const danger: "self" | "others" | null = dangerOf(userText) ?? (crisis ? "self" : null);
     if (danger) {
       crisis = true;
       reply = crisisReply(danger);
     }
     const community = results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center");
-    if (!needsMore && community.length) {
+    if (!conversational && !needsMore && community.length) {
       reply += ` Scroll to "What matters most in a provider?" below to compare these options against what's important to you.`;
     }
 
     const vaGuide = !needsMore && wantsVa;
     const vaStage = vaGuide ? vaStageOf(variables.va_applied, variables.va_registered) : null;
-    if (vaGuide && !danger) {
+    if (vaGuide && !danger && !conversational) {
       reply += " Below is a step-by-step guide to getting care through the VA, taken from VA.gov.";
     }
 
-    const readyToShow = !needsMore && !crisis && (results.length > 0 || vaGuide || !!state0);
+    const readyToShow = !conversational && !needsMore && !crisis && (results.length > 0 || vaGuide || !!state0);
     const { territoryHelp } = await import("./territory-guidance");
     const tHelp = !needsMore && !results.length && state0 ? territoryHelp(state0, variables.va_vs_community === "community") : null;
-    if (tHelp && !danger) reply += ` Providers are limited in ${tHelp.area}, so below are trusted next steps that serve the area.`;
+    if (tHelp && !danger && !conversational) reply += ` Providers are limited in ${tHelp.area}, so below are trusted next steps that serve the area.`;
 
     if (readyToShow && !danger) {
       // Ask only one thing: drop any other intake questions from this message.
@@ -440,4 +462,9 @@ export const getProviders = createServerFn({ method: "POST" })
 export function onlyStatements(text: string): string {
   const parts = text.match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g) ?? [text];
   return parts.filter((p) => !/\?["')\]]*\s*$/.test(p)).join("").replace(/\s+/g, " ").trim();
+}
+
+/** General questions and casual chat get a natural reply only, no checklist text or results prompt. */
+export function isConversational(intent: string | undefined): boolean {
+  return intent === "question" || intent === "chat";
 }
