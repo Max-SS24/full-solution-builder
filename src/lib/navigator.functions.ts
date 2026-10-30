@@ -52,6 +52,8 @@ How you talk:
 - Politely say when something is outside what you can help with (legal, medical dosing, unrelated topics) and offer what you can do.
 - Mirror their tone and words. No jargon. Never re-ask something already answered (see "Known so far").
 - Ask at most ONE gentle question per reply, and only when the answer would really help. Things that help the search: what they'd like support with (need), VA care vs a community/civilian provider (va_vs_community), one-on-one vs a group (care_type), in person/video/phone (care_format), and city/state or ZIP. When they want VA care or both, also learn whether they've applied for VA health care, whether they're registered as a patient, and at which VA facility.
+- Moving from small talk into a search should feel seamless: when they mention anything care-related (how they're feeling, what's going on, where they live, VA or not, how they'd like to meet), set intent "search", acknowledge it naturally and ask only the single most useful missing detail, in this order: need, city/state or ZIP, VA vs community, one-on-one vs group, in person/video/phone, then the VA questions. Skip anything already known or reasonably implied.
+- Never say you're about to show results or ask whether they want to see results; the app asks that separately.
 - After results were already offered, treat follow-ups as conversational refinement ("Want me to look closer to home?", "Would a group feel easier?") rather than restarting questions.
 
 Extract search variables from the whole conversation. Reply ONLY with JSON:
@@ -186,10 +188,11 @@ export const navigate = createServerFn({ method: "POST" })
     let aiError: string | null = null;
     let aiUsed = false;
     let intent = "search";
+    let offered = false;
     let aiAsks = false;
 
     try {
-      const offered = data.messages.some((m) => m.role === "assistant" && /see your results/i.test(m.content));
+      offered = data.messages.some((m) => m.role === "assistant" && /see your results/i.test(m.content));
       const known = Object.entries({ ...(data.prefs ?? {}), ...variables }).filter(([, v]) => v != null && v !== "");
       const note = `Known so far: ${known.length ? JSON.stringify(Object.fromEntries(known)) : "nothing yet"}. Results already offered: ${offered ? "yes" : "no"}.`;
       const out = (await completeJson([{ role: "system", content: SYSTEM + VOCAB + "\n" + note }, ...data.messages], aiCfg)) as
@@ -349,11 +352,11 @@ export const navigate = createServerFn({ method: "POST" })
 
     if (!locationGiven) variables.location = null;
     const missing: string[] = [];
-    if (!variables.need) missing.push("what you'd like support with (for example PTSD, depression, anxiety, grief, or substance use)");
-    if (!variables.care_type) missing.push("whether you'd prefer one-on-one therapy or a support group");
-    if (!variables.va_vs_community) missing.push("whether you'd like care through the VA or from a community provider, like a civilian therapist");
-    if (!variables.care_format) missing.push("whether you'd prefer in-person, telehealth, or phone care");
-    if (!variables.location) missing.push("your city and state (I'll use Atlanta, GA until you tell me otherwise)");
+    if (!variables.need) missing.push("What would you like support with? For example PTSD, depression, anxiety, grief, or substance use.");
+    if (!variables.location) missing.push("What city and state (or ZIP) should I search near?");
+    if (!variables.va_vs_community) missing.push("Would you like care through the VA, a community provider like a civilian therapist, or both?");
+    if (!variables.care_type) missing.push("Would one-on-one therapy or a support group feel better?");
+    if (!variables.care_format) missing.push("Would you rather meet in person, by video, or by phone?");
     const wantsVa = variables.va_vs_community === "va" || variables.va_vs_community === "both";
     let vaQuestion: string | null = null;
     if (wantsVa && !variables.va_applied) vaQuestion = "Have you already applied for VA health care?";
@@ -370,7 +373,7 @@ export const navigate = createServerFn({ method: "POST" })
         : "Got it.";
       reply = needsMore
         ? missing.length
-          ? `${sympathy} Could you tell me ${missing[0]}?`
+          ? `${sympathy} ${missing[0]}`
           : `${sympathy} ${vaQuestion}`
         : results.length
           ? `${sympathy} I found options from approved sources, each one links back so you can verify.`
@@ -380,9 +383,13 @@ export const navigate = createServerFn({ method: "POST" })
     }
 
     // Chat / general questions get a natural reply with no checklist text appended.
-    const conversational = aiUsed && isConversational(intent);
-    // The AI may forget the VA questions; ask the next one only on search turns where it asked nothing.
-    if (!conversational && needsMore && !missing.length && vaQuestion && (!aiUsed || !aiAsks)) reply += ` ${vaQuestion}`;
+    // Casual turns stay casual, unless this message completed the search and results haven't been offered yet.
+    const latestHasDetails = Object.values(fallbackExtract(lastUser)).some((v) => v != null);
+    const conversational = aiUsed && isConversational(intent) && !latestHasDetails && (needsMore || offered);
+    if (!conversational && aiUsed) reply = firstQuestionOnly(reply);
+    // The AI may forget to ask; on search turns where it asked nothing, ask the single next relevant question.
+    const nextQ = missing[0] ?? vaQuestion;
+    if (!conversational && needsMore && nextQ && aiUsed && !aiAsks && !/\?/.test(reply)) reply += ` ${nextQ}`;
     const { FIND_MY_FACILITY, vaStageOf } = await import("./va-guide");
     if (!conversational && wantsVa && variables.va_facility === "unknown" && !/877-222-8387/.test(reply)) reply += ` ${FIND_MY_FACILITY}`;
     const danger: "self" | "others" | null = dangerOf(userText) ?? (crisis ? "self" : null);
@@ -467,4 +474,13 @@ export function onlyStatements(text: string): string {
 /** General questions and casual chat get a natural reply only, no checklist text or results prompt. */
 export function isConversational(intent: string | undefined): boolean {
   return intent === "question" || intent === "chat";
+}
+
+/** Keeps everything up to and including the first question, so each reply asks one thing. */
+export function firstQuestionOnly(text: string): string {
+  const i = text.indexOf("?");
+  if (i < 0) return text;
+  const rest = text.slice(i + 1);
+  const end = rest.match(/^["')\]]*/)?.[0] ?? "";
+  return (text.slice(0, i + 1) + end).trim();
 }
