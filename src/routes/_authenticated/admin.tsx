@@ -322,7 +322,7 @@ function CareOptions() {
                 <td className="p-3">{r.insurance.length ? r.insurance.join(", ") : "Not listed"}</td>
                 <td className="p-3"><a href={r.website} target="_blank" rel="noreferrer" className="underline">{r.name}</a>{r.phone && <div className="text-xs text-ink/60">{r.phone}</div>}</td>
                 <td className="p-3">{(r.data_sources as { name: string } | null)?.name}</td>
-                <td className="min-w-[120px] whitespace-nowrap p-3"><span className={`inline-block whitespace-nowrap rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase ${r.status === "active" ? "bg-minttint" : "bg-soft"}`}>{r.status.replace("_", " ")}</span></td>
+                <td className="min-w-[120px] whitespace-nowrap p-3"><span className={`inline-block whitespace-nowrap rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase ${r.status === "active" ? "bg-minttint" : "bg-soft"}`}>{r.status.replace("_", " ")}</span>{r.contact_changed_at && Date.now() - new Date(r.contact_changed_at).getTime() < 7 * 86400000 && <span className="ml-1 text-[10px] font-bold">contact changed</span>}</td>
                 <td className="p-3 whitespace-nowrap">{r.last_validated}</td>
               </tr>
             ))}
