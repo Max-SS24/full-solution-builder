@@ -146,6 +146,13 @@ function Home() {
     setBusy(true);
     try {
       const out = await run({ data: { messages: next.slice(1), prefs: { ...(prefs ?? {}), ...quiz } } });
+      // Corrected their VA facility after seeing results: refresh the results right away, no extra question.
+      const newFac = out.variables.va_facility;
+      const facilityFixed = results !== null && !out.needsMore && !out.crisis && !!newFac && newFac !== "unknown" && newFac !== vars?.va_facility;
+      if (facilityFixed) {
+        out.reply = out.reply.replace(/\s*I have some options ready\. Would you like to see your results now\?\s*$/, "").trim()
+          + `\n\nI've updated your results with ${out.myFacility?.found ? out.myFacility.name : newFac} as your VA facility.`;
+      }
       setMessages([...next, { role: "assistant", content: out.reply }]);
       // Switched between VA and community: drop results of the other kind right away.
       if (vars?.va_vs_community && out.variables.va_vs_community && vars.va_vs_community !== out.variables.va_vs_community) {
@@ -154,6 +161,7 @@ function Home() {
       setVars(out.variables);
       setNote(out.connectorError ?? out.aiNote);
       if (out.crisis) { showResults(out); window.scrollTo({ top: 0, behavior: "smooth" }); }
+      else if (facilityFixed) showResults(out);
       else setPending(out.readyToShow ? out : null);
       if (user && !privateMode) {
         await supabase.from("search_history").insert({
