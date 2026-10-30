@@ -141,7 +141,7 @@ function Home() {
     }
     setBusy(true);
     try {
-      const out = await run({ data: { messages: next.slice(1), prefs: { ...quiz, ...(prefs ?? {}), ...quiz } } });
+      const out = await run({ data: { messages: next.slice(1), prefs: { ...(prefs ?? {}), ...quiz } } });
       setMessages([...next, { role: "assistant", content: out.reply }]);
       // Switched between VA and community: drop results of the other kind right away.
       if (vars?.va_vs_community && out.variables.va_vs_community && vars.va_vs_community !== out.variables.va_vs_community) {
@@ -274,6 +274,10 @@ function Home() {
                 🕶️ Private search, don't save to my history
               </label>
             )}
+            <p className="px-4 pb-4 text-sm font-semibold sm:px-6">
+              {Object.keys(quiz).length ? "✅ Using your quick-question answers. " : "Want fewer questions? "}
+              <Link to="/questionnaire" className="underline">{Object.keys(quiz).length ? "Edit answers" : "Answer a few quick questions first"}</Link>
+            </p>
           </div>
         </div>
       </section>

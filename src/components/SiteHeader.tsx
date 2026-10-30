@@ -18,6 +18,7 @@ export function SiteHeader() {
         </div>
         <nav className="mt-3 flex min-w-0 items-center gap-2 overflow-x-auto pb-1 text-sm md:mt-0 md:overflow-visible md:pb-0">
           <a href="/#chat" className="hidden shrink-0 rounded-full bg-navy px-5 py-2 font-semibold text-cream shadow-hard md:inline-flex">Start a chat</a>
+          <Link to="/questionnaire" className="shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft">Quick questions</Link>
           <Link to="/helpful-links" className="shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft">Helpful links</Link>
           <Link to="/security" className="shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft">Privacy & security</Link>
           {isAdmin && (
