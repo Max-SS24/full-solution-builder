@@ -157,8 +157,20 @@ function fallbackExtract(text: string): Variables {
 export const navigate = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z.object({
-      messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(4000) })).min(1).max(30),
-      prefs: z.record(z.string(), z.union([z.string(), z.number(), z.null()])).optional(),
+      messages: z
+        .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(4000) }))
+        .min(1)
+        .max(30)
+        // Must alternate assistant/user and end on a user turn; assistant turns are capped short.
+        .refine((ms) => ms.at(-1)?.role === "user" && ms.every((m, i) => i === 0 || m.role !== ms[i - 1].role), "Invalid conversation")
+        .refine((ms) => ms.every((m) => m.role === "user" || m.content.length <= 2500), "Invalid conversation"),
+      prefs: z
+        .record(
+          z.string().regex(/^[a-z_]{1,32}$/),
+          z.union([z.string().max(120).transform((s) => s.replace(/[\r\n{}<>`]/g, " ")), z.number(), z.null()]),
+        )
+        .refine((p) => Object.keys(p).length <= 20, "Too many preferences")
+        .optional(),
     }).parse(d),
   )
   .handler(async ({ data }) => {
