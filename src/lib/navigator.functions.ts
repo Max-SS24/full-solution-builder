@@ -161,8 +161,8 @@ export const navigate = createServerFn({ method: "POST" })
         .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(4000) }))
         .min(1)
         .max(30)
-        // Must alternate assistant/user and end on a user turn; assistant turns are capped short.
-        .refine((ms) => ms.at(-1)?.role === "user" && ms.every((m, i) => i === 0 || m.role !== ms[i - 1].role), "Invalid conversation")
+        // Must end on a user turn; assistant turns are capped short.
+        .refine((ms) => ms.at(-1)?.role === "user", "Invalid conversation")
         .refine((ms) => ms.every((m) => m.role === "user" || m.content.length <= 2500), "Invalid conversation"),
       prefs: z
         .record(
