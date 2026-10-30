@@ -441,6 +441,9 @@ function Home() {
               className="mt-4 w-full resize-none rounded-[18px] border-[3px] border-ink bg-cream p-4 text-base leading-relaxed placeholder:text-ink/40 focus:outline-none sm:rounded-[22px] sm:p-5 sm:text-lg"
             />
             <div className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
+              {pending && !busy && (
+                <button type="button" onClick={reveal} className="col-span-2 rounded-full border-[3px] border-ink bg-sun px-5 py-2.5 text-sm font-bold shadow-hard">👀 Show my results</button>
+              )}
               <button type="button" onClick={() => setFocused(false)} className="rounded-full border-[3px] border-ink px-5 py-2.5 text-sm font-bold">Close</button>
               <button disabled={busy || !input.trim()} className="rounded-full border-[3px] border-ink bg-mint px-6 py-2.5 text-sm font-bold text-paper shadow-hard disabled:opacity-60">Send →</button>
             </div>
