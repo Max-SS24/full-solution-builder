@@ -194,7 +194,7 @@ export const navigate = createServerFn({ method: "POST" })
     try {
       offered = data.messages.some((m) => m.role === "assistant" && /see your results/i.test(m.content));
       const known = Object.entries({ ...(data.prefs ?? {}), ...variables }).filter(([, v]) => v != null && v !== "");
-      const note = `Known so far: ${known.length ? JSON.stringify(Object.fromEntries(known)) : "nothing yet"}. Results already offered: ${offered ? "yes" : "no"}.`;
+      const note = `Known so far: ${known.length ? JSON.stringify(Object.fromEntries(known)) : "nothing yet"}. Results already offered: ${offered ? "yes" : "no"}. Already asked, never ask again (treat as no preference if unanswered): ${[...askedTopics(data.messages)].join(", ") || "none"}.${WANTS_RESULTS_RE.test(data.messages.at(-1)?.content ?? "") ? " They just asked to see results: briefly confirm, ask nothing." : ""}`;
       const out = (await completeJson([{ role: "system", content: SYSTEM + VOCAB + "\n" + note }, ...data.messages], aiCfg)) as
         | { reply?: string; crisis?: boolean; intent?: string; asks?: boolean; variables?: Partial<Variables> }
         | null;
@@ -351,17 +351,21 @@ export const navigate = createServerFn({ method: "POST" })
     }
 
     if (!locationGiven) variables.location = null;
+    // Optional details are asked once; if they skip or say "not sure", we move on instead of looping.
+    const asked = askedTopics(data.messages);
+    const wantsNow = WANTS_RESULTS_RE.test(lastUser);
     const missing: string[] = [];
-    if (!variables.need) missing.push("What would you like support with? For example PTSD, depression, anxiety, grief, or substance use.");
-    if (!variables.location) missing.push("What city and state (or ZIP) should I search near?");
-    if (!variables.va_vs_community) missing.push("Would you like care through the VA, a community provider like a civilian therapist, or both?");
-    if (!variables.care_type) missing.push("Would one-on-one therapy or a support group feel better?");
-    if (!variables.care_format) missing.push("Would you rather meet in person, by video, or by phone?");
+    if (!variables.need && !(wantsNow && asked.has("need"))) missing.push("What would you like support with? For example PTSD, depression, anxiety, grief, or substance use.");
+    if (!variables.location && !(wantsNow && asked.has("location"))) missing.push("What city and state (or ZIP) should I search near?");
+    if (!variables.va_vs_community && !asked.has("va_vs_community") && !wantsNow) missing.push("Would you like care through the VA, a community provider like a civilian therapist, or both?");
+    if (!variables.care_type && !asked.has("care_type") && !wantsNow) missing.push("Would one-on-one therapy or a support group feel better?");
+    if (!variables.care_format && !asked.has("care_format") && !wantsNow) missing.push("Would you rather meet in person, by video, or by phone?");
     const wantsVa = variables.va_vs_community === "va" || variables.va_vs_community === "both";
     let vaQuestion: string | null = null;
-    if (wantsVa && !variables.va_applied) vaQuestion = "Have you already applied for VA health care?";
-    else if (wantsVa && variables.va_applied === "yes" && !variables.va_registered) vaQuestion = "Are you registered as a patient at a VA facility (yes, no, or not sure)?";
-    else if (wantsVa && variables.va_registered === "yes" && !variables.va_facility) vaQuestion = "Which VA facility are you registered at? If you don't know, just say so and I'll show you how to find out.";
+    if (wantsNow) vaQuestion = null;
+    else if (wantsVa && !variables.va_applied && !asked.has("va_applied")) vaQuestion = "Have you already applied for VA health care?";
+    else if (wantsVa && variables.va_applied === "yes" && !variables.va_registered && !asked.has("va_registered")) vaQuestion = "Are you registered as a patient at a VA facility (yes, no, or not sure)?";
+    else if (wantsVa && variables.va_registered === "yes" && !variables.va_facility && !asked.has("va_facility")) vaQuestion = "Which VA facility are you registered at? If you don't know, just say so and I'll show you how to find out.";
     const needsMore = (missing.length > 0 || !!vaQuestion) && !crisis;
 
     if (!reply) {
@@ -405,7 +409,7 @@ export const navigate = createServerFn({ method: "POST" })
     const vaGuide = !needsMore && wantsVa;
     const vaStage = vaGuide ? vaStageOf(variables.va_applied, variables.va_registered) : null;
     if (vaGuide && !danger && !conversational) {
-      reply += " Below is a step-by-step guide to getting care through the VA, taken from VA.gov.";
+      reply += " Your results will include a step-by-step guide to VA care, taken from VA.gov.";
     }
 
     const readyToShow = !conversational && !needsMore && !crisis && (results.length > 0 || vaGuide || !!state0);
@@ -483,4 +487,22 @@ export function firstQuestionOnly(text: string): string {
   const rest = text.slice(i + 1);
   const end = rest.match(/^["')\]]*/)?.[0] ?? "";
   return (text.slice(0, i + 1) + end).trim();
+}
+
+export const WANTS_RESULTS_RE = /\b(show me|see (the |my )?(results|options)|just show|let'?s see|what (do|did) you (have|find)|go ahead and (show|search))\b/i;
+const TOPIC_RE: [string, RegExp][] = [
+  ["need", /what would you like support with|what'?s been going on/i],
+  ["location", /city|zip/i],
+  ["va_vs_community", /community provider|VA care, a|through the VA/i],
+  ["care_type", /one-on-one|support group|a group/i],
+  ["care_format", /in person.*(video|phone)|video.*phone/i],
+  ["va_applied", /applied for VA health care/i],
+  ["va_registered", /registered as a patient/i],
+  ["va_facility", /which VA facility/i],
+];
+/** Topics the navigator has already asked about in this chat. */
+export function askedTopics(messages: { role: string; content: string }[]): Set<string> {
+  const out = new Set<string>();
+  for (const m of messages) if (m.role === "assistant") for (const [k, re] of TOPIC_RE) if (re.test(m.content)) out.add(k);
+  return out;
 }
