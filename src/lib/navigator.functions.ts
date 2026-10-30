@@ -129,7 +129,7 @@ function fallbackExtract(text: string): Variables {
         || /don'?t want (to deal with )?(the )?government/.test(t) || /no[n -]?government/.test(t) || /outside (the )?va/.test(t) ? "community"
       : /\bboth\b|either|no preference|don'?t care|compare/.test(t) ? "both"
       : /\bva\b/.test(t) || t.includes("vet center") ? "va" : null,
-    va_applied: /(have|haven'?t|not|never|didn'?t|did not) (yet )?(applied|enrolled)|not (yet )?(applied|enrolled)/.test(t) && /(haven'?t|not|never|didn'?t|did not)/.test(t) ? "no"
+    va_applied: /(haven'?t|have not|never|didn'?t|did not|not yet) (yet )?(applied|enrolled)/.test(t) ? "no"
       : /\b(i('ve| have)?|already) (already )?(applied|enrolled)|\b(i'?m|i am) enrolled/.test(t) ? "yes" : null,
     va_registered: /not (registered|a patient)|never been seen/.test(t) ? "no"
       : /not sure (if|whether) i'?m registered/.test(t) ? "unsure"
@@ -191,7 +191,7 @@ export const navigate = createServerFn({ method: "POST" })
 
     // Short answers ("yes", "no", "not sure") to the question the navigator just asked.
     const lastUser = data.messages.filter((m) => m.role === "user").at(-1)?.content ?? "";
-    const prevBot = [...data.messages].reverse().find((m, i, arr) => m.role === "assistant" && arr.slice(0, i).some((x) => x.role === "user"))?.content ?? "";
+    const prevBot = data.messages.at(-2)?.role === "assistant" ? data.messages.at(-2)!.content : "";
     const yn = /^\s*(yes|yeah|yep|yup|i have|i did|i am|correct|sure)\b/i.test(lastUser) ? "yes"
       : /^\s*(no|nope|nah|not yet|i haven'?t|i'?m not|never)\b/i.test(lastUser) ? "no"
       : /(not sure|don'?t know|dunno|no idea|unsure)/i.test(lastUser) ? "unsure" : null;
@@ -353,15 +353,14 @@ export const navigate = createServerFn({ method: "POST" })
           ? `${sympathy} To find the right fit, could you tell me ${missing.slice(0, 2).join(" and ")}?`
           : `${sympathy} ${vaQuestion}`
         : results.length
-          ? `${sympathy} Here's what I found from approved sources, each one links back so you can verify.`
+          ? `${sympathy} I found options from approved sources, each one links back so you can verify.`
           : variables.va_vs_community === "community"
             ? `${sympathy} I couldn't find a community (non-VA) option that fits yet, I've left out all VA facilities as you asked. If you'd ever reconsider, VA options can be included too.`
             : `${sympathy} I couldn't find a close match yet, could you share a bit more about what you're looking for?`;
     }
 
     // The AI may forget the VA questions; make sure the next one is asked.
-    if (aiUsed && needsMore && !missing.length && vaQuestion && !reply.includes("?")) reply += ` ${vaQuestion}`;
-    else if (aiUsed && needsMore && !missing.length && vaQuestion && !/applied|registered|facility/i.test(reply)) reply += ` ${vaQuestion}`;
+    if (aiUsed && needsMore && !missing.length && vaQuestion && !/applied|registered|facility/i.test(reply)) reply += ` ${vaQuestion}`;
     const { FIND_MY_FACILITY, vaStageOf } = await import("./va-guide");
     if (wantsVa && variables.va_facility === "unknown") reply += ` ${FIND_MY_FACILITY}`;
     const danger: "self" | "others" | null = dangerOf(userText) ?? (crisis ? "self" : null);
@@ -380,15 +379,17 @@ export const navigate = createServerFn({ method: "POST" })
       reply += " Below is a step-by-step guide to getting care through the VA, taken from VA.gov.";
     }
 
+    const readyToShow = !needsMore && !crisis && (results.length > 0 || vaGuide || !!state0);
     const { territoryHelp } = await import("./territory-guidance");
     const tHelp = !needsMore && !results.length && state0 ? territoryHelp(state0, variables.va_vs_community === "community") : null;
     if (tHelp && !danger) reply += ` Providers are limited in ${tHelp.area}, so below are trusted next steps that serve the area.`;
 
+    if (readyToShow && !danger) reply += "\n\nI have some options ready. Would you like to see your results now?";
     return {
       reply,
       territoryHelp: tHelp,
       vaStage,
-      readyToShow: !needsMore && !crisis && (results.length > 0 || !!tHelp || vaGuide),
+      readyToShow,
       crisis,
       danger,
       vaGuide,
