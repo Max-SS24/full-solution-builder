@@ -29,3 +29,4 @@
 - Supported areas (50 states, DC, PR, GU, VI, AS, MP) live in src/lib/us-areas.ts; territories are geocoded by name because OpenStreetMap treats them as separate countries.
 
 - Territory fallback next steps (fixed, official contacts) live in src/lib/territory-guidance.ts and show only when a territory search finds no providers.- Results are held client-side until the person confirms ("Would you like to see your results now?"); the server only flags readyToShow. The VA guide is filtered by stage via guideFor() in src/lib/va-guide.ts; the latest VA/community choice in the chat overrides earlier ones; optional /questionnaire answers live in sessionStorage (van_quiz) and are sent as prefs.
+- Navigator AI returns intent (search|refine|question|chat); chat/question turns get the AI reply only, with no checklist text, guide notes or results prompt appended, so conversation stays natural.
