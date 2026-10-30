@@ -1,7 +1,9 @@
 // Every step below was read and confirmed on the official VA.gov page it links to.
 export const VA_GUIDE_CHECKED = "2026-10-28";
 
-export type VaStep = { title: string; detail: string; url: string; linkLabel: string; checked: string };
+export type VaStage = "not_applied" | "applied" | "registered";
+const ALL: VaStage[] = ["not_applied", "applied", "registered"];
+export type VaStep = { title: string; detail: string; url: string; linkLabel: string; checked: string; stages?: VaStage[] };
 
 export const VA_GUIDE: VaStep[] = [
   {
@@ -17,6 +19,15 @@ export const VA_GUIDE: VaStep[] = [
     url: "https://www.va.gov/health-care/health-needs-conditions/mental-health/",
     checked: VA_GUIDE_CHECKED,
     linkLabel: "How to get mental health care",
+    stages: ["not_applied", "applied"],
+  },
+  {
+    title: "Ask your VA provider for a mental health appointment",
+    detail: "If you're already using VA medical services, ask your primary care provider to help you make an appointment with a VA mental health provider.",
+    url: "https://www.va.gov/health-care/health-needs-conditions/mental-health/",
+    checked: VA_GUIDE_CHECKED,
+    linkLabel: "How do I schedule my first appointment?",
+    stages: ["registered"],
   },
   {
     title: "Apply for VA health care (VA Form 10-10EZ)",
@@ -24,6 +35,15 @@ export const VA_GUIDE: VaStep[] = [
     url: "https://www.va.gov/health-care/how-to-apply/",
     checked: VA_GUIDE_CHECKED,
     linkLabel: "How to apply",
+    stages: ["not_applied"],
+  },
+  {
+    title: "After you apply: wait for your welcome call",
+    detail: "If more than a week has passed since you applied and VA hasn't contacted you, don't apply again. Call 877-222-8387 (TTY: 711). Once approved, VA will call to welcome you and help you schedule your first appointment.",
+    url: "https://www.va.gov/health-care/after-you-apply/",
+    checked: VA_GUIDE_CHECKED,
+    linkLabel: "After you apply for VA health care",
+    stages: ["applied"],
   },
   {
     title: "Find your nearest VA medical center or Vet Center",
@@ -31,6 +51,7 @@ export const VA_GUIDE: VaStep[] = [
     url: "https://www.va.gov/find-locations/",
     checked: VA_GUIDE_CHECKED,
     linkLabel: "Find VA locations",
+    stages: ["not_applied", "applied"],
   },
   {
     title: "Vet Centers: free individual and group counseling",
@@ -45,6 +66,7 @@ export const VA_GUIDE: VaStep[] = [
     url: "https://www.va.gov/health-care/schedule-view-va-appointments/",
     checked: VA_GUIDE_CHECKED,
     linkLabel: "Schedule VA appointments",
+    stages: ["applied", "registered"],
   },
   {
     title: "Ask about Community Care if VA can't see you in time",
@@ -63,5 +85,21 @@ export const VA_GUIDE: VaStep[] = [
 ];
 
 export function showVaGuide(vaVsCommunity: string | null | undefined): boolean {
-  return vaVsCommunity === "va";
+  return vaVsCommunity === "va" || vaVsCommunity === "both";
 }
+
+/** Where the veteran is in the VA process, from what they told us. Unknown = full guide. */
+export function vaStageOf(applied: string | null | undefined, registered: string | null | undefined): VaStage | null {
+  if (registered === "yes") return "registered";
+  if (applied === "yes") return "applied";
+  if (applied === "no") return "not_applied";
+  return null;
+}
+
+export function guideFor(stage: VaStage | null): VaStep[] {
+  if (!stage) return VA_GUIDE.filter((s) => !s.stages || s.stages.includes("not_applied"));
+  return VA_GUIDE.filter((s) => (s.stages ?? ALL).includes(stage));
+}
+
+/** Official VA.gov ways to find out which facility you're registered at. */
+export const FIND_MY_FACILITY = "Not sure which VA facility you're registered at? Call VA at 877-222-8387 (TTY: 711, Monday to Friday, 8:00 a.m. to 8:00 p.m. ET), or sign in on VA.gov and open your appointments (va.gov/my-health/appointments), which lists the facility for each visit.";

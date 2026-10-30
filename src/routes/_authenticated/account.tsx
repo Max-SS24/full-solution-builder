@@ -24,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/account")({
 const LABELS: Record<string, string> = {
   location: "📍 Location", distance_miles: "📏 Distance (mi)", care_format: "📡 Format", care_type: "🗂️ Care type",
   need: "🩺 Need", payment: "💳 Payment", va_vs_community: "🏥 VA / community",
+  va_applied: "📝 Applied for VA care", va_registered: "🪪 Registered VA patient", va_facility: "🏥 VA facility",
 };
 
 function Account() {
@@ -63,7 +64,17 @@ function Account() {
           ) : (
             <div className="mt-4 flex flex-wrap gap-2">
               {entries.map(([k, v]) => (
-                <span key={k} className="max-w-full break-words rounded-full border-2 border-ink bg-soft px-3 py-1 text-sm font-bold">{LABELS[k] ?? k}: {String(v)}</span>
+                <span key={k} className="inline-flex max-w-full items-center gap-2 break-words rounded-full border-2 border-ink bg-soft py-1 pl-3 pr-1 text-sm font-bold">
+                  {LABELS[k] ?? k}: {String(v)}
+                  <button
+                    aria-label={`Remove ${LABELS[k] ?? k}`}
+                    onClick={async () => {
+                      const { [k]: _gone, ...rest } = prefs ?? {};
+                      try { await savePrefs(rest); toast.success("Preference removed"); } catch { toast.error("Couldn't remove that preference."); }
+                    }}
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-ink bg-paper text-xs"
+                  >✕</button>
+                </span>
               ))}
             </div>
           )}

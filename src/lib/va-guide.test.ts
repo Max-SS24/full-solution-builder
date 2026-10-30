@@ -23,3 +23,29 @@ describe("VA guide citations", () => {
     for (const s of VA_GUIDE) expect(s.checked).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
+
+import { guideFor, vaStageOf } from "./va-guide";
+describe("VA guide by stage", () => {
+  it("not applied includes the application step", () => {
+    expect(guideFor("not_applied").some((s) => s.title.includes("10-10EZ"))).toBe(true);
+  });
+  it("applied skips applying and shows the welcome-call step", () => {
+    const g = guideFor("applied");
+    expect(g.some((s) => s.title.includes("10-10EZ"))).toBe(false);
+    expect(g.some((s) => s.title.includes("welcome call"))).toBe(true);
+  });
+  it("registered skips application steps and asks the provider", () => {
+    const g = guideFor("registered");
+    expect(g.some((s) => s.title.includes("10-10EZ") || s.title.includes("welcome call"))).toBe(false);
+    expect(g.some((s) => s.title.includes("Ask your VA provider"))).toBe(true);
+  });
+  it("stage comes from answers", () => {
+    expect(vaStageOf("yes", "yes")).toBe("registered");
+    expect(vaStageOf("yes", "no")).toBe("applied");
+    expect(vaStageOf("no", null)).toBe("not_applied");
+  });
+  it("guide shows for VA and both, not community", () => {
+    expect(showVaGuide("both")).toBe(true);
+    expect(showVaGuide("community")).toBe(false);
+  });
+});

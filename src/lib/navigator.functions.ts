@@ -12,6 +12,9 @@ export type Variables = {
   payment: string | null;
   va_vs_community: string | null;
   urgency: string | null;
+  va_applied?: string | null;
+  va_registered?: string | null;
+  va_facility?: string | null;
 };
 
 export type CareResult = {
@@ -47,7 +50,9 @@ Extract search variables from the whole conversation. Reply ONLY with JSON:
   "care_type": "therapy"|"counseling"|"psychiatry"|"group"|"iop"|"residential"|null (use "group" for support groups/group therapy; "therapy" or "counseling" for one-on-one),
   "need": "ptsd"|"depression"|"anxiety"|"mst"|"grief"|"trauma"|"substance use"|null,
   "payment": "va"|"tricare"|"medicaid"|"medicare"|"private"|"self-pay"|null,
-  "va_vs_community": "va"|"community"|"either"|null ("va" = VA facility/Vet Center, "community" = civilian therapist or non-VA provider, ALSO use "community" whenever they say they don't want the VA, don't want to deal with the VA or government, or want to avoid VA/government care, "either" = no preference), "urgency": "routine"|"soon"|"urgent"|"crisis"|null}}`;
+  "va_vs_community": "va"|"community"|"both"|null ("va" = VA facility/Vet Center, "community" = civilian therapist or non-VA provider, ALSO use "community" whenever they say they don't want the VA, don't want to deal with the VA or government, or want to avoid VA/government care, "both" = wants to compare VA and community options or has no preference), "urgency": "routine"|"soon"|"urgent"|"crisis"|null,
+  "va_applied": "yes"|"no"|null (have they applied for VA health care), "va_registered": "yes"|"no"|"unsure"|null (registered/enrolled as a patient at a VA facility), "va_facility": string|null (name of the VA facility they're registered at, or "unknown" if they don't know)}}
+Use the LATEST message to decide va_vs_community if it changes their earlier choice. Only ask the VA questions (applied, registered, which facility) when they want VA care or both.`;
 
 const VOCAB = `
 Map everyday language to "need": depression = feeling down, empty, numb, hopeless, heavy, unmotivated, can't get out of bed, nothing matters, lost interest, dark place, burden, stuck in a rut, no purpose/mission;
@@ -122,8 +127,14 @@ function fallbackExtract(text: string): Variables {
     va_vs_community: t.includes("not the va") || t.includes("community") || t.includes("civilian") || t.includes("private therapist")
         || /don'?t want (to deal with )?(the )?va/.test(t) || /no[n -]?va/.test(t) || /avoid (the )?va/.test(t)
         || /don'?t want (to deal with )?(the )?government/.test(t) || /no[n -]?government/.test(t) || /outside (the )?va/.test(t) ? "community"
-      : t.includes("either") || t.includes("no preference") || t.includes("don't care") ? "either"
+      : /\bboth\b|either|no preference|don'?t care|compare/.test(t) ? "both"
       : /\bva\b/.test(t) || t.includes("vet center") ? "va" : null,
+    va_applied: /(haven'?t|have not|never|didn'?t|did not|not yet) (yet )?(applied|enrolled)/.test(t) ? "no"
+      : /\b(i('ve| have)?|already) (already )?(applied|enrolled)|\b(i'?m|i am) enrolled/.test(t) ? "yes" : null,
+    va_registered: /not (registered|a patient)|never been seen/.test(t) ? "no"
+      : /not sure (if|whether) i'?m registered/.test(t) ? "unsure"
+      : /(i'?m|i am|already) (registered|a patient)|registered (at|with)|my va (clinic|hospital|medical center)/.test(t) ? "yes" : null,
+    va_facility: text.match(/(?:registered|a patient|seen|go) (?:at|to) (?:the )?([A-Z][\w.'-]*(?: [A-Z0-9][\w.'-]*){0,6})/)?.[1] ?? null,
     urgency: CRISIS_RE.test(t) || HARM_OTHERS_RE.test(t) ? "crisis" : t.includes("soon") || t.includes("asap") ? "soon" : null,
   };
 }
@@ -178,10 +189,25 @@ export const navigate = createServerFn({ method: "POST" })
       aiError = e instanceof Error ? e.message : "AI unavailable";
     }
 
+    // Short answers ("yes", "no", "not sure") to the question the navigator just asked.
+    const lastUser = data.messages.filter((m) => m.role === "user").at(-1)?.content ?? "";
+    const prevBot = data.messages.at(-2)?.role === "assistant" ? data.messages.at(-2)!.content : "";
+    const yn = /^\s*(yes|yeah|yep|yup|i have|i did|i am|correct|sure)\b/i.test(lastUser) ? "yes"
+      : /^\s*(no|nope|nah|not yet|i haven'?t|i'?m not|never)\b/i.test(lastUser) ? "no"
+      : /(not sure|don'?t know|dunno|no idea|unsure)/i.test(lastUser) ? "unsure" : null;
+    if (yn && /applied for VA health care/i.test(prevBot) && !variables.va_applied) variables.va_applied = yn === "unsure" ? "no" : yn;
+    else if (yn && /registered as a patient/i.test(prevBot) && !variables.va_registered) variables.va_registered = yn;
+    else if (/which VA facility/i.test(prevBot) && !variables.va_facility) variables.va_facility = yn === "unsure" ? "unknown" : yn ? null : lastUser.trim().slice(0, 120);
+    // The newest VA / community choice wins over anything said earlier.
+    const latestChoice = fallbackExtract(lastUser).va_vs_community;
+    if (latestChoice) variables.va_vs_community = latestChoice;
+    if (variables.va_vs_community === "either") variables.va_vs_community = "both";
+    if (variables.va_registered === "yes" && !variables.va_applied) variables.va_applied = "yes";
+
     // Fill gaps with the signed-in user's saved preferences (what they said now wins).
     if (data.prefs) {
       for (const [k, val] of Object.entries(data.prefs)) {
-        if (k in variables && (variables as Record<string, unknown>)[k] == null && val != null) (variables as Record<string, unknown>)[k] = val;
+        if ((k in variables || k.startsWith("va_")) && (variables as Record<string, unknown>)[k] == null && val != null) (variables as Record<string, unknown>)[k] = val;
       }
     }
 
@@ -286,10 +312,19 @@ export const navigate = createServerFn({ method: "POST" })
         })
         .filter((x): x is { score: number; item: CareResult } => !!x && x.score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, v.va_vs_community === "va" ? 12 : 6)
+        .slice(0, v.va_vs_community === "community" ? 6 : 24)
         .map((x) => x.item);
       // VA care: nearest locations first, with the distance shown on each listing.
       if (v.va_vs_community === "va") results = sortByDistance(results).slice(0, 6);
+      if (v.va_vs_community === "both") {
+        const isVa = (r: CareResult) => r.kind.includes("VA") || r.kind === "Vet Center";
+        const vaBest = sortByDistance(results.filter(isVa)).slice(0, 3);
+        const comBest = results.filter((r) => !isVa(r)).slice(0, 6 - vaBest.length);
+        results = [...vaBest, ...comBest];
+      }
+      // Their own VA facility first, when it's in the results.
+      const fac = v.va_facility && v.va_facility !== "unknown" ? v.va_facility.toLowerCase() : null;
+      if (fac) results = [...results.filter((r) => r.name.toLowerCase().includes(fac)), ...results.filter((r) => !r.name.toLowerCase().includes(fac))];
     }
 
     if (!locationGiven) variables.location = null;
@@ -299,7 +334,12 @@ export const navigate = createServerFn({ method: "POST" })
     if (!variables.va_vs_community) missing.push("whether you'd like care through the VA or from a community provider, like a civilian therapist");
     if (!variables.care_format) missing.push("whether you'd prefer in-person, telehealth, or phone care");
     if (!variables.location) missing.push("your city and state (I'll use Atlanta, GA until you tell me otherwise)");
-    const needsMore = missing.length > 0 && !crisis;
+    const wantsVa = variables.va_vs_community === "va" || variables.va_vs_community === "both";
+    let vaQuestion: string | null = null;
+    if (wantsVa && !variables.va_applied) vaQuestion = "Have you already applied for VA health care?";
+    else if (wantsVa && variables.va_applied === "yes" && !variables.va_registered) vaQuestion = "Are you registered as a patient at a VA facility (yes, no, or not sure)?";
+    else if (wantsVa && variables.va_registered === "yes" && !variables.va_facility) vaQuestion = "Which VA facility are you registered at? If you don't know, just say so and I'll show you how to find out.";
+    const needsMore = (missing.length > 0 || !!vaQuestion) && !crisis;
 
     if (!reply) {
       const last = data.messages.filter((m) => m.role === "user").at(-1)?.content ?? "";
@@ -309,14 +349,20 @@ export const navigate = createServerFn({ method: "POST" })
         ? "I'm really sorry you're dealing with this, and thank you for reaching out. That takes strength."
         : "Got it, thanks.";
       reply = needsMore
-        ? `${sympathy} To find the right fit, could you tell me ${missing.slice(0, 2).join(" and ")}?`
+        ? missing.length
+          ? `${sympathy} To find the right fit, could you tell me ${missing.slice(0, 2).join(" and ")}?`
+          : `${sympathy} ${vaQuestion}`
         : results.length
-          ? `${sympathy} Here's what I found from approved sources, each one links back so you can verify.`
+          ? `${sympathy} I found options from approved sources, each one links back so you can verify.`
           : variables.va_vs_community === "community"
             ? `${sympathy} I couldn't find a community (non-VA) option that fits yet, I've left out all VA facilities as you asked. If you'd ever reconsider, VA options can be included too.`
             : `${sympathy} I couldn't find a close match yet, could you share a bit more about what you're looking for?`;
     }
 
+    // The AI may forget the VA questions; make sure the next one is asked.
+    if (aiUsed && needsMore && !missing.length && vaQuestion && !/applied|registered|facility/i.test(reply)) reply += ` ${vaQuestion}`;
+    const { FIND_MY_FACILITY, vaStageOf } = await import("./va-guide");
+    if (wantsVa && variables.va_facility === "unknown") reply += ` ${FIND_MY_FACILITY}`;
     const danger: "self" | "others" | null = dangerOf(userText) ?? (crisis ? "self" : null);
     if (danger) {
       crisis = true;
@@ -327,18 +373,23 @@ export const navigate = createServerFn({ method: "POST" })
       reply += ` Scroll to "What matters most in a provider?" below to compare these options against what's important to you.`;
     }
 
-    const vaGuide = !needsMore && variables.va_vs_community === "va";
+    const vaGuide = !needsMore && wantsVa;
+    const vaStage = vaGuide ? vaStageOf(variables.va_applied, variables.va_registered) : null;
     if (vaGuide && !danger) {
       reply += " Below is a step-by-step guide to getting care through the VA, taken from VA.gov.";
     }
 
+    const readyToShow = !needsMore && !crisis && (results.length > 0 || vaGuide || !!state0);
     const { territoryHelp } = await import("./territory-guidance");
     const tHelp = !needsMore && !results.length && state0 ? territoryHelp(state0, variables.va_vs_community === "community") : null;
     if (tHelp && !danger) reply += ` Providers are limited in ${tHelp.area}, so below are trusted next steps that serve the area.`;
 
+    if (readyToShow && !danger) reply += "\n\nI have some options ready. Would you like to see your results now?";
     return {
       reply,
       territoryHelp: tHelp,
+      vaStage,
+      readyToShow,
       crisis,
       danger,
       vaGuide,
