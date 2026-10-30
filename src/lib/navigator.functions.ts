@@ -384,7 +384,11 @@ export const navigate = createServerFn({ method: "POST" })
     const tHelp = !needsMore && !results.length && state0 ? territoryHelp(state0, variables.va_vs_community === "community") : null;
     if (tHelp && !danger) reply += ` Providers are limited in ${tHelp.area}, so below are trusted next steps that serve the area.`;
 
-    if (readyToShow && !danger) reply += "\n\nI have some options ready. Would you like to see your results now?";
+    if (readyToShow && !danger) {
+      // Ask only one thing: drop any other intake questions from this message.
+      reply = onlyStatements(reply);
+      reply += "\n\nI have some options ready. Would you like to see your results now?";
+    }
     return {
       reply,
       territoryHelp: tHelp,
@@ -431,3 +435,9 @@ export const getProviders = createServerFn({ method: "POST" })
       .map((p) => ({ id: p.id, name: p.name, credentials: p.credentials, insurance: p.insurance, bio: p.bio, source_url: p.source_url, is_sample: p.is_sample, last_checked: p.last_checked, matches: !!pay && p.insurance.includes(pay) }))
       .sort((a, b) => Number(b.matches) - Number(a.matches));
   });
+
+/** Removes question sentences so the "ready to see results?" prompt stands alone. */
+export function onlyStatements(text: string): string {
+  const parts = text.match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g) ?? [text];
+  return parts.filter((p) => !/\?["')\]]*\s*$/.test(p)).join("").replace(/\s+/g, " ").trim();
+}

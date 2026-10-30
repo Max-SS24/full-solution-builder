@@ -6,6 +6,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { useAccount } from "@/hooks/useAccount";
 import { useServerFn } from "@tanstack/react-start";
 import { deleteMyAccount } from "@/lib/privacy.functions";
+import { visibleQuestions } from "@/lib/questionnaire";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -85,6 +87,7 @@ function Account() {
             >Clear preferences</button>
           )}
         </section>
+        <QuizAnswers prefs={prefs ?? {}} savePrefs={savePrefs} />
         <section className="mt-8 rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[26px] sm:p-6">
           <h2 className="font-display text-xl font-bold">🔒 Data security & privacy</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink/70">
@@ -97,5 +100,54 @@ function Account() {
         </section>
       </main>
     </div>
+  );
+}
+
+function QuizAnswers({ prefs, savePrefs }: { prefs: Record<string, unknown>; savePrefs: (p: Record<string, unknown>) => Promise<unknown> }) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  async function save(k: string, v: string) {
+    const next: Record<string, unknown> = { ...prefs };
+    if (v) next[k] = v; else delete next[k];
+    // Drop VA follow-ups that no longer apply.
+    const keys = new Set(visibleQuestions(next).map((q) => q.key));
+    for (const key of ["va_applied", "va_registered", "va_facility"]) if (!keys.has(key)) delete next[key];
+    try { await savePrefs(next); toast.success("Answer updated"); } catch { toast.error("Couldn't save that answer."); }
+  }
+  return (
+    <section className="mt-8 rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[26px] sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-xl font-bold">📝 My questionnaire answers</h2>
+        <button onClick={() => setOpen(!open)} aria-expanded={open} className="rounded-full border-[3px] border-ink bg-sun px-4 py-1.5 text-sm font-bold">{open ? "Done" : "Review & edit"}</button>
+      </div>
+      <p className="mt-1 text-sm text-ink/60">Change any single answer, it saves right away. No need to retake the whole questionnaire.</p>
+      {open && (
+        <div className="mt-4 space-y-4">
+          {visibleQuestions(prefs).map((q) => {
+            const cur = prefs[q.key] == null ? "" : String(prefs[q.key]);
+            return (
+              <div key={q.key} className="rounded-[18px] border-2 border-ink bg-cream p-4">
+                <label htmlFor={`qa-${q.key}`} className="text-sm font-bold">{q.label}</label>
+                {q.options ? (
+                  <select id={`qa-${q.key}`} value={cur} onChange={(e) => save(q.key, e.target.value)}
+                    className="mt-2 w-full rounded-full border-[3px] border-ink bg-paper px-4 py-2 text-sm">
+                    <option value="">Not answered</option>
+                    {q.options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                    {cur && !q.options.some(([v]) => v === cur) && <option value={cur}>{cur}</option>}
+                  </select>
+                ) : (
+                  <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); save(q.key, (draft[q.key] ?? cur).trim()); }}>
+                    <input id={`qa-${q.key}`} value={draft[q.key] ?? cur} placeholder={q.placeholder}
+                      onChange={(e) => setDraft({ ...draft, [q.key]: e.target.value.slice(0, 120) })}
+                      className="min-w-0 flex-1 rounded-full border-[3px] border-ink bg-paper px-4 py-2 text-sm" />
+                    <button type="submit" className="shrink-0 rounded-full border-[3px] border-ink bg-mint px-4 py-2 text-sm font-bold text-paper">Save</button>
+                  </form>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
