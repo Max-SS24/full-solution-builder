@@ -64,6 +64,7 @@ function Home() {
   const [vaGuide, setVaGuide] = useState(false);
   const [vaStage, setVaStage] = useState<VaStage | null>(null);
   const [facilityUnknown, setFacilityUnknown] = useState(false);
+  const [myFacility, setMyFacility] = useState<NavOut["myFacility"]>(null);
   const [pending, setPending] = useState<NavOut | null>(null);
   const [quiz, setQuiz] = useState<Record<string, string>>({});
   useEffect(() => { try { setQuiz(JSON.parse(sessionStorage.getItem("van_quiz") ?? "{}")); } catch { /* none */ } }, []);
@@ -111,6 +112,7 @@ function Home() {
     setVaGuide(out.vaGuide);
     setVaStage((out.vaStage ?? null) as VaStage | null);
     setFacilityUnknown(!!out.facilityUnknown);
+    setMyFacility(out.myFacility ?? null);
     setVaStatus(out.vaStatus);
     setTHelp(out.territoryHelp ?? null);
     setVaCheckedAt(out.vaCheckedAt);
@@ -308,6 +310,26 @@ function Home() {
               ))}
             </div>
           </div>
+          {myFacility && (
+            <section aria-label="Your VA facility" className="mt-8 rounded-[26px] border-[3px] border-ink bg-minttint p-5 shadow-hard-lg sm:p-7">
+              <p className="text-xs font-bold uppercase tracking-wide text-ink/60">Your VA facility</p>
+              <h3 className="mt-1 font-display text-2xl font-bold">{myFacility.name}</h3>
+              {myFacility.found ? (
+                <div className="mt-2 space-y-1 text-sm">
+                  {myFacility.address && <p>📍 {myFacility.address}</p>}
+                  {myFacility.phone && <p>📞 <a className="font-semibold underline" href={`tel:${myFacility.phone}`}>{myFacility.phone}</a></p>}
+                  {myFacility.url && <p><a className="font-bold underline" href={myFacility.url} target="_blank" rel="noreferrer">Official VA.gov page ↗</a></p>}
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-ink/75">We couldn't match this name to a VA.gov listing near you, so we can't show its address or phone yet. Try the full name, or tell us the city it's in.</p>
+              )}
+              <button
+                type="button"
+                onClick={() => { setInput("My VA facility is actually "); setFocused(true); }}
+                className="mt-4 rounded-full border-[3px] border-ink bg-paper px-4 py-1.5 text-sm font-bold shadow-hard"
+              >✏️ Not my facility? Change it</button>
+            </section>
+          )}
           {vaGuide && (
             <section aria-label="VA care step-by-step guide" className="mt-8 rounded-[26px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:p-7">
               <h3 className="font-display text-2xl font-bold">🇺🇸 Your step-by-step guide to VA care</h3>
