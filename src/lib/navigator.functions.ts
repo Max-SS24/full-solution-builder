@@ -399,7 +399,7 @@ export const navigate = createServerFn({ method: "POST" })
     }
     const community = results.filter((r) => !r.kind.includes("VA") && r.kind !== "Vet Center");
     if (!conversational && !needsMore && community.length) {
-      reply += ` Scroll to "What matters most in a provider?" below to compare these options against what's important to you.`;
+      reply += ` Once you see them, the "What matters most" box below can compare them against what matters to you.`;
     }
 
     const vaGuide = !needsMore && wantsVa;
