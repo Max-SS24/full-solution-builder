@@ -14,3 +14,9 @@ describe("conversational turns", () => {
     expect(crisisReply("self")).toContain("988");
   });
 });
+import { firstQuestionOnly } from "./navigator.functions";
+describe("one question at a time", () => {
+  it("keeps only the first question in a reply", () => {
+    expect(firstQuestionOnly("Got it, Atlanta. Would a group feel better? And by video?")).toBe("Got it, Atlanta. Would a group feel better?");
+  });
+});
