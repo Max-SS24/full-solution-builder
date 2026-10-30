@@ -221,6 +221,9 @@ export const navigate = createServerFn({ method: "POST" })
     if (yn && /applied for VA health care/i.test(prevBot) && !variables.va_applied) variables.va_applied = yn === "unsure" ? "no" : yn;
     else if (yn && /(registered|enrolled) as a patient/i.test(prevBot) && !variables.va_registered) variables.va_registered = yn;
     else if (/which VA facility/i.test(prevBot) && !variables.va_facility) variables.va_facility = yn === "unsure" ? "unknown" : yn ? null : lastUser.trim().slice(0, 120);
+    // Corrections: "my facility is actually X", "that's not my facility", "wrong facility".
+    const fix = correctFacility(lastUser);
+    if (fix) variables.va_facility = fix === "ask" ? null : fix;
     // The newest VA / community choice wins over anything said earlier.
     const latestChoice = fallbackExtract(lastUser).va_vs_community;
     if (latestChoice) variables.va_vs_community = latestChoice;
@@ -349,6 +352,9 @@ export const navigate = createServerFn({ method: "POST" })
       if (v.va_facility && v.va_facility !== "unknown") {
         const own = pool.find((r) => (r.kind.includes("VA") || r.kind === "Vet Center") && facilityMatches(v.va_facility!, r.name, city));
         if (own) results = [own, ...results.filter((r) => r.id !== own.id)].slice(0, 6);
+        myFacility = own
+          ? { name: own.name, address: addressOf(own.bio), phone: own.phone, url: own.source_url, found: true }
+          : { name: v.va_facility, address: null, phone: null, url: null, found: false };
       }
     }
 
@@ -367,7 +373,7 @@ export const navigate = createServerFn({ method: "POST" })
     if (wantsNow) vaQuestion = null;
     else if (wantsVa && !variables.va_applied && !asked.has("va_applied")) vaQuestion = "Have you already applied for VA health care?";
     else if (wantsVa && variables.va_applied === "yes" && !variables.va_registered && !asked.has("va_registered")) vaQuestion = "Are you registered as a patient at a VA facility (yes, no, or not sure)?";
-    else if (wantsVa && variables.va_registered === "yes" && !variables.va_facility && !asked.has("va_facility")) vaQuestion = "Which VA facility are you registered at? If you don't know, just say so and I'll show you how to find out.";
+    else if (wantsVa && variables.va_registered === "yes" && !variables.va_facility && (fix === "ask" || !asked.has("va_facility"))) vaQuestion = "Which VA facility are you registered at? If you don't know, just say so and I'll show you how to find out.";
     const needsMore = (missing.length > 0 || !!vaQuestion) && !crisis;
 
     if (!reply) {
@@ -429,6 +435,7 @@ export const navigate = createServerFn({ method: "POST" })
       territoryHelp: tHelp,
       vaStage,
       facilityUnknown: variables.va_facility === "unknown",
+      myFacility: needsMore ? null : myFacility,
       readyToShow,
       crisis,
       danger,
@@ -519,4 +526,18 @@ export function facilityMatches(said: string, name: string, city = ""): boolean 
   if (!key.length) return false;
   const have = new Set(words(name));
   return key.every((w) => have.has(w));
+}
+
+/** Street address saved at the start of a VA listing's description. */
+export function addressOf(bio?: string | null): string | null {
+  const m = bio?.match(/^(.+?\d{5}(?:-\d{4})?)\./);
+  return m ? m[1]! : null;
+}
+
+/** Detects a facility correction. Returns the new name, "ask" when they only said it's wrong, or null. */
+export function correctFacility(text: string): string | "ask" | null {
+  const named = text.match(/(?:my (?:va )?facility is (?:actually |really )?|i'?m (?:actually )?registered at |change (?:my )?(?:va )?facility to |it'?s actually |i actually go to )(?:the )?(.{3,120}?)[.!]?\s*$/i);
+  if (named) return named[1]!.trim();
+  if (/(not|isn'?t|wrong) (?:my |the right )?(?:va )?facility|wrong (?:va )?(?:clinic|hospital|facility)|that'?s not (?:where i'?m registered|my (?:clinic|hospital|facility))|change my (?:va )?facility|update my (?:va )?facility/i.test(text)) return "ask";
+  return null;
 }
