@@ -316,7 +316,12 @@ function Home() {
                     <h3 className="mt-3 font-display text-xl font-bold leading-tight">{r.name}</h3>
                   </div>
                   <div className="flex-1 space-y-2 p-5 text-sm font-medium text-ink/75">
-                    <p>📍 {r.city}, {r.state} · {r.formats.join(" & ")}</p>
+                    <p>📍 {r.city}, {r.state}{r.distance_miles != null && <strong> · {r.distance_miles.toFixed(1)} miles away</strong>} · {r.formats.join(" & ")}</p>
+                    {r.review !== undefined && r.freshness === "saved" && (
+                      <p className={`rounded-xl border-2 border-ink px-2 py-1 text-xs font-bold ${r.review ? "bg-sun" : "bg-minttint"}`}>
+                        Last verified on VA.gov: {fmtDay(r.last_checked)} · {r.review === "page_missing" ? "⚠️ VA.gov page needs review, call to confirm" : r.review === "contact_changed" ? "⚠️ Contact details recently changed on VA.gov, review" : "✅ Page and contact details verified"}
+                      </p>
+                    )}
                     <p>🩺 {r.needs.join(", ")} · {r.care_types.join(", ")}</p>
                     <p>💳 {r.payment.length ? r.payment.join(", ") : "Insurance not listed by the source"}</p>
                     {r.veteran_focus && <p>🎖️ Veteran-experienced (per source)</p>}
