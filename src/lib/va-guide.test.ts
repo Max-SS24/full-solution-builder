@@ -24,7 +24,7 @@ describe("VA guide citations", () => {
   });
 });
 
-import { guideFor, vaStageOf, showVaGuide } from "./va-guide";
+import { guideFor, vaStageOf } from "./va-guide";
 describe("VA guide by stage", () => {
   it("not applied includes the application step", () => {
     expect(guideFor("not_applied").some((s) => s.title.includes("10-10EZ"))).toBe(true);
