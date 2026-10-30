@@ -219,7 +219,7 @@ export const navigate = createServerFn({ method: "POST" })
       : /^\s*(no|nope|nah|not yet|i haven'?t|i'?m not|never)\b/i.test(lastUser) ? "no"
       : /(not sure|don'?t know|dunno|no idea|unsure)/i.test(lastUser) ? "unsure" : null;
     if (yn && /applied for VA health care/i.test(prevBot) && !variables.va_applied) variables.va_applied = yn === "unsure" ? "no" : yn;
-    else if (yn && /registered as a patient/i.test(prevBot) && !variables.va_registered) variables.va_registered = yn;
+    else if (yn && /(registered|enrolled) as a patient/i.test(prevBot) && !variables.va_registered) variables.va_registered = yn;
     else if (/which VA facility/i.test(prevBot) && !variables.va_facility) variables.va_facility = yn === "unsure" ? "unknown" : yn ? null : lastUser.trim().slice(0, 120);
     // The newest VA / community choice wins over anything said earlier.
     const latestChoice = fallbackExtract(lastUser).va_vs_community;
@@ -497,7 +497,7 @@ const TOPIC_RE: [string, RegExp][] = [
   ["care_type", /one-on-one|support group|a group/i],
   ["care_format", /in person.*(video|phone)|video.*phone/i],
   ["va_applied", /applied for VA health care/i],
-  ["va_registered", /registered as a patient/i],
+  ["va_registered", /(registered|enrolled) as a patient/i],
   ["va_facility", /which VA facility/i],
 ];
 /** Topics the navigator has already asked about in this chat. */
