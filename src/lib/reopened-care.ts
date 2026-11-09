@@ -14,7 +14,7 @@ export function officialCheckUrl(raw: string): string | null {
 }
 
 export function checkOutcome(source: "confirmed" | "unavailable" | "unconfirmed", link: ReopenCheck["link"], checkedAt: string): ReopenCheck {
-  return { status: link === "broken" ? "unavailable" : source, link, checkedAt };
+  return { status: link === "broken" ? "unavailable" : source === "confirmed" && link === "unchecked" ? "unconfirmed" : source, link, checkedAt };
 }
 
 export function applyReopenCheck(row: CareResult, check: ReopenCheck): RecheckedCareResult {

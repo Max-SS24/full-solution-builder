@@ -13,6 +13,9 @@ describe("reopened care verification", () => {
   it("does not treat an unreachable source as evidence of closure", () => {
     expect(checkOutcome("unconfirmed", "unchecked", "2026-11-09").status).toBe("unconfirmed");
   });
+  it("does not mark an option fully confirmed when its website cannot be checked", () => {
+    expect(checkOutcome("confirmed", "unchecked", "2026-11-09").status).toBe("unconfirmed");
+  });
   it("does not refresh last-verified dates for unconfirmed records", () => {
     const row = { verified: true, last_checked: "2026-10-28" } as CareResult;
     expect(applyReopenCheck(row, checkOutcome("unconfirmed", "unchecked", "2026-11-09")).last_checked).toBe("2026-10-28");
