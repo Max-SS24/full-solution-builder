@@ -9,7 +9,7 @@ it("shows distance only for in-person care with a location", () => {
 
 it("adds miles from the area center and never invents one without a position", () => {
   const origin = { lat: 33.749, lon: -84.388 };
-  const [a, b] = withDistances([{ lat: 33.760211, lon: -84.3880503 }, { lat: null, lon: null }], origin);
+  const [a, b] = withDistances<{ lat: number | null; lon: number | null; distance_miles?: number | null }>([{ lat: 33.760211, lon: -84.3880503 }, { lat: null, lon: null }], origin);
   expect(a!.distance_miles).toBe(0.8);
   expect(b!.distance_miles).toBeUndefined();
 });
