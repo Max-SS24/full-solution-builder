@@ -86,6 +86,7 @@ export type Database = {
           name: string
           needs: string[]
           phone: string | null
+          provider_website: string | null
           review_reason: string | null
           source_id: string
           state: string | null
@@ -112,6 +113,7 @@ export type Database = {
           name: string
           needs?: string[]
           phone?: string | null
+          provider_website?: string | null
           review_reason?: string | null
           source_id: string
           state?: string | null
@@ -138,6 +140,7 @@ export type Database = {
           name?: string
           needs?: string[]
           phone?: string | null
+          provider_website?: string | null
           review_reason?: string | null
           source_id?: string
           state?: string | null

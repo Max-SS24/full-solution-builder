@@ -113,6 +113,13 @@
       "when": 1793325696262,
       "tag": "0015_lock_claim_first_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794194533420,
+      "tag": "0016_community_provider_website",
+      "breakpoints": true
     }
   ]
 }
