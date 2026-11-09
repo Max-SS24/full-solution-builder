@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { ProviderMatcher } from "@/components/ProviderMatcher";
 import { VA_GUIDE_CHECKED, guideFor, type VaStage } from "@/lib/va-guide";
+import { reopenCareSearch } from "@/lib/reopened-care.functions";
+import type { RecheckedCareResult } from "@/lib/reopened-care";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -58,7 +60,10 @@ function Home() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [vars, setVars] = useState<Variables | null>(null);
-  const [results, setResults] = useState<CareResult[] | null>(null);
+  const [results, setResults] = useState<RecheckedCareResult[] | null>(null);
+  const reopenSearch = useServerFn(reopenCareSearch);
+  const [checkingSaved, setCheckingSaved] = useState(false);
+  const [savedCheckNote, setSavedCheckNote] = useState<string | null>(null);
   const [crisis, setCrisis] = useState(false);
   const [danger, setDanger] = useState<"self" | "others" | null>(null);
   const [vaGuide, setVaGuide] = useState(false);
@@ -97,15 +102,24 @@ function Home() {
   const { h } = Route.useSearch();
   useEffect(() => {
     if (!h || !user) return;
-    supabase.from("search_history").select("*").eq("id", h).maybeSingle().then(({ data }) => {
-      if (!data) return;
+    let cancelled = false;
+    setCheckingSaved(true);
+    setResults(null); setPending(null); setMyFacility(null); setVaGuide(false);
+    setSavedCheckNote(null);
+    reopenSearch({ data: { id: h } }).then((data) => {
+      if (cancelled) return;
       setMessages(data.messages as Msg[]);
       setVars(data.variables as Variables);
-      setResults(data.results as CareResult[]);
-    });
-  }, [h, user]);
+      setResults(data.results);
+      setSavedCheckNote("Saved care options checked again. Availability, insurance and appointments still need confirmation with the provider.");
+    }).catch(() => {
+      if (!cancelled) setSavedCheckNote("We couldn't check this saved chat. Please reopen it to try again; old options haven't been shown as verified.");
+    }).finally(() => { if (!cancelled) setCheckingSaved(false); });
+    return () => { cancelled = true; };
+  }, [h, user?.id, reopenSearch]);
 
   function showResults(out: NavOut) {
+    setSavedCheckNote(null);
     setResults(out.results);
     setCrisis(out.crisis);
     setDanger(out.danger);
@@ -318,6 +332,8 @@ function Home() {
               ))}
             </div>
           </div>
+          {checkingSaved && <p role="status" className="mt-4 text-sm font-semibold">Checking saved care options and their official sources…</p>}
+          {savedCheckNote && <p role="status" className="mt-4 text-sm text-ink/75">{savedCheckNote}</p>}
           {myFacility && (
             <section aria-label="Your VA facility" className="mt-8 rounded-[26px] border-[3px] border-ink bg-minttint p-5 shadow-hard-lg sm:p-7">
               <p className="text-xs font-bold uppercase tracking-wide text-ink/60">Your VA facility</p>
@@ -395,8 +411,13 @@ function Home() {
                     <h3 className="mt-3 font-display text-xl font-bold leading-tight">{r.name}</h3>
                   </div>
                   <div className="flex-1 space-y-2 p-5 text-sm font-medium text-ink/75">
+                    {r.reopenCheck && <p className={`border-2 border-ink px-3 py-2 text-xs font-bold ${r.reopenCheck.status === "confirmed" ? "bg-minttint" : "bg-sun"}`}>
+                      {r.reopenCheck.status === "confirmed" ? "Listing confirmed in its official source" : r.reopenCheck.status === "unavailable" ? "No longer available in the enabled directory, or its official page is missing. Search again for current options." : "Could not confirm this listing right now. Call before relying on it."}
+                      {" · "}{r.reopenCheck.link === "working" ? "Official link works" : r.reopenCheck.link === "broken" ? "Official link is broken" : "Link not confirmed"}
+                      {" · Checked "}{fmtDay(r.reopenCheck.checkedAt.slice(0, 10))}
+                    </p>}
                     <p>📍 {r.city}, {r.state}{r.distance_miles != null && <strong> · {r.distance_miles.toFixed(1)} miles away</strong>} · {r.formats.join(" & ")}</p>
-                    {r.review !== undefined && r.freshness === "saved" && (
+                    {!r.reopenCheck && r.review !== undefined && r.freshness === "saved" && (
                       <p className={`rounded-xl border-2 border-ink px-2 py-1 text-xs font-bold ${r.review ? "bg-sun" : "bg-minttint"}`}>
                         Last verified on VA.gov: {fmtDay(r.last_checked)} · {r.review === "page_missing" ? "⚠️ VA.gov page needs review, call to confirm" : r.review === "contact_changed" ? "⚠️ Contact details recently changed on VA.gov, review" : "✅ Page and contact details verified"}
                       </p>
@@ -424,7 +445,7 @@ function Home() {
                     </div>
                   )}
                   <div className="border-t-[3px] border-ink p-5">
-                    <a href={r.source_url} target="_blank" rel="noreferrer" className="block rounded-full bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">View original source ↗</a>
+                    {r.reopenCheck?.status === "unavailable" ? <p className="text-sm font-bold">This saved option is unavailable. Ask the chat for fresh matches.</p> : <a href={r.source_url} target="_blank" rel="noreferrer" className="block rounded-full bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">View original source ↗</a>}
                     <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[11px] font-semibold text-ink/60">
                       <dt>Verified by:</dt><dd className="text-ink">{r.source_name}</dd>
                       <dt>Last checked:</dt><dd className="text-ink">{new Date(r.last_checked + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</dd>
