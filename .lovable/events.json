@@ -34,6 +34,27 @@
         }
       }
     },
+    "project.care_replacement_viewed": {
+      "event_schema_version": 1,
+      "description": "A newly provided replacement listing enters the viewport with at least half visible; counted once per listing per replacement batch, not when merely fetched.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "option_count"
+        ],
+        "properties": {
+          "option_count": {
+            "type": "integer",
+            "const": 1
+          }
+        }
+      }
+    },
     "project.reopened_care_options_checked": {
       "event_schema_version": 1,
       "description": "A saved chat finishes rechecking its care options; counts include unavailable options. Fires once per completed reopen.",
