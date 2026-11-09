@@ -21,6 +21,7 @@ export async function validateAll() {
   const { data, error } = await supabaseAdmin.from("care_options")
     .select("id, source_id, external_id, city, state, status, website, data_sources(name, connector)")
     .in("status", ["active", "needs_review"])
+    .neq("va_vs_community", "community") // Community source and website checks run together in bounded Sunday batches.
     .not("website", "like", "https://www.va.gov/%"); // VA.gov directory rows are checked in batches by validateVaBatch
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as unknown as Row[];
