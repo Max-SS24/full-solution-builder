@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Include community homepage availability and unexpected-redirect checks in Sunday automated verification, retaining separate website and care-validity outcomes.
+- [x] Include community homepage availability and unexpected-redirect checks in Sunday automated verification, retaining separate website and care-validity outcomes.
 - [x] Check community homepages in searches and reopened chats; flag unavailable pages and unexpected redirects separately from care validity.
 - [x] Add separate community provider homepage links while preserving verification source links across live, saved, and reopened results.
 - [x] Track unavailable reopened options, replacement consent, and visible replacement listings without personal care data.
