@@ -52,8 +52,26 @@ export function WeeklyChecks() {
     const checks = all.filter((r) => r.week_start === w);
     return { week: w, checked: checks.length, unavailable: checks.filter((r) => r.homepage_status === "unavailable").length, redirects: checks.filter((r) => r.homepage_status === "unexpected_redirect").length, unconfirmed: checks.filter((r) => r.homepage_status === "unconfirmed").length };
   });
+  const exportCsv = () => {
+    const esc = (v: unknown) => { const s = String(v ?? ""); return /^[=+\-@]/.test(s) ? `"'${s.replace(/"/g, '""')}"` : `"${s.replace(/"/g, '""')}"`; };
+    const lines = [
+      [`Weekly community care check report`, `Week beginning ${week}`].map(esc).join(","),
+      "",
+      ["Trends (last 12 weeks)"].map(esc).join(","),
+      ["Week", "Providers checked", "Unavailable pages", "Unexpected redirects", "Could not check"].map(esc).join(","),
+      ...trends.map((t) => [t.week, t.checked, t.unavailable, t.redirects, t.unconfirmed].map(esc).join(",")),
+      "",
+      [`Results for week ${week}`].map(esc).join(","),
+      ["Provider", "City", "State", "Website result", "Redirects to", "Care services", "Care note", "Provider website", "Official source", "Checked"].map(esc).join(","),
+      ...rows.map((r) => [r.provider_name, r.city, r.state, labels[r.homepage_status] ?? r.homepage_status, r.redirected_to, r.care_status === "listed" ? "Services listed" : r.care_status === "inactive_registration" ? "Registration deactivated - review" : "Needs confirmation", r.care_reason, r.homepage_url, r.source_url, r.checked_at].map(esc).join(",")),
+    ];
+    const url = URL.createObjectURL(new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a"); a.href = url; a.download = `weekly-community-checks-${week}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  };
   return <section className="mt-8 min-w-0">
-    <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-display text-2xl font-bold">Weekly community care checks</h2><Button variant="outline" size="icon" title="Refresh weekly checks" aria-label="Refresh weekly checks" onClick={() => q.refetch()} disabled={q.isFetching}><RefreshCw /></Button></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-display text-2xl font-bold">Weekly community care checks</h2><div className="flex gap-2"><Button variant="outline" onClick={exportCsv} disabled={!all.length}>Export CSV</Button><Button variant="outline" size="icon" title="Refresh weekly checks" aria-label="Refresh weekly checks" onClick={() => q.refetch()} disabled={q.isFetching}><RefreshCw /></Button></div></div>
     <p className="mt-2 text-sm text-ink/70">Sunday checks · latest attempt {all[0] ? new Date(Math.max(...rows.map((r) => Date.parse(r.checked_at)))).toLocaleString() : "not yet recorded"}</p>
     {!all.length ? <p className="mt-6">No weekly reports yet. The next Sunday checks will start the history.</p> : <>
       <div className="mt-5 flex flex-wrap items-end gap-4"><label className="text-sm font-bold">Week beginning (UTC)<select className="mt-1 block rounded-md border-2 border-ink bg-paper p-2" value={week} onChange={(e) => setSelectedWeek(e.target.value)}>{weeks.map((w) => <option key={w}>{w}</option>)}</select></label><span className="text-sm">{rows.length} providers checked so far · weekly totals may grow while Sunday checks run</span></div>
