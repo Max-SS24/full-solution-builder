@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 # Architecture rules
+- Community provider homepages use a source-supplied provider_website field separate from directory source_url; safe legacy URLs are supported and missing websites are never guessed.
 - Reopened-chat analytics emit directly through the injected Lovable event global with counts and decisions only; replacement views require half the listing to enter the viewport, avoiding sensitive care data and hidden-result counts.
 - AI provider is chosen server-side only via AI_PROVIDER env (grok|openai|gemini|openrouter) in src/lib/ai/providers.server.ts — users never see or pick the model.
 - Care search reads care_resources joined to data_sources; only enabled sources are returned (RLS), so admins control retrieval by toggling sources.

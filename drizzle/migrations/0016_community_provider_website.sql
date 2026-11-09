@@ -1,0 +1,3 @@
+ALTER TABLE public.care_options ADD COLUMN provider_website text;
+COMMENT ON COLUMN public.care_options.provider_website IS 'Provider website supplied by an approved directory, separate from the verification source URL in website.';
+UPDATE public.care_options SET provider_website = website WHERE va_vs_community = 'community' AND external_id LIKE 'ft-%' AND website ~* '^https?://' AND website !~* '^https?://([^/]+\.)?(findtreatment\.gov|npiregistry\.cms\.hhs\.gov)(/|$)';
