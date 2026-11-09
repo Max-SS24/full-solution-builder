@@ -67,6 +67,8 @@ function Home() {
   const replaceCare = useServerFn(replaceSavedCare);
   const [replacementOffer, setReplacementOffer] = useState<RecheckedCareResult[]>([]);
   const [replacing, setReplacing] = useState(false);
+  const replacementViews = useRef<IntersectionObserver | null>(null);
+  useEffect(() => () => replacementViews.current?.disconnect(), []);
   const [checkingSaved, setCheckingSaved] = useState(false);
   const [savedCheckNote, setSavedCheckNote] = useState<string | null>(null);
   const [crisis, setCrisis] = useState(false);
@@ -108,6 +110,7 @@ function Home() {
   useEffect(() => {
     if (!h || !user) return;
     let cancelled = false;
+    replacementViews.current?.disconnect();
     setCheckingSaved(true);
     setResults(null); setPending(null); setMyFacility(null); setVaGuide(false);
     setSavedCheckNote(null);
@@ -115,6 +118,10 @@ function Home() {
     reopenSearch({ data: { id: h } }).then((data) => {
       if (cancelled) return;
       const unavailable = unavailableOptions(data.results);
+      window.__lovableEvents?.track?.("project.reopened_care_options_checked", {
+        checked_count: data.results.length,
+        unavailable_count: unavailable.length,
+      });
       const offer = unavailable.length ? `The saved care ${unavailable.length === 1 ? "option" : "options"} ${unavailable.map((r) => r.name).join(", ")} ${unavailable.length === 1 ? "is" : "are"} no longer available. Would you like me to find ${unavailable.length === 1 ? "a replacement option" : "replacement options"}?` : null;
       setMessages([...(data.messages as Msg[]), ...(offer ? [{ role: "assistant" as const, content: offer }] : [])]);
       setReplacementOffer(unavailable);
@@ -128,6 +135,7 @@ function Home() {
   }, [h, user?.id, reopenSearch]);
 
   function showResults(out: NavOut) {
+    replacementViews.current?.disconnect();
     setReplacementOffer([]);
     setSavedCheckNote(null);
     setResults(out.results);
@@ -150,8 +158,11 @@ function Home() {
     showResults(pending);
   }
 
-  async function findReplacements(next: Msg[] = messages) {
+  async function findReplacements(next: Msg[] = messages, method: "button" | "chat" = "button") {
     if (!h || !replacementOffer.length || replacing) return;
+    window.__lovableEvents?.track?.("project.care_replacement_consent", {
+      accepted: true, method, unavailable_count: replacementOffer.length,
+    });
     setReplacing(true);
     setBusy(true);
     try {
@@ -159,6 +170,21 @@ function Home() {
       const replaced = replacementOffer.slice(0, out.replacements.length);
       const removed = new Set(replaced.map((r) => `${r.source_name}|${r.id}`));
       setResults((current) => [...(current ?? []).filter((r) => !removed.has(`${r.source_name}|${r.id}`)), ...out.replacements]);
+      setFocused(false);
+      replacementViews.current?.disconnect();
+      if (out.replacements.length) {
+        const unseen = new Set(out.replacements.map((r) => `${r.source_name}|${r.id}`));
+        const observer = new IntersectionObserver((entries) => {
+          for (const entry of entries) {
+            const key = entry.target.getAttribute("data-care-option-key");
+            if (!entry.isIntersecting || entry.intersectionRatio < 0.5 || !key || !unseen.delete(key)) continue;
+            window.__lovableEvents?.track?.("project.care_replacement_viewed", { option_count: 1 });
+            observer.unobserve(entry.target);
+          }
+          if (!unseen.size) observer.disconnect();
+        }, { threshold: 0.5 });
+        replacementViews.current = observer;
+      }
       const reply = out.replacements.length
         ? `I've added ${out.replacements.map((r) => r.name).join(", ")} as ${out.replacements.length === 1 ? "a replacement" : "replacements"}. ${out.replacements.length < replacementOffer.length ? "I couldn't confirm a replacement for every unavailable option. " : ""}Their listings and official links were checked just now. Call to confirm appointments and insurance.`
         : "I couldn't confirm a suitable replacement with a working official link right now. Your other options are unchanged. You can tell me a different location or care preference to try a broader search.";
@@ -183,8 +209,11 @@ function Home() {
     const next = [...messages, { role: "user" as const, content: text }];
     setMessages(next);
     setInput("");
-    if (replacementOffer.length && YES_RE.test(text)) { await findReplacements(next); return; }
+    if (replacementOffer.length && YES_RE.test(text)) { await findReplacements(next, "chat"); return; }
     if (replacementOffer.length && NO_RE.test(text) && text.split(/\s+/).length <= 3) {
+      window.__lovableEvents?.track?.("project.care_replacement_consent", {
+        accepted: false, method: "chat", unavailable_count: replacementOffer.length,
+      });
       setReplacementOffer([]);
       setMessages([...next, { role: "assistant", content: "Okay, I'll leave your options as they are. The unavailable ones remain flagged." }]);
       return;
@@ -382,7 +411,12 @@ function Home() {
             <p className="mt-1 text-sm">Would you like {replacementOffer.length === 1 ? "a replacement option" : "replacement options"}?</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button disabled={busy} onClick={() => findReplacements([...messages, { role: "user", content: "Yes, find replacement options." }])}>{replacing ? "Checking replacements…" : "Yes, find replacements"}</Button>
-              <Button variant="outline" disabled={busy} onClick={() => { setReplacementOffer([]); setMessages((m) => [...m, { role: "user", content: "No, not now." }, { role: "assistant", content: "Okay, your unavailable options will stay flagged." }]); }}>Not now</Button>
+              <Button variant="outline" disabled={busy} onClick={() => {
+                window.__lovableEvents?.track?.("project.care_replacement_consent", {
+                  accepted: false, method: "button", unavailable_count: replacementOffer.length,
+                });
+                setReplacementOffer([]); setMessages((m) => [...m, { role: "user", content: "No, not now." }, { role: "assistant", content: "Okay, your unavailable options will stay flagged." }]);
+              }}>Not now</Button>
             </div>
           </div>}
           {myFacility && (
@@ -448,7 +482,7 @@ function Home() {
           {results && results.length > 0 && (
              <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {results.map((r) => (
-                <article key={r.id} className="flex flex-col rounded-[26px] border-[3px] border-ink bg-paper shadow-hard-lg">
+                <article key={r.id} ref={(element) => { if (element) replacementViews.current?.observe(element); }} data-care-option-key={`${r.source_name}|${r.id}`} className="flex flex-col rounded-[26px] border-[3px] border-ink bg-paper shadow-hard-lg">
                   <div className="border-b-[3px] border-ink p-5">
                     <div className="flex items-center justify-between gap-2">
                       <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${KIND_TINT[r.kind] ?? "bg-plumtint"}`}>{r.kind}</span>

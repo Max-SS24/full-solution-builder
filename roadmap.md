@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Track unavailable reopened options, replacement consent, and visible replacement listings without personal care data.
 - [x] Notify users about unavailable reopened options and provide checked replacements after consent.
 - [x] Check saved care options against their sources and official links whenever a chat is reopened; flag missing listings and unconfirmed websites.
 - [x] Build app in design v1 (Playful care navigator)
