@@ -1,6 +1,39 @@
 {
   "schema_version": 1,
   "events": {
+    "project.care_replacement_consent": {
+      "event_schema_version": 1,
+      "description": "A person accepts or declines a reopened-chat replacement offer using the button or chat; acceptance is counted even if the search later fails.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "accepted",
+          "method",
+          "unavailable_count"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "button",
+              "chat"
+            ]
+          },
+          "unavailable_count": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
     "project.reopened_care_options_checked": {
       "event_schema_version": 1,
       "description": "A saved chat finishes rechecking its care options; counts include unavailable options. Fires once per completed reopen.",
