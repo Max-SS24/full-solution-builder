@@ -32,7 +32,10 @@ function AuthPage() {
   const { step } = Route.useSearch();
   const [codeFor, setCodeFor] = useState<string | null>(null);
   useEffect(() => {
-    if (step === "code") supabase.auth.getUser().then(({ data }) => data.user?.email && setCodeFor(data.user.email));
+    if (step !== "code") return;
+    // Arriving from the emailed link: finish straight away; otherwise ask for the code.
+    completeMfa().then(() => nav({ to: "/" })).catch(() =>
+      supabase.auth.getUser().then(({ data }) => data.user?.email && setCodeFor(data.user.email)));
   }, [step]);
 
   const pw = checkPassword(password, email);

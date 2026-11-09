@@ -11,7 +11,7 @@ export function EmailCodeStep({ email, onVerified, onCancel, intro }: { email: s
   const [busy, setBusy] = useState(false);
 
   async function send() {
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/auth?step=code` } });
     if (error) { toast.error(error.message); return; }
     setTries(0); setWait(60);
     toast.success(`We emailed a sign-in code to ${email}.`);
