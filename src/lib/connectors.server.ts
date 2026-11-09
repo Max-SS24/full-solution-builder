@@ -3,6 +3,7 @@
 //  - NPI Registry (CMS): licensed clinicians, credentials, specialties, addresses
 // Each connector only runs when its data_sources row is enabled (admin page).
 import type { CareResult, Variables } from "./navigator.functions";
+import { providerHomepage } from "./care-links";
 
 const UA = { "User-Agent": "VA-Navigator/1.0 (capstone; https://va-navigator.lovable.app)" };
 const today = () => new Date().toISOString().slice(0, 10);
@@ -65,7 +66,8 @@ export async function findTreatment(city: string, state: string, v: Variables, s
       payment,
       veteran_focus: /veteran/i.test(svc("SG")),
       phone: row.phone ?? null,
-      source_url: row.website || "https://findtreatment.gov",
+      source_url: "https://findtreatment.gov/locator",
+      provider_website: providerHomepage(row.website),
       verified: true,
       last_checked: today(),
       source_name: sourceName,

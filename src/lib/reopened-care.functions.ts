@@ -29,7 +29,7 @@ export const replaceSavedCare = createServerFn({ method: "POST" })
     const radius = v.distance_miles ?? 50;
     const options = (rows ?? []).filter((o) => o.data_sources?.enabled).map((o) => ({
       id: o.external_id, name: o.name, kind: o.kind, city: o.city, state: o.state, formats: o.formats, needs: o.needs,
-      care_types: o.care_types, payment: o.insurance, veteran_focus: o.veteran_focus, phone: o.phone, source_url: o.website,
+      care_types: o.care_types, payment: o.insurance, veteran_focus: o.veteran_focus, phone: o.phone, source_url: o.website, provider_website: o.provider_website,
       source_name: o.data_sources?.name ?? "", verified: false, last_checked: o.last_validated, bio: o.bio,
       distance_miles: origin && o.lat != null && o.lon != null ? Math.round(milesBetween(origin, { lat: o.lat, lon: o.lon }) * 10) / 10 : null,
     } satisfies CareResult)).filter((r) => r.distance_miles != null ? r.distance_miles <= radius : r.city?.toLowerCase() === city?.toLowerCase());
@@ -53,7 +53,7 @@ export const reopenCareSearch = createServerFn({ method: "POST" })
       const option = options?.find((o) => o.external_id === saved.id && o.data_sources?.name === saved.source_name && o.data_sources.enabled);
       // History never overrides current source visibility or removal.
       if (!option || option.status === "removed") return applyReopenCheck(saved, checkOutcome("unavailable", "unchecked", new Date().toISOString()));
-      const current: CareResult = { ...saved, name: option.name, kind: option.kind, city: option.city, state: option.state, phone: option.phone, bio: option.bio, formats: option.formats, needs: option.needs, care_types: option.care_types, payment: option.insurance, veteran_focus: option.veteran_focus, source_url: option.website, last_checked: option.last_validated };
+      const current: CareResult = { ...saved, name: option.name, kind: option.kind, city: option.city, state: option.state, phone: option.phone, bio: option.bio, formats: option.formats, needs: option.needs, care_types: option.care_types, payment: option.insurance, veteran_focus: option.veteran_focus, source_url: option.website, provider_website: option.provider_website, last_checked: option.last_validated };
       return recheckCare(current, option.data_sources.connector, history.variables as unknown as Variables);
     }));
     return { messages: history.messages, variables: history.variables, results, checkedAt: new Date().toISOString() };

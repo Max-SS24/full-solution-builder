@@ -14,6 +14,8 @@ import { reopenCareSearch, replaceSavedCare } from "@/lib/reopened-care.function
 import { unavailableOptions } from "@/lib/reopened-care";
 import { Button } from "@/components/ui/button";
 import type { RecheckedCareResult } from "@/lib/reopened-care";
+import { communityHomepage } from "@/lib/care-links";
+import { isVaKind } from "@/lib/care-rules";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -530,7 +532,10 @@ function Home() {
                     </div>
                   )}
                   <div className="border-t-[3px] border-ink p-5">
-                    {r.reopenCheck?.status === "unavailable" ? <p className="text-sm font-bold">This saved option is unavailable. Ask the chat for fresh matches.</p> : <a href={r.source_url} target="_blank" rel="noreferrer" className="block rounded-full bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">View original source ↗</a>}
+                    {r.reopenCheck?.status === "unavailable" ? <p className="text-sm font-bold">This saved option is unavailable. Ask the chat for fresh matches.</p> : <div className="space-y-3">
+                      {!isVaKind(r.kind) && (communityHomepage(r) ? <a href={communityHomepage(r) ?? undefined} target="_blank" rel="noopener noreferrer" className="block rounded-full border-[3px] border-ink bg-paper px-4 py-2.5 text-center text-sm font-bold shadow-hard">Visit provider website ↗</a> : <p className="text-xs text-ink/65">Provider website not listed by the source.{r.phone ? " Call the office for its website." : ""}</p>)}
+                      <a href={r.source_name.toLowerCase().includes("findtreatment") || r.id.startsWith("ft-") ? "https://findtreatment.gov/locator" : r.source_url} target="_blank" rel="noopener noreferrer" className="block rounded-full bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">View original source ↗</a>
+                    </div>}
                     <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[11px] font-semibold text-ink/60">
                       <dt>Verified by:</dt><dd className="text-ink">{r.source_name}</dd>
                       <dt>Last checked:</dt><dd className="text-ink">{new Date(r.last_checked + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</dd>

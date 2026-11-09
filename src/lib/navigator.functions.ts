@@ -30,6 +30,7 @@ export type CareResult = {
   veteran_focus: boolean;
   phone: string | null;
   source_url: string;
+  provider_website?: string | null;
   verified: boolean;
   last_checked: string;
   source_name: string;
@@ -313,7 +314,7 @@ export const navigate = createServerFn({ method: "POST" })
         distance_miles: origin && o.lat != null && o.lon != null ? Math.round(milesBetween(origin, { lat: o.lat, lon: o.lon }) * 10) / 10 : null,
         review: o.va_vs_community === "va" ? reviewReason(o.status, o.contact_changed_at) : null,
         id: o.external_id, name: o.name, kind: o.kind, city: o.city, state: o.state, formats: o.formats, needs: o.needs,
-        care_types: o.care_types, payment: o.insurance, veteran_focus: o.veteran_focus, phone: o.phone, source_url: o.website,
+        care_types: o.care_types, payment: o.insurance, veteran_focus: o.veteran_focus, phone: o.phone, source_url: o.website, provider_website: o.provider_website,
         verified: true, last_checked: o.last_validated, source_name: (o.data_sources as { name: string } | null)?.name ?? "Saved listing", bio: o.bio, freshness: "saved" as const,
       }));
     }
