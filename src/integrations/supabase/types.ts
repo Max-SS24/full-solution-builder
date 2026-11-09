@@ -71,6 +71,8 @@ export type Database = {
       care_options: {
         Row: {
           bio: string | null
+          care_check: Json | null
+          care_checked_at: string | null
           care_types: string[]
           city: string | null
           contact_changed_at: string | null
@@ -100,6 +102,8 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
+          care_check?: Json | null
+          care_checked_at?: string | null
           care_types?: string[]
           city?: string | null
           contact_changed_at?: string | null
@@ -129,6 +133,8 @@ export type Database = {
         }
         Update: {
           bio?: string | null
+          care_check?: Json | null
+          care_checked_at?: string | null
           care_types?: string[]
           city?: string | null
           contact_changed_at?: string | null
@@ -268,6 +274,62 @@ export type Database = {
             columns: ["source_id"]
             isOneToOne: false
             referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_check_history: {
+        Row: {
+          care_option_id: string
+          care_reason: string
+          care_status: string
+          checked_at: string
+          city: string | null
+          homepage_status: string
+          homepage_url: string | null
+          id: string
+          provider_name: string
+          redirected_to: string | null
+          source_url: string
+          state: string | null
+          week_start: string
+        }
+        Insert: {
+          care_option_id: string
+          care_reason: string
+          care_status: string
+          checked_at: string
+          city?: string | null
+          homepage_status: string
+          homepage_url?: string | null
+          id?: string
+          provider_name: string
+          redirected_to?: string | null
+          source_url: string
+          state?: string | null
+          week_start: string
+        }
+        Update: {
+          care_option_id?: string
+          care_reason?: string
+          care_status?: string
+          checked_at?: string
+          city?: string | null
+          homepage_status?: string
+          homepage_url?: string | null
+          id?: string
+          provider_name?: string
+          redirected_to?: string | null
+          source_url?: string
+          state?: string | null
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_check_history_care_option_id_fkey"
+            columns: ["care_option_id"]
+            isOneToOne: false
+            referencedRelation: "care_options"
             referencedColumns: ["id"]
           },
         ]

@@ -127,6 +127,13 @@
       "when": 1794195969479,
       "tag": "0017_weekly_community_homepage_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794201175913,
+      "tag": "0018_weekly_community_care_reports",
+      "breakpoints": true
     }
   ]
 }

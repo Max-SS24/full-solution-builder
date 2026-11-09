@@ -1,5 +1,6 @@
 import { communityHomepage } from "./care-links";
 import { checkHomepage } from "./homepage-check.server";
+import { checkCommunityCare } from "./community-care-check.server";
 
 /** Each Sunday, attempt every saved community homepage once, in bounded batches.
  * Website failures never change the care listing's status or last_validated date.
@@ -10,16 +11,17 @@ export async function validateCommunityHomepageBatch(limit = 40) {
   week.setUTCDate(week.getUTCDate() - week.getUTCDay());
   week.setUTCHours(0, 0, 0, 0);
   const { data, error } = await supabaseAdmin.from("care_options")
-    .select("id, kind, website, provider_website, data_sources!inner(enabled)")
+    .select("id, external_id, name, city, state, kind, website, provider_website, data_sources!inner(enabled, name, connector)")
     .eq("va_vs_community", "community").eq("data_sources.enabled", true)
     .in("status", ["active", "needs_review"])
-    .or(`homepage_checked_at.is.null,homepage_checked_at.lt.${week.toISOString()}`)
+    .or(`homepage_checked_at.is.null,homepage_checked_at.lt.${week.toISOString()},care_checked_at.is.null,care_checked_at.lt.${week.toISOString()}`)
     .order("homepage_checked_at", { nullsFirst: true }).order("id").limit(limit);
   if (error) throw new Error(error.message);
 
   const checks = new Map<string, ReturnType<typeof checkHomepage>>();
   const counts = { homepages_checked: 0, working: 0, unavailable: 0, unexpected_redirect: 0, unconfirmed: 0, no_homepage: 0 };
-  await Promise.all((data ?? []).map(async (row) => {
+  const rows = data ?? [];
+  for (let start = 0; start < rows.length; start += 3) await Promise.all(rows.slice(start, start + 3).map(async (row) => {
     const url = communityHomepage({ ...row, source_url: row.website });
     let outcome = null;
     if (url) {
@@ -30,9 +32,20 @@ export async function validateCommunityHomepageBatch(limit = 40) {
       counts[check.status]++;
       outcome = { url, ...check };
     } else counts.no_homepage++;
+    const care = await checkCommunityCare(row);
+    const { error: historyError } = await supabaseAdmin.from("community_check_history").upsert({
+      care_option_id: row.id, week_start: week.toISOString().slice(0, 10), checked_at: care.checkedAt,
+      provider_name: row.name, city: row.city, state: row.state, homepage_url: url,
+      homepage_status: outcome?.status ?? "no_homepage", redirected_to: outcome?.redirectedTo ?? null,
+      care_status: care.status, care_reason: care.reason, source_url: row.website,
+    }, { onConflict: "care_option_id,week_start" });
+    if (historyError) throw new Error(historyError.message);
     const { error: writeError } = await supabaseAdmin.from("care_options").update({
       homepage_check: outcome,
       homepage_checked_at: outcome?.checkedAt ?? new Date().toISOString(),
+      care_check: care, care_checked_at: care.checkedAt,
+      ...(care.status === "listed" ? { last_validated: care.checkedAt.slice(0, 10) } : {}),
+      ...(care.status === "inactive_registration" ? { status: "needs_review", review_reason: "inactive_registration" } : {}),
     }).eq("id", row.id);
     if (writeError) throw new Error(writeError.message);
   }));

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
+import { WeeklyCheckAlert, WeeklyChecks } from "@/components/WeeklyChecks";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -39,7 +41,7 @@ function Admin() {
       return data;
     },
   });
-  const [tab, setTab] = useState<"analytics" | "options" | "sources" | "admins" | "ai" | "audit">("analytics");
+  const [tab, setTab] = useState<"analytics" | "weekly" | "options" | "sources" | "admins" | "ai" | "audit">("analytics");
   const [form, setForm] = useState({ name: "", url: "", category: "community", description: "" });
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["sources"] });
@@ -122,13 +124,15 @@ function Admin() {
 
         {isAdmin.data && (
           <>
+            <WeeklyCheckAlert onOpen={() => setTab("weekly")} />
             <div role="tablist" className="mt-6 flex gap-2 overflow-x-auto pb-1">
-              {([["analytics", "Analytics"], ["options", "Care options"], ["sources", "Sources"], ["admins", "Admins"], ["ai", "AI service"], ["audit", "Audit log"]] as const).map(([k, l]) => (
-                <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-                  className={`shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-bold ${tab === k ? "bg-sun shadow-hard" : "bg-paper"}`}>{l}</button>
+              {([["analytics", "Analytics"], ["weekly", "Weekly checks"], ["options", "Care options"], ["sources", "Sources"], ["admins", "Admins"], ["ai", "AI service"], ["audit", "Audit log"]] as const).map(([k, l]) => (
+                <Button variant="outline" key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+                  className={`shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-bold ${tab === k ? "bg-sun shadow-hard" : "bg-paper"}`}>{l}</Button>
               ))}
             </div>
             {tab === "analytics" && <Analytics />}
+            {tab === "weekly" && <WeeklyChecks />}
             {tab === "options" && <CareOptions />}
             {tab === "sources" && <>
              <form onSubmit={add} className="mt-8 grid min-w-0 gap-3 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:p-6 md:grid-cols-2 md:rounded-[26px]">
