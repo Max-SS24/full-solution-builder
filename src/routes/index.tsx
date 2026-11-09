@@ -534,6 +534,10 @@ function Home() {
                   <div className="border-t-[3px] border-ink p-5">
                     {r.reopenCheck?.status === "unavailable" ? <p className="text-sm font-bold">This saved option is unavailable. Ask the chat for fresh matches.</p> : <div className="space-y-3">
                       {!isVaKind(r.kind) && (communityHomepage(r) ? <a href={communityHomepage(r) ?? undefined} target="_blank" rel="noopener noreferrer" className="block rounded-full border-[3px] border-ink bg-paper px-4 py-2.5 text-center text-sm font-bold shadow-hard">Visit provider website ↗</a> : <p className="text-xs text-ink/65">Provider website not listed by the source.{r.phone ? " Call the office for its website." : ""}</p>)}
+                      {!isVaKind(r.kind) && r.homepageCheck && <p className={`rounded-lg border-2 border-ink px-3 py-2 text-xs font-semibold ${r.homepageCheck.status === "working" ? "bg-minttint" : "bg-sun"}`}>
+                        {r.homepageCheck.status === "working" ? "✓ Provider website works" : r.homepageCheck.status === "unavailable" ? "⚠ Provider website unavailable. Call the office; this does not mean care is unavailable." : r.homepageCheck.status === "unexpected_redirect" ? `⚠ Unexpected website redirect${r.homepageCheck.redirectedTo ? ` to ${r.homepageCheck.redirectedTo}` : ""}. Confirm the website with the office before using it.` : "Website could not be confirmed (it may block automated checks). Call the office to confirm."}
+                        <span className="mt-1 block">Website checked: {new Date(r.homepageCheck.checkedAt).toLocaleString()}</span>
+                      </p>}
                       <a href={r.source_name.toLowerCase().includes("findtreatment") || r.id.startsWith("ft-") ? "https://findtreatment.gov/locator" : r.source_url} target="_blank" rel="noopener noreferrer" className="block rounded-full bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">View original source ↗</a>
                     </div>}
                     <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[11px] font-semibold text-ink/60">

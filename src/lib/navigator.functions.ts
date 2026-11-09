@@ -31,6 +31,7 @@ export type CareResult = {
   phone: string | null;
   source_url: string;
   provider_website?: string | null;
+  homepageCheck?: import("./homepage-check").HomepageCheck;
   verified: boolean;
   last_checked: string;
   source_name: string;
@@ -447,6 +448,8 @@ export const navigate = createServerFn({ method: "POST" })
       reply = onlyStatements(reply);
       reply += "\n\nI have some options ready. Would you like to see your results now?";
     }
+    const { checkCommunityHomepages } = await import("./homepage-check.server");
+    const checkedResults = needsMore ? [] : await checkCommunityHomepages(results);
     return {
       reply,
       territoryHelp: tHelp,
@@ -460,7 +463,7 @@ export const navigate = createServerFn({ method: "POST" })
       vaStatus: vaGuide && !vaStatus ? ("directory" as VaStatus) : vaStatus,
       vaCheckedAt: new Date().toISOString(),
       variables,
-      results: needsMore ? [] : results,
+      results: checkedResults,
       needsMore,
       connectorError: error || liveError ? "A data source is temporarily unavailable." : null,
       aiNote: aiUsed ? null : aiError ?? `AI unavailable for ${activeProvider(aiCfg).name}; using basic matching.`,
