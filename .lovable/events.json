@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "events": {
+    "project.reopened_care_options_checked": {
+      "event_schema_version": 1,
+      "description": "A saved chat finishes rechecking its care options; counts include unavailable options. Fires once per completed reopen.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "checked_count",
+          "unavailable_count"
+        ],
+        "properties": {
+          "checked_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unavailable_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}
