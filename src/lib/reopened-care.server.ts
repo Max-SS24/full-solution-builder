@@ -8,9 +8,9 @@ async function officialPage(raw: string): Promise<{ status: number; body: string
   if (!url) return null;
   try {
     for (let hop = 0; hop < 4; hop++) {
-      const response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(8000), headers: { "User-Agent": "VA-Navigator/1.0" } });
+      const response: Response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(8000), headers: { "User-Agent": "VA-Navigator/1.0" } });
       if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get("location");
+        const location: string | null = response.headers.get("location");
         url = location ? officialCheckUrl(new URL(location, url).href) : null;
         if (!url) return null;
         continue;
