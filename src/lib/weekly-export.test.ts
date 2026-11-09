@@ -21,7 +21,7 @@ it("CSV trend rows match preview trend totals for the range", () => {
 it("CSV result rows equal preview results in the same order, excluding outside weeks", () => {
   const d = rangeData(all, "2026-10-25", "2026-11-01");
   expect(d.rows.map((r) => r.id)).toEqual([2, 3, 4, 5]);
-  const results = parse(buildCsv(d)).slice(8);
+  const results = parse(buildCsv(d)).slice(9);
   expect(results.map((r) => r[1])).toEqual(["P2", "P3", "P4", "P5"]);
 });
 
