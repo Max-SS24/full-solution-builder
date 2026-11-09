@@ -38,6 +38,11 @@ export type CareResult = {
   bio?: string | null;
   freshness?: "live" | "saved";
   distance_miles?: number | null;
+  /** Map position of the listing; geo_estimated = taken from its ZIP code center. */
+  lat?: number | null;
+  lon?: number | null;
+  zip?: string | null;
+  geo_estimated?: boolean;
   review?: "page_missing" | "contact_changed" | null;
 };
 
@@ -287,7 +292,7 @@ export const navigate = createServerFn({ method: "POST" })
 
     // Where the person is: a ZIP they typed wins, otherwise their city/state.
     const { geocode, geocodeZip } = await import("./connectors.server");
-    const { milesBetween, sortByDistance, reviewReason } = await import("./care-rules");
+    const { milesBetween, sortByDistance, reviewReason, wantsDistance, withDistances } = await import("./care-rules");
     const zip = data.messages.filter((m) => m.role === "user").map((m) => m.content.match(/\b(\d{5})(?:-\d{4})?\b/)?.[1]).filter(Boolean).at(-1);
     let origin: { lat: number; lon: number } | null = null;
     try {
@@ -316,6 +321,7 @@ export const navigate = createServerFn({ method: "POST" })
         review: o.va_vs_community === "va" ? reviewReason(o.status, o.contact_changed_at) : null,
         id: o.external_id, name: o.name, kind: o.kind, city: o.city, state: o.state, formats: o.formats, needs: o.needs,
         care_types: o.care_types, payment: o.insurance, veteran_focus: o.veteran_focus, phone: o.phone, source_url: o.website, provider_website: o.provider_website,
+        lat: o.lat, lon: o.lon, geo_estimated: o.geo_estimated,
         verified: true, last_checked: o.last_validated, source_name: (o.data_sources as { name: string } | null)?.name ?? "Saved listing", bio: o.bio, freshness: "saved" as const,
       }));
     }
@@ -365,6 +371,26 @@ export const navigate = createServerFn({ method: "POST" })
         const vaBest = sortByDistance(results.filter(isVa)).slice(0, 3);
         const comBest = results.filter((r) => !isVa(r)).slice(0, 6 - vaBest.length);
         results = [...vaBest, ...comBest];
+      }
+      // In person with a location: estimated miles from the center of their area, nearest community care first.
+      if (origin && wantsDistance(v)) {
+        const zips = [...new Set(results.filter((r) => r.lat == null && r.zip).map((r) => r.zip!))].slice(0, 6);
+        const found = new Map<string, { lat: number; lon: number }>();
+        for (const z of zips) {
+          try { const g = await geocodeZip(z); if (g) found.set(z, { lat: Number(g.lat), lon: Number(g.lon) }); } catch { /* no estimate */ }
+        }
+        const estimated: CareResult[] = [];
+        results = results.map((r) => {
+          if (r.lat == null && r.zip && found.has(r.zip)) { const p = { ...r, ...found.get(r.zip)!, geo_estimated: true }; estimated.push(p); return p; }
+          return r;
+        });
+        results = withDistances(results, origin);
+        if (estimated.length) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          await Promise.all(estimated.map((r) => supabaseAdmin.from("care_options").update({ lat: r.lat, lon: r.lon, geo_estimated: true }).eq("external_id", r.id).is("lat", null)));
+        }
+        const isVaR = (r: CareResult) => r.kind.includes("VA") || r.kind === "Vet Center";
+        results = [...results.filter(isVaR), ...sortByDistance(results.filter((r) => !isVaR(r)))];
       }
       // Their own VA facility first, matched loosely by name ("James A. Haley in Tampa").
       if (v.va_facility && v.va_facility !== "unknown") {

@@ -34,7 +34,7 @@ export async function geocodeZip(zip: string): Promise<{ lat: string; lon: strin
   return ((await r.json()) as { lat: string; lon: string }[])[0] ?? null;
 }
 
-type FtRow = { _irow: number; name1: string; name2?: string; street1?: string; city: string; state: string; zip?: string; phone?: string; website?: string; miles?: number; services?: { f2: string; f3: string }[] };
+type FtRow = { _irow: number; name1: string; name2?: string; street1?: string; city: string; state: string; zip?: string; phone?: string; website?: string; miles?: number; latitude?: string; longitude?: string; services?: { f2: string; f3: string }[] };
 
 export async function findTreatment(city: string, state: string, v: Variables, sourceName: string, pageSize = 25): Promise<CareResult[]> {
   const g = await geocode(city, state);
@@ -68,6 +68,8 @@ export async function findTreatment(city: string, state: string, v: Variables, s
       phone: row.phone ?? null,
       source_url: "https://findtreatment.gov/locator",
       provider_website: providerHomepage(row.website),
+      ...(Number.isFinite(Number(row.latitude)) && Number.isFinite(Number(row.longitude)) && row.latitude ? { lat: Number(row.latitude), lon: Number(row.longitude), geo_estimated: false } : {}),
+      zip: row.zip?.slice(0, 5) ?? null,
       verified: true,
       last_checked: today(),
       source_name: sourceName,
@@ -77,7 +79,7 @@ export async function findTreatment(city: string, state: string, v: Variables, s
 }
 
 type NpiRow = { number: string; enumeration_type: string; basic: { first_name?: string; last_name?: string; credential?: string; organization_name?: string };
-  addresses: { address_purpose: string; city: string; state: string; telephone_number?: string }[]; taxonomies: { desc: string; primary: boolean }[] };
+  addresses: { address_purpose: string; city: string; state: string; postal_code?: string; telephone_number?: string }[]; taxonomies: { desc: string; primary: boolean }[] };
 
 const NPI_TAX: Record<string, string> = { therapy: "counselor", counseling: "counselor", psychiatry: "psychiatry", group: "psychologist" };
 
@@ -106,6 +108,7 @@ export async function npiClinicians(city: string, state: string, v: Variables, s
       payment: [],
       veteran_focus: false,
       phone: loc?.telephone_number ?? null,
+      zip: loc?.postal_code?.slice(0, 5) ?? null,
       source_url: `https://npiregistry.cms.hhs.gov/provider-view/${p.number}`,
       verified: true,
       last_checked: today(),

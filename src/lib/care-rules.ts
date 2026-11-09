@@ -25,6 +25,7 @@ export type CareOptionRow = {
   source_id: string; external_id: string; name: string; kind: string; city: string | null; state: string | null;
   va_vs_community: "va" | "community"; insurance: string[]; formats: string[]; needs: string[]; care_types: string[];
   veteran_focus: boolean; phone: string | null; website: string; provider_website: string | null; bio: string | null;
+  lat?: number; lon?: number; geo_estimated?: boolean;
 };
 
 export function toOptionRow(r: CareResult, sourceId: string): CareOptionRow {
@@ -32,7 +33,18 @@ export function toOptionRow(r: CareResult, sourceId: string): CareOptionRow {
     source_id: sourceId, external_id: r.id, name: r.name, kind: r.kind, city: r.city, state: r.state,
     va_vs_community: isVaKind(r.kind) ? "va" : "community", insurance: r.payment, formats: r.formats, needs: r.needs,
     care_types: r.care_types, veteran_focus: r.veteran_focus, phone: r.phone, website: r.source_url, provider_website: communityHomepage(r), bio: r.bio ?? null,
+    ...(r.lat != null && r.lon != null ? { lat: r.lat, lon: r.lon, geo_estimated: !!r.geo_estimated } : {}),
   };
+}
+
+/** Distances are shown for in-person care when the person gave a location. */
+export function wantsDistance(v: { location: string | null; care_format: string | null }): boolean {
+  return !!v.location && v.care_format === "in-person";
+}
+
+/** Adds rounded straight-line miles from the origin to every listing that has a map position. */
+export function withDistances<T extends { lat?: number | null; lon?: number | null; distance_miles?: number | null }>(rows: T[], origin: { lat: number; lon: number }): T[] {
+  return rows.map((r) => r.lat != null && r.lon != null ? { ...r, distance_miles: Math.round(milesBetween(origin, { lat: r.lat, lon: r.lon }) * 10) / 10 } : r);
 }
 
 /** Straight-line miles between two points (haversine). */
