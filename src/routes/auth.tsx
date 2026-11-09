@@ -8,7 +8,7 @@ import { EmailCodeStep } from "@/components/EmailCodeStep";
 import { beginMfa, completeMfa } from "@/lib/mfa.functions";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>) => ({ step: s.step === "code" ? ("code" as const) : undefined }),
+  validateSearch: (s: Record<string, unknown>): { step?: "code" } => (s.step === "code" ? { step: "code" } : {}),
   head: () => ({
     meta: [
       { title: "Sign in | VA Navigator" },
@@ -71,7 +71,7 @@ function AuthPage() {
           <div className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[30px] sm:p-8">
             <h1 className="mb-4 font-display text-3xl font-bold">Check your email</h1>
             <EmailCodeStep email={codeFor} onVerified={async () => { await completeMfa(); nav({ to: "/" }); }}
-              onCancel={async () => { await supabase.auth.signOut(); setCodeFor(null); nav({ to: "/auth", search: { step: undefined } }); }} />
+              onCancel={async () => { await supabase.auth.signOut(); setCodeFor(null); nav({ to: "/auth", search: {} }); }} />
           </div>
         ) : (
         <form onSubmit={submit} className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[30px] sm:p-8 sm:shadow-[8px_8px_0_var(--ink)]">
