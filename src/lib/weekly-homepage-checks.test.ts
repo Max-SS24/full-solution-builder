@@ -28,13 +28,13 @@ describe("weekly community homepage verification", () => {
   it("persists working and unavailable website outcomes without changing care availability", async () => {
     const { writes } = setup([row("working", "https://working.example"), row("missing", "https://missing.example")]);
     expect(await validateCommunityHomepageBatch()).toMatchObject({ homepages_checked: 2, working: 1, unavailable: 1 });
-    expect(writes.find((w) => w.id === "missing")?.patch.homepage_check).toMatchObject({ url: "https://missing.example/", status: "unavailable" });
+    expect(writes.find((w) => w.id === "missing")?.patch["homepage_check"]).toMatchObject({ url: "https://missing.example/", status: "unavailable" });
     for (const { patch } of writes) expect(Object.keys(patch).sort()).toEqual(["homepage_check", "homepage_checked_at"]);
   });
   it("persists unexpected redirects without visiting foreign websites", async () => {
     const { writes, fetcher } = setup([row("redirect", "https://redirect.example")]);
     expect(await validateCommunityHomepageBatch()).toMatchObject({ unexpected_redirect: 1 });
-    expect(writes[0]?.patch.homepage_check).toMatchObject({ status: "unexpected_redirect", redirectedTo: "foreign.example" });
+    expect(writes[0]?.patch["homepage_check"]).toMatchObject({ status: "unexpected_redirect", redirectedTo: "foreign.example" });
     expect(fetcher.mock.calls.some(([url]) => String(url).startsWith("https://foreign.example"))).toBe(false);
   });
   it("uses Sunday boundaries, enabled sources, active/review rows and bounded batches", async () => {
@@ -53,6 +53,6 @@ describe("weekly community homepage verification", () => {
     const { fetcher, writes } = setup([row("none", null), row("a", "https://working.example"), row("b", "https://working.example")]);
     expect(await validateCommunityHomepageBatch()).toMatchObject({ processed: 3, no_homepage: 1, working: 2 });
     expect(fetcher).toHaveBeenCalledTimes(2); // One DNS lookup and one homepage request.
-    expect(writes.find((w) => w.id === "none")?.patch.homepage_check).toBeNull();
+    expect(writes.find((w) => w.id === "none")?.patch["homepage_check"]).toBeNull();
   });
 });
