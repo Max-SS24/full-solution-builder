@@ -184,12 +184,6 @@ function Home() {
           if (!unseen.size) observer.disconnect();
         }, { threshold: 0.5 });
         replacementViews.current = observer;
-        requestAnimationFrame(() => {
-          if (replacementViews.current !== observer) return;
-          document.querySelectorAll("[data-care-option-key]").forEach((element) => {
-            if (unseen.has(element.getAttribute("data-care-option-key") ?? "")) observer.observe(element);
-          });
-        });
       }
       const reply = out.replacements.length
         ? `I've added ${out.replacements.map((r) => r.name).join(", ")} as ${out.replacements.length === 1 ? "a replacement" : "replacements"}. ${out.replacements.length < replacementOffer.length ? "I couldn't confirm a replacement for every unavailable option. " : ""}Their listings and official links were checked just now. Call to confirm appointments and insurance.`
@@ -488,7 +482,7 @@ function Home() {
           {results && results.length > 0 && (
              <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {results.map((r) => (
-                <article key={r.id} data-care-option-key={`${r.source_name}|${r.id}`} className="flex flex-col rounded-[26px] border-[3px] border-ink bg-paper shadow-hard-lg">
+                <article key={r.id} ref={(element) => { if (element) replacementViews.current?.observe(element); }} data-care-option-key={`${r.source_name}|${r.id}`} className="flex flex-col rounded-[26px] border-[3px] border-ink bg-paper shadow-hard-lg">
                   <div className="border-b-[3px] border-ink p-5">
                     <div className="flex items-center justify-between gap-2">
                       <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${KIND_TINT[r.kind] ?? "bg-plumtint"}`}>{r.kind}</span>
