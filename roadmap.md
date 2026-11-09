@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Check saved care options against their sources and links whenever a chat is reopened; show verification outcomes.
 - [x] Build app in design v1 (Playful care navigator)
 - [x] Backend-only swappable AI provider (Grok default)
 - [x] Admin login + manage authorized data sources
