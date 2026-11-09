@@ -7,7 +7,9 @@ import { useAccount, type Prefs } from "@/hooks/useAccount";
 import { useServerFn } from "@tanstack/react-start";
 import { deleteMyAccount } from "@/lib/privacy.functions";
 import { visibleQuestions } from "@/lib/questionnaire";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { EmailCodeStep } from "@/components/EmailCodeStep";
+import { mfaStatus, setEmailMfa } from "@/lib/mfa.functions";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -58,6 +60,7 @@ function Account() {
           <button onClick={signOut} className="shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Sign out</button>
         </div>
         <p className="mt-2 break-all text-sm text-ink/60">{user?.email}</p>
+        {user?.email && <SignInSecurity email={user.email} />}
         <section className="mt-8 rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[26px] sm:p-6">
           <h2 className="font-display text-xl font-bold">Saved preferences</h2>
           <p className="mt-1 text-sm text-ink/60">These fill in automatically on your next search. Anything you say in the chat overrides them.</p>
@@ -146,6 +149,31 @@ function QuizAnswers({ prefs, savePrefs }: { prefs: Prefs; savePrefs: (p: Prefs)
               </div>
             );
           })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function SignInSecurity({ email }: { email: string }) {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [confirmOff, setConfirmOff] = useState(false);
+  useEffect(() => { mfaStatus().then((s) => setEnabled(s.enabled)).catch(() => setEnabled(null)); }, []);
+  async function turnOn() {
+    try { await setEmailMfa({ data: { enabled: true } }); setEnabled(true); toast.success("Sign-in codes are on. We'll email you a code each time you log in."); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Couldn't turn on sign-in codes."); }
+  }
+  return (
+    <section className="mt-6 rounded-[22px] border-[3px] border-ink bg-paper p-5">
+      <h2 className="font-display text-xl font-bold">Sign-in security</h2>
+      <p className="mt-1 text-sm">Email me a code each time I log in: <strong>{enabled == null ? "…" : enabled ? "On" : "Off"}</strong></p>
+      {enabled === false && <button onClick={turnOn} className="mt-3 rounded-full border-[3px] border-ink bg-navy px-4 py-1.5 text-sm font-bold text-cream">Turn on sign-in codes</button>}
+      {enabled && !confirmOff && <button onClick={() => setConfirmOff(true)} className="mt-3 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Turn off sign-in codes</button>}
+      {enabled && confirmOff && (
+        <div className="mt-3">
+          <EmailCodeStep email={email} intro="To turn this off, enter the 6-digit code we just emailed you."
+            onCancel={() => setConfirmOff(false)}
+            onVerified={async () => { await setEmailMfa({ data: { enabled: false } }); setEnabled(false); setConfirmOff(false); toast.success("Sign-in codes are off."); }} />
         </div>
       )}
     </section>

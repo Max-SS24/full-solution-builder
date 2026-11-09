@@ -503,7 +503,7 @@ function Home() {
                       {" · "}{r.reopenCheck.link === "working" ? "Official link works" : r.reopenCheck.link === "broken" ? "Official link is broken" : "Link not confirmed"}
                       {" · Checked "}{fmtDay(r.reopenCheck.checkedAt.slice(0, 10))}
                     </p>}
-                    <p>📍 {r.city}, {r.state}{r.distance_miles != null && <strong> · {r.distance_miles.toFixed(1)} miles away</strong>} · {r.formats.join(" & ")}</p>
+                    <p>📍 {r.city}, {r.state}{r.distance_miles != null && <strong> · {r.geo_estimated ? "about " : ""}{r.distance_miles.toFixed(1)} miles away{r.geo_estimated ? " (est.)" : ""}</strong>} · {r.formats.join(" & ")}</p>
                     {!r.reopenCheck && r.review !== undefined && r.freshness === "saved" && (
                       <p className={`rounded-xl border-2 border-ink px-2 py-1 text-xs font-bold ${r.review ? "bg-sun" : "bg-minttint"}`}>
                         Last verified on VA.gov: {fmtDay(r.last_checked)} · {r.review === "page_missing" ? "⚠️ VA.gov page needs review, call to confirm" : r.review === "contact_changed" ? "⚠️ Contact details recently changed on VA.gov, review" : "✅ Page and contact details verified"}

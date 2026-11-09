@@ -79,6 +79,7 @@ export type Database = {
           external_id: string
           first_seen: string
           formats: string[]
+          geo_estimated: boolean
           homepage_check: Json | null
           homepage_checked_at: string | null
           id: string
@@ -110,6 +111,7 @@ export type Database = {
           external_id: string
           first_seen?: string
           formats?: string[]
+          geo_estimated?: boolean
           homepage_check?: Json | null
           homepage_checked_at?: string | null
           id?: string
@@ -141,6 +143,7 @@ export type Database = {
           external_id?: string
           first_seen?: string
           formats?: string[]
+          geo_estimated?: boolean
           homepage_check?: Json | null
           homepage_checked_at?: string | null
           id?: string
@@ -391,6 +394,42 @@ export type Database = {
         }
         Relationships: []
       }
+      mfa_proofs: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mfa_sessions: {
+        Row: {
+          cleared_at: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          cleared_at?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          cleared_at?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       search_history: {
         Row: {
           created_at: string
@@ -460,6 +499,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_security: {
+        Row: {
+          email_mfa: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          email_mfa?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          email_mfa?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -475,6 +532,7 @@ export type Database = {
         }[]
       }
       grant_admin: { Args: { _email: string }; Returns: string }
+      has_mfa_cleared: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -134,6 +134,13 @@
       "when": 1794201175913,
       "tag": "0018_weekly_community_care_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794266614841,
+      "tag": "0019_email_mfa_and_geo_estimate",
+      "breakpoints": true
     }
   ]
 }
