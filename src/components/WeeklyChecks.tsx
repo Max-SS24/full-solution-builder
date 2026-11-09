@@ -40,6 +40,8 @@ export function WeeklyChecks() {
   const q = useWeeklyChecks();
   const [selectedWeek, setSelectedWeek] = useState("");
   const [filter, setFilter] = useState("issues");
+  const [fromWeek, setFromWeek] = useState("");
+  const [toWeek, setToWeek] = useState("");
   if (q.isPending) return <p className="mt-8" role="status">Loading weekly checks…</p>;
   if (q.isError) return <div className="mt-8"><p role="alert">Weekly checks could not be loaded.</p><Button variant="outline" onClick={() => q.refetch()}>Try again</Button></div>;
   const all = q.data;
@@ -52,21 +54,26 @@ export function WeeklyChecks() {
     const checks = all.filter((r) => r.week_start === w);
     return { week: w, checked: checks.length, unavailable: checks.filter((r) => r.homepage_status === "unavailable").length, redirects: checks.filter((r) => r.homepage_status === "unexpected_redirect").length, unconfirmed: checks.filter((r) => r.homepage_status === "unconfirmed").length };
   });
+  const from = fromWeek || weeks[weeks.length - 1] || "";
+  const to = toWeek || weeks[0] || "";
+  const [lo, hi] = from <= to ? [from, to] : [to, from];
   const exportCsv = () => {
+    const rangeTrends = trends.filter((t) => t.week >= lo && t.week <= hi);
+    const rangeRows = all.filter((r) => r.week_start >= lo && r.week_start <= hi);
     const esc = (v: unknown) => { const s = String(v ?? ""); return /^[=+\-@]/.test(s) ? `"'${s.replace(/"/g, '""')}"` : `"${s.replace(/"/g, '""')}"`; };
     const lines = [
-      [`Weekly community care check report`, `Week beginning ${week}`].map(esc).join(","),
+      [`Weekly community care check report`, `Weeks beginning ${lo} to ${hi}`].map(esc).join(","),
       "",
-      ["Trends (last 12 weeks)"].map(esc).join(","),
+      ["Trends"].map(esc).join(","),
       ["Week", "Providers checked", "Unavailable pages", "Unexpected redirects", "Could not check"].map(esc).join(","),
-      ...trends.map((t) => [t.week, t.checked, t.unavailable, t.redirects, t.unconfirmed].map(esc).join(",")),
+      ...rangeTrends.map((t) => [t.week, t.checked, t.unavailable, t.redirects, t.unconfirmed].map(esc).join(",")),
       "",
-      [`Results for week ${week}`].map(esc).join(","),
-      ["Provider", "City", "State", "Website result", "Redirects to", "Care services", "Care note", "Provider website", "Official source", "Checked"].map(esc).join(","),
-      ...rows.map((r) => [r.provider_name, r.city, r.state, labels[r.homepage_status] ?? r.homepage_status, r.redirected_to, r.care_status === "listed" ? "Services listed" : r.care_status === "inactive_registration" ? "Registration deactivated - review" : "Needs confirmation", r.care_reason, r.homepage_url, r.source_url, r.checked_at].map(esc).join(",")),
+      [`Results for weeks ${lo} to ${hi}`].map(esc).join(","),
+      ["Week", "Provider", "City", "State", "Website result", "Redirects to", "Care services", "Care note", "Provider website", "Official source", "Checked"].map(esc).join(","),
+      ...rangeRows.map((r) => [r.week_start, r.provider_name, r.city, r.state, labels[r.homepage_status] ?? r.homepage_status, r.redirected_to, r.care_status === "listed" ? "Services listed" : r.care_status === "inactive_registration" ? "Registration deactivated - review" : "Needs confirmation", r.care_reason, r.homepage_url, r.source_url, r.checked_at].map(esc).join(",")),
     ];
     const url = URL.createObjectURL(new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }));
-    const a = document.createElement("a"); a.href = url; a.download = `weekly-community-checks-${week}.csv`;
+    const a = document.createElement("a"); a.href = url; a.download = `weekly-community-checks-${lo}_to_${hi}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 30000);
   };
@@ -75,6 +82,7 @@ export function WeeklyChecks() {
     <p className="mt-2 text-sm text-ink/70">Sunday checks · latest attempt {all[0] ? new Date(Math.max(...rows.map((r) => Date.parse(r.checked_at)))).toLocaleString() : "not yet recorded"}</p>
     {!all.length ? <p className="mt-6">No weekly reports yet. The next Sunday checks will start the history.</p> : <>
       <div className="mt-5 flex flex-wrap items-end gap-4"><label className="text-sm font-bold">Week beginning (UTC)<select className="mt-1 block rounded-md border-2 border-ink bg-paper p-2" value={week} onChange={(e) => setSelectedWeek(e.target.value)}>{weeks.map((w) => <option key={w}>{w}</option>)}</select></label><span className="text-sm">{rows.length} providers checked so far · weekly totals may grow while Sunday checks run</span></div>
+      <fieldset className="mt-4 flex flex-wrap items-end gap-4"><legend className="text-sm font-bold">Export date range</legend><label className="text-sm">From week<select aria-label="Export from week" className="mt-1 block rounded-md border-2 border-ink bg-paper p-2" value={from} onChange={(e) => setFromWeek(e.target.value)}>{weeks.map((w) => <option key={w}>{w}</option>)}</select></label><label className="text-sm">To week<select aria-label="Export to week" className="mt-1 block rounded-md border-2 border-ink bg-paper p-2" value={to} onChange={(e) => setToWeek(e.target.value)}>{weeks.map((w) => <option key={w}>{w}</option>)}</select></label></fieldset>
       <div className="mt-5 grid grid-cols-2 gap-4 border-y-2 border-ink py-5 sm:grid-cols-4">{[["Unavailable pages", count("unavailable")], ["Unexpected redirects", count("unexpected_redirect")], ["Could not check", count("unconfirmed")], ["Services still listed", rows.filter((r) => r.care_status === "listed").length]].map(([label, n]) => <div key={label}><p className="font-display text-3xl font-bold">{n}</p><p className="text-sm font-semibold">{label}</p></div>)}</div>
       <h3 className="mt-8 font-display text-xl font-bold">Website trends · last 12 weeks</h3>
       <div className="mt-3 h-64 w-full min-w-0 overflow-hidden"><ResponsiveContainer width="100%" height="100%"><LineChart data={trends} margin={{ top: 10, right: 15, bottom: 10, left: 0 }}><CartesianGrid stroke="var(--color-ink)" opacity={0.15} /><XAxis dataKey="week" tickFormatter={(w: string) => w.slice(5)} /><YAxis allowDecimals={false} width={35} /><Tooltip /><Line name="Unavailable pages" dataKey="unavailable" stroke="var(--color-coral)" strokeWidth={2} /><Line name="Unexpected redirects" dataKey="redirects" stroke="var(--color-mint)" strokeWidth={2} /><Line name="Could not check" dataKey="unconfirmed" stroke="var(--color-ink)" strokeWidth={2} /></LineChart></ResponsiveContainer></div>
