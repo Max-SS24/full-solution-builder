@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
+import { buildCsv, rangeData } from "@/lib/weekly-export";
 
 type Check = Tables<"community_check_history">;
 const labels: Record<string, string> = { working: "Website works", unavailable: "Page unavailable", unexpected_redirect: "Unexpected redirect", unconfirmed: "Could not check", no_homepage: "No website supplied" };
@@ -56,23 +57,10 @@ export function WeeklyChecks() {
   });
   const from = fromWeek || weeks[weeks.length - 1] || "";
   const to = toWeek || weeks[0] || "";
-  const [lo, hi] = from <= to ? [from, to] : [to, from];
-  const rangeTrends = trends.filter((t) => t.week >= lo && t.week <= hi);
-  const rangeRows = all.filter((r) => r.week_start >= lo && r.week_start <= hi);
+  const range = rangeData(all, from, to);
+  const { lo, hi, trends: rangeTrends, rows: rangeRows } = range;
   const exportCsv = () => {
-    const esc = (v: unknown) => { const s = String(v ?? ""); return /^[=+\-@]/.test(s) ? `"'${s.replace(/"/g, '""')}"` : `"${s.replace(/"/g, '""')}"`; };
-    const lines = [
-      [`Weekly community care check report`, `Weeks beginning ${lo} to ${hi}`].map(esc).join(","),
-      "",
-      ["Trends"].map(esc).join(","),
-      ["Week", "Providers checked", "Unavailable pages", "Unexpected redirects", "Could not check"].map(esc).join(","),
-      ...rangeTrends.map((t) => [t.week, t.checked, t.unavailable, t.redirects, t.unconfirmed].map(esc).join(",")),
-      "",
-      [`Results for weeks ${lo} to ${hi}`].map(esc).join(","),
-      ["Week", "Provider", "City", "State", "Website result", "Redirects to", "Care services", "Care note", "Provider website", "Official source", "Checked"].map(esc).join(","),
-      ...rangeRows.map((r) => [r.week_start, r.provider_name, r.city, r.state, labels[r.homepage_status] ?? r.homepage_status, r.redirected_to, r.care_status === "listed" ? "Services listed" : r.care_status === "inactive_registration" ? "Registration deactivated - review" : "Needs confirmation", r.care_reason, r.homepage_url, r.source_url, r.checked_at].map(esc).join(",")),
-    ];
-    const url = URL.createObjectURL(new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }));
+    const url = URL.createObjectURL(new Blob(["\uFEFF" + buildCsv(range)], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a"); a.href = url; a.download = `weekly-community-checks-${lo}_to_${hi}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 30000);
