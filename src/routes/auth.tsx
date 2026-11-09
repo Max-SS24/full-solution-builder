@@ -1,11 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { checkPassword, emailSchema } from "@/lib/password-rules";
+import { EmailCodeStep } from "@/components/EmailCodeStep";
+import { beginMfa, completeMfa } from "@/lib/mfa.functions";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (s: Record<string, unknown>) => ({ step: s.step === "code" ? ("code" as const) : undefined }),
   head: () => ({
     meta: [
       { title: "Sign in | VA Navigator" },
@@ -25,6 +28,12 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [wantMfa, setWantMfa] = useState(false);
+  const { step } = Route.useSearch();
+  const [codeFor, setCodeFor] = useState<string | null>(null);
+  useEffect(() => {
+    if (step === "code") supabase.auth.getUser().then(({ data }) => data.user?.email && setCodeFor(data.user.email));
+  }, [step]);
 
   const pw = checkPassword(password, email);
   const canSubmit = mode === "in" || pw.valid;
@@ -40,9 +49,13 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
       setBusy(false);
       if (error) { toast.error(error.message); return; }
+      try {
+        const r = await beginMfa();
+        if (r.needed) { setCodeFor(cleanEmail); return; }
+      } catch (err) { toast.error(err instanceof Error ? err.message : "Sign-in check failed."); return; }
       nav({ to: "/" });
     } else {
-      const { error } = await supabase.auth.signUp({ email: cleanEmail, password, options: { emailRedirectTo: window.location.origin } });
+      const { error } = await supabase.auth.signUp({ email: cleanEmail, password, options: { emailRedirectTo: window.location.origin, data: { email_mfa: wantMfa } } });
       setBusy(false);
       if (error) { toast.error(error.message); return; }
       toast.success("Check your email to confirm your account, then sign in.");
@@ -54,6 +67,13 @@ function AuthPage() {
     <div className="min-h-screen bg-cream">
       <SiteHeader />
       <main className="mx-auto max-w-md px-4 py-10 sm:px-6 sm:py-16">
+        {codeFor ? (
+          <div className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[30px] sm:p-8">
+            <h1 className="mb-4 font-display text-3xl font-bold">Check your email</h1>
+            <EmailCodeStep email={codeFor} onVerified={async () => { await completeMfa(); nav({ to: "/" }); }}
+              onCancel={async () => { await supabase.auth.signOut(); setCodeFor(null); nav({ to: "/auth", search: { step: undefined } }); }} />
+          </div>
+        ) : (
         <form onSubmit={submit} className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[30px] sm:p-8 sm:shadow-[8px_8px_0_var(--ink)]">
           <h1 className="font-display text-3xl font-bold">{mode === "in" ? "Sign in" : "Create your account"}</h1>
           <p className="mt-2 text-sm text-ink/60">Save your search preferences for next time. Admins sign in here too.</p>
@@ -69,6 +89,12 @@ function AuthPage() {
                 </li>
               ))}
             </ul>
+          )}
+          {mode === "up" && (
+            <label className="mt-4 flex items-start gap-2 text-sm">
+              <input type="checkbox" checked={wantMfa} onChange={(e) => setWantMfa(e.target.checked)} className="mt-1 size-4" />
+              <span>Also email me a sign-in code each time I log in (extra security)</span>
+            </label>
           )}
           <button disabled={busy || !canSubmit} className="mt-6 w-full rounded-full border-[3px] border-ink bg-navy py-3 font-bold text-cream shadow-hard disabled:opacity-60">
             {mode === "in" ? "Sign in" : "Sign up"}
@@ -86,6 +112,7 @@ function AuthPage() {
             }} className="mt-2 w-full text-sm font-semibold underline">Forgot password?</button>
           )}
         </form>
+        )}
       </main>
     </div>
   );
