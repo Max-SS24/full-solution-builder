@@ -77,6 +77,8 @@ export type Database = {
           external_id: string
           first_seen: string
           formats: string[]
+          homepage_check: Json | null
+          homepage_checked_at: string | null
           id: string
           insurance: string[]
           kind: string
@@ -104,6 +106,8 @@ export type Database = {
           external_id: string
           first_seen?: string
           formats?: string[]
+          homepage_check?: Json | null
+          homepage_checked_at?: string | null
           id?: string
           insurance?: string[]
           kind: string
@@ -131,6 +135,8 @@ export type Database = {
           external_id?: string
           first_seen?: string
           formats?: string[]
+          homepage_check?: Json | null
+          homepage_checked_at?: string | null
           id?: string
           insurance?: string[]
           kind?: string
