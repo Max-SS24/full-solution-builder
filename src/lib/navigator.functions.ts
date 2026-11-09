@@ -387,7 +387,7 @@ export const navigate = createServerFn({ method: "POST" })
         results = withDistances(results, origin);
         if (estimated.length) {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          await Promise.all(estimated.map((r) => supabaseAdmin.from("care_options").update({ lat: r.lat, lon: r.lon, geo_estimated: true }).eq("external_id", r.id).is("lat", null)));
+          await Promise.all(estimated.map((r) => supabaseAdmin.from("care_options").update({ lat: r.lat ?? null, lon: r.lon ?? null, geo_estimated: true }).eq("external_id", r.id).is("lat", null)));
         }
         const isVaR = (r: CareResult) => r.kind.includes("VA") || r.kind === "Vet Center";
         results = [...results.filter(isVaR), ...sortByDistance(results.filter((r) => !isVaR(r)))];

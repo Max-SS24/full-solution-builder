@@ -8,7 +8,7 @@ import { EmailCodeStep } from "@/components/EmailCodeStep";
 import { beginMfa, completeMfa } from "@/lib/mfa.functions";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>): { step?: "code" } => (s.step === "code" ? { step: "code" } : {}),
+  validateSearch: (s: Record<string, unknown>): { step?: "code" } => (s["step"] === "code" ? { step: "code" } : {}),
   head: () => ({
     meta: [
       { title: "Sign in | VA Navigator" },
