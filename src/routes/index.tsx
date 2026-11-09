@@ -10,7 +10,9 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { ProviderMatcher } from "@/components/ProviderMatcher";
 import { VA_GUIDE_CHECKED, guideFor, type VaStage } from "@/lib/va-guide";
-import { reopenCareSearch } from "@/lib/reopened-care.functions";
+import { reopenCareSearch, replaceSavedCare } from "@/lib/reopened-care.functions";
+import { unavailableOptions } from "@/lib/reopened-care";
+import { Button } from "@/components/ui/button";
 import type { RecheckedCareResult } from "@/lib/reopened-care";
 
 export const Route = createFileRoute("/")({
@@ -62,6 +64,9 @@ function Home() {
   const [vars, setVars] = useState<Variables | null>(null);
   const [results, setResults] = useState<RecheckedCareResult[] | null>(null);
   const reopenSearch = useServerFn(reopenCareSearch);
+  const replaceCare = useServerFn(replaceSavedCare);
+  const [replacementOffer, setReplacementOffer] = useState<RecheckedCareResult[]>([]);
+  const [replacing, setReplacing] = useState(false);
   const [checkingSaved, setCheckingSaved] = useState(false);
   const [savedCheckNote, setSavedCheckNote] = useState<string | null>(null);
   const [crisis, setCrisis] = useState(false);
@@ -106,9 +111,13 @@ function Home() {
     setCheckingSaved(true);
     setResults(null); setPending(null); setMyFacility(null); setVaGuide(false);
     setSavedCheckNote(null);
+    setReplacementOffer([]);
     reopenSearch({ data: { id: h } }).then((data) => {
       if (cancelled) return;
-      setMessages(data.messages as Msg[]);
+      const unavailable = unavailableOptions(data.results);
+      const offer = unavailable.length ? `The saved care ${unavailable.length === 1 ? "option" : "options"} ${unavailable.map((r) => r.name).join(", ")} ${unavailable.length === 1 ? "is" : "are"} no longer available. Would you like me to find ${unavailable.length === 1 ? "a replacement option" : "replacement options"}?` : null;
+      setMessages([...(data.messages as Msg[]), ...(offer ? [{ role: "assistant" as const, content: offer }] : [])]);
+      setReplacementOffer(unavailable);
       setVars(data.variables as Variables);
       setResults(data.results);
       setSavedCheckNote("Saved care options checked again. Availability, insurance and appointments still need confirmation with the provider.");
@@ -119,6 +128,7 @@ function Home() {
   }, [h, user?.id, reopenSearch]);
 
   function showResults(out: NavOut) {
+    setReplacementOffer([]);
     setSavedCheckNote(null);
     setResults(out.results);
     setCrisis(out.crisis);
@@ -140,13 +150,46 @@ function Home() {
     showResults(pending);
   }
 
+  async function findReplacements(next: Msg[] = messages) {
+    if (!h || !replacementOffer.length || replacing) return;
+    setReplacing(true);
+    setBusy(true);
+    try {
+      const out = await replaceCare({ data: { id: h, count: replacementOffer.length } });
+      const replaced = replacementOffer.slice(0, out.replacements.length);
+      const removed = new Set(replaced.map((r) => `${r.source_name}|${r.id}`));
+      setResults((current) => [...(current ?? []).filter((r) => !removed.has(`${r.source_name}|${r.id}`)), ...out.replacements]);
+      const reply = out.replacements.length
+        ? `I've added ${out.replacements.map((r) => r.name).join(", ")} as ${out.replacements.length === 1 ? "a replacement" : "replacements"}. ${out.replacements.length < replacementOffer.length ? "I couldn't confirm a replacement for every unavailable option. " : ""}Their listings and official links were checked just now. Call to confirm appointments and insurance.`
+        : "I couldn't confirm a suitable replacement with a working official link right now. Your other options are unchanged. You can tell me a different location or care preference to try a broader search.";
+      const updatedMessages: Msg[] = [...next, { role: "assistant", content: reply }];
+      setMessages(updatedMessages);
+      setReplacementOffer([]);
+      // Preserve the original chat; save the replacement conversation as a new history entry.
+      if (user && !privateMode && out.replacements.length) {
+        const updatedResults = [...(results ?? []).filter((r) => !removed.has(`${r.source_name}|${r.id}`)), ...out.replacements];
+        const { error } = await supabase.from("search_history").insert({ user_id: user.id, question: "Find replacement care options", reply, messages: updatedMessages, variables: vars ?? {}, results: updatedResults });
+        if (error) toast.error("Replacements are shown, but couldn't be saved to history.");
+      }
+    } catch {
+      setMessages([...next, { role: "assistant", content: "I couldn't complete the replacement check. Please try again." }]);
+    } finally { setReplacing(false); setBusy(false); }
+  }
+
   async function send(e?: React.FormEvent) {
     e?.preventDefault();
     const text = input.trim();
-    if (!text || busy) return;
+    if (!text || busy || checkingSaved) return;
     const next = [...messages, { role: "user" as const, content: text }];
     setMessages(next);
     setInput("");
+    if (replacementOffer.length && YES_RE.test(text)) { await findReplacements(next); return; }
+    if (replacementOffer.length && NO_RE.test(text) && text.split(/\s+/).length <= 3) {
+      setReplacementOffer([]);
+      setMessages([...next, { role: "assistant", content: "Okay, I'll leave your options as they are. The unavailable ones remain flagged." }]);
+      return;
+    }
+    setReplacementOffer([]);
     // Answering "Would you like to see your results now?"
     if (pending && YES_RE.test(text)) {
       setMessages([...next, { role: "assistant", content: "Here are your results. You can keep chatting anytime to change your search." }]);
@@ -334,6 +377,14 @@ function Home() {
           </div>
           {checkingSaved && <p role="status" className="mt-4 text-sm font-semibold">Checking saved care options and their official sources…</p>}
           {savedCheckNote && <p role="status" className="mt-4 text-sm text-ink/75">{savedCheckNote}</p>}
+          {!!replacementOffer.length && <div role="alert" className="mt-4 border-l-4 border-ink bg-sun p-4 text-ink">
+            <p className="font-bold">{replacementOffer.map((r) => r.name).join(", ")} {replacementOffer.length === 1 ? "is" : "are"} no longer available.</p>
+            <p className="mt-1 text-sm">Would you like {replacementOffer.length === 1 ? "a replacement option" : "replacement options"}?</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button disabled={busy} onClick={() => findReplacements([...messages, { role: "user", content: "Yes, find replacement options." }])}>{replacing ? "Checking replacements…" : "Yes, find replacements"}</Button>
+              <Button variant="outline" disabled={busy} onClick={() => { setReplacementOffer([]); setMessages((m) => [...m, { role: "user", content: "No, not now." }, { role: "assistant", content: "Okay, your unavailable options will stay flagged." }]); }}>Not now</Button>
+            </div>
+          </div>}
           {myFacility && (
             <section aria-label="Your VA facility" className="mt-8 rounded-[26px] border-[3px] border-ink bg-minttint p-5 shadow-hard-lg sm:p-7">
               <p className="text-xs font-bold uppercase tracking-wide text-ink/60">Your VA facility</p>

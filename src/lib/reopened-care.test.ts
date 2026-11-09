@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyReopenCheck, checkOutcome, officialCheckUrl } from "./reopened-care";
+import { applyReopenCheck, checkOutcome, officialCheckUrl, replacementCandidates, unavailableOptions } from "./reopened-care";
 import type { CareResult } from "./navigator.functions";
 
 describe("reopened care verification", () => {
@@ -20,5 +20,16 @@ describe("reopened care verification", () => {
     const row = { verified: true, last_checked: "2026-10-28" } as CareResult;
     expect(applyReopenCheck(row, checkOutcome("unconfirmed", "unchecked", "2026-11-09")).last_checked).toBe("2026-10-28");
     expect(applyReopenCheck(row, checkOutcome("confirmed", "working", "2026-11-09T02:00:00Z")).last_checked).toBe("2026-11-09");
+  });
+});
+
+describe("replacement options", () => {
+  const row = { id: "old", source_name: "VA", kind: "VA Clinic", needs: ["ptsd"], care_types: ["therapy"], formats: ["in-person"] } as CareResult;
+  it("offers replacements only for unavailable records, not temporary failures", () => {
+    expect(unavailableOptions([applyReopenCheck(row, checkOutcome("unavailable", "broken", "2026-11-09")), applyReopenCheck({ ...row, id: "temporary" }, checkOutcome("unconfirmed", "unchecked", "2026-11-09"))]).map((r) => r.id)).toEqual(["old"]);
+  });
+  it("excludes existing options and preserves the VA-only care preference", () => {
+    const v = { va_vs_community: "va", need: "ptsd", care_type: "therapy", care_format: "in-person" } as import("./navigator.functions").Variables;
+    expect(replacementCandidates([row, { ...row, id: "new" }, { ...row, id: "civilian", kind: "Private practice" }], [row], v).map((r) => r.id)).toEqual(["new"]);
   });
 });
