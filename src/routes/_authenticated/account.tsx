@@ -186,7 +186,8 @@ function RecoveryCodes({ email }: { email: string }) {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [codes, setCodes] = useState<string[] | null>(null);
   const [confirm, setConfirm] = useState(false);
-  useEffect(() => { recoveryStatus().then((s) => setRemaining(s.remaining)).catch(() => setRemaining(null)); }, []);
+  const [lastUsed, setLastUsed] = useState<string | null>(null);
+  useEffect(() => { recoveryStatus().then((s) => { setRemaining(s.remaining); setLastUsed(s.lastUsedAt); }).catch(() => setRemaining(null)); }, []);
   async function make() {
     try { const r = await createRecoveryCodes(); setCodes(r.codes); setRemaining(r.codes.length); setConfirm(false); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Couldn't make recovery codes."); }
@@ -200,6 +201,11 @@ function RecoveryCodes({ email }: { email: string }) {
     <div className="mt-5 border-t-2 border-ink/15 pt-4">
       <h3 className="font-bold">Recovery codes</h3>
       <p className="mt-1 text-sm">If you lose access to your email, you can sign in with one of these instead. {remaining != null && <strong>{remaining} left.</strong>}</p>
+      {lastUsed && (
+        <div role="alert" className="mt-2 rounded-xl border-2 border-ink bg-cream p-2 text-sm">
+          <strong>Security notice:</strong> a recovery code was used to sign in on {new Date(lastUsed).toLocaleString()}. If that wasn't you, change your password and make new recovery codes.
+        </div>
+      )}
       {remaining === 0 && !codes && <p className="mt-2 rounded-xl bg-cream p-2 text-sm font-semibold">You don't have recovery codes yet. Make them now so you can't get locked out.</p>}
       {codes && (
         <div className="mt-3 rounded-xl border-2 border-ink bg-cream p-3">
