@@ -11,8 +11,8 @@
 
 # Architecture rules
 - Analytics use URL-held inclusive UTC dates and admin_analytics aggregates; snapshot totals stay current. Owner/MFA-checked recovery_activity() provides personal exports; CSVs match displayed data.
-- Community homepages use source-supplied provider_website, separate from source_url; checks use public DNS and manual redirects, flag foreign domains without following, and never imply care closure.
-- Sunday community homepage checks run in bounded managed batches, persisting URL-bound outcomes and separate attempt timestamps in care_options; website failures never alter care status or source verification dates.
+- Community homepages use source-supplied provider_website (separate from source_url); checks use public DNS and manual redirects and flag foreign domains without following.
+- Sunday homepage checks run in bounded batches, storing URL-bound outcomes and attempt times in care_options; website failures never change care status or verification dates.
 - Community Sunday batches persist care-source evidence and one admin-only history row per provider/week; NPI status or directory absence never proves availability or closure; alerts derive from persisted outcomes.
 - Reopened-chat analytics use the injected Lovable event global with counts/decisions only (no care data); a replacement view needs half the listing in the viewport.
 - AI provider is chosen server-side only via AI_PROVIDER env (grok|openai|gemini|openrouter) in src/lib/ai/providers.server.ts — users never see or pick the model.
