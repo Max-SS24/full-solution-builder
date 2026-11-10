@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 # Architecture rules
-- Recovery charts use admin_analytics aggregates; full personal exports use owner/MFA-checked recovery_activity(), sharing CSV helpers to match displayed counts.
+- Analytics use URL-held inclusive UTC dates and admin_analytics aggregates; snapshot totals stay current. Owner/MFA-checked recovery_activity() provides personal exports; CSVs match displayed data.
 - Community homepages use source-supplied provider_website, separate from source_url; checks use public DNS and manual redirects, flag foreign domains without following, and never imply care closure.
 - Sunday community homepage checks run in bounded managed batches, persisting URL-bound outcomes and separate attempt timestamps in care_options; website failures never alter care status or source verification dates.
 - Community Sunday batches also persist authoritative care-source evidence and one admin-only history row per provider/week; active NPI registration or directory absence never proves care availability or closure, and weekly dashboard alerts derive from persisted outcomes.
