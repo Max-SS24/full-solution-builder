@@ -8,7 +8,7 @@ const days = [
 ];
 describe("recovery reports", () => {
   it("exports all three event types with exact UTC timestamps, without a 50-event cap", () => {
-    const events = Array.from({ length: 60 }, (_, i) => ({ kind: ["sign_in", "revoked", "regenerated"][i % 3], at: "2026-11-10T01:30:00-05:00" }));
+    const events = Array.from({ length: 60 }, (_, i) => ({ kind: i % 3 === 0 ? "sign_in" : i % 3 === 1 ? "revoked" : "regenerated", at: "2026-11-10T01:30:00-05:00" }));
     const csv = recoveryHistoryCsv(events);
     expect(csv.split("\r\n")).toHaveLength(61);
     for (const kind of ["sign_in", "revoked", "regenerated"]) expect(csv).toContain(`"${kind}","2026-11-10T06:30:00.000Z"`);

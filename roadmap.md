@@ -1,6 +1,6 @@
 # Roadmap
-- [ ] Chart recovery-code events over time in admin analytics, with CSV exports for all displayed analytics.
-- [ ] Export complete personal recovery activity with event types and timestamps; verify downloads and access controls.
+- [x] Chart recovery-code events over time in admin analytics, with CSV exports for all displayed analytics.
+- [x] Export complete personal recovery activity with event types and timestamps; verify downloads and access controls.
 - [x] Add Sunday community care source checks, dashboard-only weekly alerts, and historical website-check trends.
 - [x] Include community homepage availability and unexpected-redirect checks in Sunday automated verification, retaining separate website and care-validity outcomes.
 - [x] Check community homepages in searches and reopened chats; flag unavailable pages and unexpected redirects separately from care validity.
