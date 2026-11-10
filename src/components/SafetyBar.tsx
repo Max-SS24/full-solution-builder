@@ -27,7 +27,7 @@ export function SafetyBar() {
       <button type="button" onClick={skip} className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-full focus:bg-paper focus:px-4 focus:py-2 focus:font-bold focus:text-ink focus:shadow-hard">
         Skip to main content
       </button>
-      <aside aria-label="Veterans Crisis Line" className="border-b-[3px] border-ink bg-navy text-cream">
+      <aside aria-label="Veterans Crisis Line" className="sticky top-0 z-40 border-b-[3px] border-ink bg-navy text-cream">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 text-sm sm:px-6">
           <span className="font-bold">In crisis?</span>
           <a href={CRISIS.call.href} className="inline-flex min-h-11 items-center rounded-full bg-cream px-3 font-bold text-ink underline-offset-2 hover:underline">📞 Dial 988, press 1</a>
