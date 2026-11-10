@@ -9,7 +9,8 @@ import { deleteMyAccount } from "@/lib/privacy.functions";
 import { visibleQuestions } from "@/lib/questionnaire";
 import { useEffect, useState } from "react";
 import { EmailCodeStep } from "@/components/EmailCodeStep";
-import { createRecoveryCodes, mfaStatus, recoveryStatus, setEmailMfa } from "@/lib/mfa.functions";
+import { createRecoveryCodes, mfaStatus, recoveryStatus, revokeRecoveryCodes, setEmailMfa } from "@/lib/mfa.functions";
+import { recoveryNoticeText } from "@/lib/recovery-notice";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -185,25 +186,36 @@ function SignInSecurity({ email }: { email: string }) {
 function RecoveryCodes({ email }: { email: string }) {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [codes, setCodes] = useState<string[] | null>(null);
-  const [confirm, setConfirm] = useState(false);
+  const [confirm, setConfirm] = useState<null | "replace" | "revoke">(null);
   const [lastUsed, setLastUsed] = useState<string | null>(null);
-  useEffect(() => { recoveryStatus().then((s) => { setRemaining(s.remaining); setLastUsed(s.lastUsedAt); }).catch(() => setRemaining(null)); }, []);
+  const [needsFresh, setNeedsFresh] = useState(false);
+  useEffect(() => { recoveryStatus().then((s) => { setRemaining(s.remaining); setLastUsed(s.lastUsedAt); setNeedsFresh(s.needsFresh); }).catch(() => setRemaining(null)); }, []);
   async function make() {
-    try { const r = await createRecoveryCodes(); setCodes(r.codes); setRemaining(r.codes.length); setConfirm(false); }
+    try { const r = await createRecoveryCodes(); setCodes(r.codes); setRemaining(r.codes.length); setConfirm(null); setNeedsFresh(false); toast.success("Old recovery codes revoked. Here is your new set."); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Couldn't make recovery codes."); }
+  }
+  async function revoke() {
+    try { await revokeRecoveryCodes(); setRemaining(0); setConfirm(null); setCodes(null); toast.success("All recovery codes revoked."); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Couldn't revoke recovery codes."); }
   }
   function download() {
     if (!codes) return;
     const blob = new Blob([`Recovery codes for ${email}\nEach code works once.\n\n${codes.join("\n")}\n`], { type: "text/plain" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "recovery-codes.txt"; a.click(); URL.revokeObjectURL(a.href);
   }
+  const notice = recoveryNoticeText(lastUsed);
   return (
     <div className="mt-5 border-t-2 border-ink/15 pt-4">
       <h3 className="font-bold">Recovery codes</h3>
       <p className="mt-1 text-sm">If you lose access to your email, you can sign in with one of these instead. {remaining != null && <strong>{remaining} left.</strong>}</p>
-      {lastUsed && (
+      {notice && (
         <div role="alert" className="mt-2 rounded-xl border-2 border-ink bg-cream p-2 text-sm">
-          <strong>Security notice:</strong> a recovery code was used to sign in on {new Date(lastUsed).toLocaleString()}. If that wasn't you, change your password and make new recovery codes.
+          <strong>Security notice:</strong> {notice}
+          {needsFresh && !codes && !confirm && (
+            <div className="mt-2">
+              <button onClick={() => setConfirm("replace")} className="rounded-full border-[3px] border-ink bg-navy px-3 py-1 text-sm font-bold text-cream">Revoke old codes and make a fresh set</button>
+            </div>
+          )}
         </div>
       )}
       {remaining === 0 && !codes && <p className="mt-2 rounded-xl bg-cream p-2 text-sm font-semibold">You don't have recovery codes yet. Make them now so you can't get locked out.</p>}
@@ -218,12 +230,18 @@ function RecoveryCodes({ email }: { email: string }) {
           </div>
         </div>
       )}
-      {!codes && remaining === 0 && <button onClick={make} className="mt-3 rounded-full border-[3px] border-ink bg-navy px-4 py-1.5 text-sm font-bold text-cream">Make recovery codes</button>}
-      {!codes && !!remaining && !confirm && <button onClick={() => setConfirm(true)} className="mt-3 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Make new recovery codes</button>}
+      {!codes && remaining === 0 && !confirm && <button onClick={make} className="mt-3 rounded-full border-[3px] border-ink bg-navy px-4 py-1.5 text-sm font-bold text-cream">Make recovery codes</button>}
+      {!codes && !!remaining && !confirm && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button onClick={() => setConfirm("replace")} className="rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Make new recovery codes</button>
+          <button onClick={() => setConfirm("revoke")} className="rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Revoke all codes</button>
+        </div>
+      )}
       {confirm && (
         <div className="mt-3">
-          <EmailCodeStep email={email} intro="To make new codes, enter the 6-digit code we just emailed you. Your old recovery codes will stop working."
-            onCancel={() => setConfirm(false)} onVerified={make} />
+          <EmailCodeStep email={email}
+            intro={confirm === "revoke" ? "To revoke your recovery codes, enter the 6-digit code we just emailed you. None of your current codes will work after this." : "To make new codes, enter the 6-digit code we just emailed you. Your old recovery codes will stop working."}
+            onCancel={() => setConfirm(null)} onVerified={confirm === "revoke" ? revoke : make} />
         </div>
       )}
     </div>
