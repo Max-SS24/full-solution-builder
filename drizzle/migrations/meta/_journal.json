@@ -162,6 +162,13 @@
       "when": 1794283261733,
       "tag": "0022_recovery_activity_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794283566358,
+      "tag": "0023_analytics_date_range",
+      "breakpoints": true
     }
   ]
 }

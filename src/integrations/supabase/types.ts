@@ -588,7 +588,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      admin_analytics: { Args: never; Returns: Json }
+      admin_analytics:
+        | { Args: never; Returns: Json }
+        | { Args: { _from: string; _to: string }; Returns: Json }
       claim_first_admin: { Args: never; Returns: boolean }
       get_ai_settings: {
         Args: never

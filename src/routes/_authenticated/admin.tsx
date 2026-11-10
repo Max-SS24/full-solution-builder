@@ -8,6 +8,8 @@ import { WeeklyCheckAlert, WeeklyChecks } from "@/components/WeeklyChecks";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { RecoveryTrends } from "@/components/RecoveryActivity";
+import { AnalyticsDates } from "@/components/AnalyticsDates";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { analyticsCsv, downloadCsv, reportCsv, type AnalyticsStats } from "@/lib/activity-reports";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -22,6 +24,10 @@ export const Route = createFileRoute("/_authenticated/admin")({
     ],
   }),
   component: Admin,
+  validateSearch: (search: Record<string, unknown>): { from?: string; to?: string } => {
+    const valid = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v;
+    return { ...(valid(search["from"]) ? { from: String(search["from"]) } : {}), ...(valid(search["to"]) ? { to: String(search["to"]) } : {}) };
+  },
 });
 
 function Admin() {
@@ -223,16 +229,25 @@ function Admin() {
 }
 
 function Analytics() {
+  const search = Route.useSearch();
+  const nav = useNavigate({ from: Route.fullPath });
+  const today = new Date().toISOString().slice(0, 10);
+  const from = search.from ?? new Date(Date.parse(today) - 29 * 86400000).toISOString().slice(0, 10);
+  const to = search.to ?? today;
+  const validRange = from <= to;
   const q = useQuery({
-    queryKey: ["admin-analytics"],
+    queryKey: ["admin-analytics", from, to],
+    enabled: validRange,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_analytics");
+      const { data, error } = await supabase.rpc("admin_analytics", { _from: from, _to: to });
       if (error) throw error;
       return data as unknown as AnalyticsStats;
     },
   });
-  if (q.isLoading) return <p className="mt-8">Loading numbers…</p>;
-  if (q.error || !q.data) return <p className="mt-8 font-semibold text-coral">Couldn't load analytics.</p>;
+  const dates = <AnalyticsDates from={from} to={to} onChange={(from, to) => { void nav({ search: (prev) => ({ ...prev, from, to }) }); }} />;
+  if (!validRange) return <section className="mt-8">{dates}<p role="alert">The start date must be on or before the end date.</p></section>;
+  if (q.isLoading) return <section className="mt-8">{dates}<p role="status">Loading numbers…</p></section>;
+  if (q.error || !q.data) return <section className="mt-8">{dates}<p role="alert" className="font-semibold text-coral">Couldn't load analytics.</p><Button variant="outline" onClick={() => q.refetch()}>Try again</Button></section>;
   const d = q.data;
   const cards: [string, number, string][] = [
     ["Registered users", d.total_users, "bg-paper"],
@@ -257,7 +272,13 @@ function Analytics() {
   return (
     <section className="mt-8">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="font-display text-2xl font-bold">Analytics</h2><Button variant="outline" onClick={() => downloadCsv(analyticsCsv(d), "admin-analytics.csv")}><Download />Export summary & rankings CSV</Button></div>
-      <p className="text-sm text-ink/60">"Active" means signed in during the last 30 days. Only totals are shown, no names or emails.</p>
+      {dates}
+      <h3 className="font-display text-xl font-bold">Selected period · {from} to {to}</h3>
+      <div className="my-4 grid grid-cols-2 gap-4 border-y-2 border-ink/20 py-4"><div><p className="font-display text-3xl font-bold">{d.signups_period}</p><p className="text-sm font-semibold">Sign-ups in selected period</p></div><div><p className="font-display text-3xl font-bold">{d.searches_period}</p><p className="text-sm font-semibold">Saved searches in selected period</p></div></div>
+      <div className="h-64 min-w-0"><ResponsiveContainer width="100%" height="100%"><LineChart data={d.activity_daily ?? []}><CartesianGrid stroke="var(--color-ink)" opacity={0.15} /><XAxis dataKey="day" tickFormatter={(s: string) => s.slice(5)} minTickGap={28} /><YAxis allowDecimals={false} width={35} /><Tooltip /><Line name="Sign-ups" dataKey="signups" stroke="var(--color-mint)" strokeWidth={2} isAnimationActive={false} /><Line name="Saved searches" dataKey="searches" stroke="var(--color-ink)" strokeWidth={2} isAnimationActive={false} /></LineChart></ResponsiveContainer></div>
+      <div className="mb-6 flex gap-4 text-xs font-semibold"><span className="text-mint">● Sign-ups</span><span>● Saved searches</span></div>
+      <h3 className="font-display text-xl font-bold">Current snapshot</h3>
+      <p className="text-sm text-ink/60">Current account and care totals; not historical snapshots. "Active" means signed in during the last 30 days.</p>
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
         {cards.map(([l, n, bg]) => (
           <div key={l} className={`rounded-[18px] border-[3px] border-ink p-4 shadow-hard ${bg}`}>
