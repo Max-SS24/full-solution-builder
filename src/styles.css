@@ -111,3 +111,30 @@
   #care-card, #care-card * { visibility: visible; }
   #care-card { position: absolute; inset: 0 auto auto 0; width: 100%; border: none; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
+
+/* Display settings (see src/lib/a11y-prefs.ts). Tailwind sizes use rem, so these scale the whole app. */
+html[data-text="large"] { font-size: 112.5%; }
+html[data-text="xlarge"] { font-size: 125%; }
+html[data-contrast="high"] {
+  --cream: oklch(1 0 0);
+  --paper: oklch(1 0 0);
+  --ink: oklch(0 0 0);
+  --navy: oklch(0.2 0.09 270);
+  --sky: oklch(0.38 0.2 262);
+  --coral: oklch(0.45 0.2 30);
+  --mint: oklch(0.42 0.12 158);
+  --sun: oklch(0.88 0.18 95);
+  --soft: oklch(1 0 0);
+  --skytint: oklch(1 0 0);
+  --minttint: oklch(1 0 0);
+  --plumtint: oklch(1 0 0);
+  --muted-foreground: oklch(0 0 0);
+}
+html[data-contrast="high"] a { text-decoration: underline; }
+html[data-contrast="high"] :focus-visible { outline: 4px solid oklch(0 0 0); outline-offset: 3px; box-shadow: 0 0 0 7px oklch(0.88 0.18 95); }
+/* Faded text (text-ink/70 etc.) becomes full strength in high contrast. */
+html[data-contrast="high"] [class*="text-ink/"] { color: var(--ink) !important; }
+html[data-motion="reduce"] *, html[data-motion="reduce"] *::before, html[data-motion="reduce"] *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
