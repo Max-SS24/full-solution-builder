@@ -466,6 +466,13 @@ function Home() {
               <p className="mt-4 text-xs font-semibold text-ink/55">Source: VA.gov, checked {new Date(VA_GUIDE_CHECKED + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
             </section>
           )}
+          {results && results.length > 0 && (
+            <section aria-label="Appointment preparation" className="mt-8 rounded-[22px] border-[3px] border-ink bg-minttint p-5 shadow-hard">
+              <p className="font-display text-xl font-bold">Would you like to see how to prepare for your appointment?</p>
+              <p className="mt-1 text-sm text-ink/70">Facts from official VA.gov pages on eligibility, referrals and urgent care, checked against the live pages first.</p>
+              <Link to="/appointment-prep" search={vaStage ? { stage: vaStage } : {}} className="mt-3 inline-flex rounded-full bg-navy px-5 py-2 text-sm font-semibold text-cream shadow-hard">Yes, show me</Link>
+            </section>
+          )}
           {tHelp && (
             <section className="mt-8 rounded-2xl border-2 border-ink bg-card p-5">
               <h2 className="font-display text-xl font-bold">Next steps for {tHelp.area}</h2>
