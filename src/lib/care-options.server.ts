@@ -80,9 +80,9 @@ type VaRow = { id: string; status: string; website: string; name: string; phone:
 export function parseVaPage(html: string) {
   for (const m of html.matchAll(/<script type="application\/ld\+json">([^<]*)<\/script>/g)) {
     try {
-      const ld = JSON.parse(m[1]!) as { name?: string; telephone?: string; geo?: { latitude?: number; longitude?: number }; address?: { streetAddress?: string; addressLocality?: string; addressRegion?: string; postalCode?: string } };
+      const ld = JSON.parse(m[1]!) as { openingHoursSpecification?: unknown; name?: string; telephone?: string; geo?: { latitude?: number; longitude?: number }; address?: { streetAddress?: string; addressLocality?: string; addressRegion?: string; postalCode?: string } };
       const a = ld.address;
-      if (a?.streetAddress && a.addressLocality && a.addressRegion) return { name: ld.name?.trim(), phone: ld.telephone?.trim() || null, street: a.streetAddress.trim(), city: a.addressLocality.trim(), state: a.addressRegion.trim().toUpperCase(), zip: (a.postalCode ?? "").trim(), lat: typeof ld.geo?.latitude === "number" ? ld.geo.latitude : null, lon: typeof ld.geo?.longitude === "number" ? ld.geo.longitude : null };
+      if (a?.streetAddress && a.addressLocality && a.addressRegion) return { hours: formatHours(ld.openingHoursSpecification), name: ld.name?.trim(), phone: ld.telephone?.trim() || null, street: a.streetAddress.trim(), city: a.addressLocality.trim(), state: a.addressRegion.trim().toUpperCase(), zip: (a.postalCode ?? "").trim(), lat: typeof ld.geo?.latitude === "number" ? ld.geo.latitude : null, lon: typeof ld.geo?.longitude === "number" ? ld.geo.longitude : null };
     } catch { /* skip */ }
   }
   return null;
@@ -114,6 +114,7 @@ export async function validateVaBatch(limit = 40) {
     counts[status]++;
     const patch: import("@/integrations/supabase/types").TablesUpdate<"care_options"> = { status, updated_at: new Date().toISOString(), review_reason: status === "needs_review" ? "page_missing" : null, ...(status === "active" ? { last_validated: today } : {}) };
     if (page) {
+      patch.hours = page.hours;
       if (page.lat != null && page.lon != null && (page.lat !== r.lat || page.lon !== r.lon)) Object.assign(patch, { lat: page.lat, lon: page.lon });
       const bio = `${page.street}, ${page.city}, ${page.state} ${page.zip}. Address and phone from this facility's official VA.gov page; re-checked every Sunday.`;
       if (page.phone !== r.phone || page.city !== r.city || page.state !== r.state || bio !== r.bio || (page.name && page.name !== r.name)) {
