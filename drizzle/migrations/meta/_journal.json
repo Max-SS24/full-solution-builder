@@ -155,6 +155,13 @@
       "when": 1794279353139,
       "tag": "0021_mfa_recovery_events",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794283261733,
+      "tag": "0022_recovery_activity_reports",
+      "breakpoints": true
     }
   ]
 }
