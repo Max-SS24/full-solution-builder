@@ -143,7 +143,7 @@ export const redeemRecoveryCode = createServerFn({ method: "POST" })
 export const recoveryHistory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin.from("mfa_recovery_events").select("kind, created_at").eq("user_id", context.userId).order("created_at", { ascending: false }).limit(50);
-    return { events: (data ?? []).map((e) => ({ kind: e.kind as string, at: e.created_at as string })) };
+    const { data, error } = await context.supabase.rpc("recovery_activity");
+    if (error) throw new Error("Couldn’t load recovery activity.");
+    return { events: (data ?? []) as unknown as { kind: string; at: string }[] };
   });

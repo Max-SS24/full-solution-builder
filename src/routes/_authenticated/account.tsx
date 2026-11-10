@@ -10,7 +10,8 @@ import { visibleQuestions } from "@/lib/questionnaire";
 import { useEffect, useState } from "react";
 import { EmailCodeStep } from "@/components/EmailCodeStep";
 import { createRecoveryCodes, mfaStatus, recoveryHistory, recoveryStatus, revokeRecoveryCodes, setEmailMfa } from "@/lib/mfa.functions";
-import { recoveryEventLabel, recoveryNoticeText } from "@/lib/recovery-notice";
+import { recoveryNoticeText } from "@/lib/recovery-notice";
+import { PersonalRecoveryActivity } from "@/components/RecoveryActivity";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -179,6 +180,7 @@ function SignInSecurity({ email }: { email: string }) {
         </div>
       )}
       {enabled && <RecoveryCodes email={email} />}
+      <PersonalRecoveryActivity />
     </section>
   );
 }
@@ -190,7 +192,8 @@ function RecoveryCodes({ email }: { email: string }) {
   const [lastUsed, setLastUsed] = useState<string | null>(null);
   const [needsFresh, setNeedsFresh] = useState(false);
   const [history, setHistory] = useState<{ kind: string; at: string }[]>([]);
-  function loadHistory() { recoveryHistory().then((h) => setHistory(h.events)).catch(() => setHistory([])); }
+  const qc = useQueryClient();
+  function loadHistory() { recoveryHistory().then((h) => setHistory(h.events)).catch(() => setHistory([])); void qc.invalidateQueries({ queryKey: ["recovery-activity"] }); }
   useEffect(() => { recoveryStatus().then((s) => { setRemaining(s.remaining); setLastUsed(s.lastUsedAt); setNeedsFresh(s.needsFresh); }).catch(() => setRemaining(null)); loadHistory(); }, []);
   async function make() {
     try { const first = remaining === 0 && !history.some((e) => e.kind === "regenerated"); const r = await createRecoveryCodes(); window.__lovableEvents?.track?.("project.recovery_codes_generated", { first_set: first, after_use: needsFresh }); loadHistory(); setCodes(r.codes); setRemaining(r.codes.length); setConfirm(null); setNeedsFresh(false); toast.success("Old recovery codes revoked. Here is your new set."); }
@@ -246,19 +249,6 @@ function RecoveryCodes({ email }: { email: string }) {
             onCancel={() => setConfirm(null)} onVerified={confirm === "revoke" ? revoke : make} />
         </div>
       )}
-      <div className="mt-4">
-        <h4 className="text-sm font-bold">Recovery code activity</h4>
-        {history.length === 0 ? <p className="mt-1 text-sm">No activity yet.</p> : (
-          <ul className="mt-1 space-y-1 text-sm" aria-label="Recovery code activity">
-            {history.map((e, i) => (
-              <li key={i} className="flex flex-wrap justify-between gap-2 rounded-lg bg-cream px-2 py-1">
-                <span className="font-semibold">{recoveryEventLabel(e.kind)}</span>
-                <time dateTime={e.at}>{new Date(e.at).toLocaleString()}</time>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
     </div>
   );
 }
