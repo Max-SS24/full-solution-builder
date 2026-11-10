@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock service boundaries only: keep the real route tree, guards, layouts,
@@ -11,12 +12,15 @@ const fixtures = vi.hoisted(() => ({
   getUser: vi.fn(),
   rpc: vi.fn(),
   from: vi.fn(),
+  resetPasswordForEmail: vi.fn(),
+  reopenCareSearch: vi.fn(),
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getUser: fixtures.getUser,
+      resetPasswordForEmail: fixtures.resetPasswordForEmail,
       onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
     },
     rpc: fixtures.rpc,
@@ -34,6 +38,11 @@ vi.mock("@/lib/mfa.functions", () => ({
 
 vi.mock("@/lib/appointment-prep.functions", () => ({
   verifyPrepFacts: vi.fn(async () => ({ checks: [] })),
+}));
+
+vi.mock("@/lib/reopened-care.functions", () => ({
+  reopenCareSearch: fixtures.reopenCareSearch,
+  replaceSavedCare: vi.fn(),
 }));
 
 import { routeTree } from "@/routeTree.gen";
@@ -67,6 +76,11 @@ beforeEach(() => {
   sessionStorage.clear();
   fixtures.signedIn = true;
   fixtures.getUser.mockImplementation(async () => ({ data: { user: fixtures.signedIn ? fixtures.user : null }, error: null }));
+  fixtures.resetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
+  fixtures.reopenCareSearch.mockResolvedValue({
+    messages: [{ role: "assistant", content: "Saved test conversation restored." }],
+    variables: {}, results: [],
+  });
   fixtures.rpc.mockImplementation(async (name: string) => {
     if (name === "is_admin" || name === "claim_first_admin") return { data: true, error: null };
     if (name === "admin_analytics") return { data: {
@@ -118,6 +132,117 @@ const pages = [
   { path: "/history", id: "/_authenticated/history", title: "My search history | VA Navigator" },
   { path: "/admin", id: "/_authenticated/admin", title: "Admin | VA Navigator" },
 ] as const;
+
+type Page = (typeof pages)[number];
+
+async function expectDestination(router: Awaited<ReturnType<typeof renderAt>>, page: Page) {
+  await waitFor(() => {
+    expect(router.state.location.pathname).toBe(page.path);
+    expect(router.state.status).toBe("idle");
+    expect(router.state.matches.at(-1)?.routeId).toBe(page.id);
+    expect(router.state.matches.every((match) => match.status === "success")).toBe(true);
+    expect(document.title).toBe(page.title);
+  });
+  const main = screen.getByRole("main");
+  expect(within(main).getByRole("heading", { level: 1 })).toBeVisible();
+  expect(screen.getByRole("navigation")).toBeVisible();
+  expect(screen.getByRole("complementary", { name: "Veterans Crisis Line" })).toBeVisible();
+  if (page.path === "/admin") {
+    expect(await within(main).findByRole("button", { name: /Export summary/ })).toBeVisible();
+  }
+  if (page.path === "/account") {
+    expect(await within(main).findByRole("button", { name: "Turn on sign-in codes" })).toBeVisible();
+  }
+  if (page.path === "/history") {
+    expect(await within(main).findByRole("link", { name: "Reopen" })).toHaveAttribute("href", "/?h=smoke-history");
+  }
+  if (page.path === "/auth") expect(within(main).getByRole("textbox", { name: "Email" })).toBeVisible();
+  if (page.path === "/questionnaire") expect(within(main).getAllByRole("group").length).toBeGreaterThan(0);
+  if (page.path === "/appointment-prep") expect(await within(main).findAllByRole("note")).not.toHaveLength(0);
+  expect(main).toBeInTheDocument();
+}
+
+const navigationPages = [
+  { page: pages[3], name: "Quick questions" },
+  { page: pages[4], name: "Appointment prep" },
+  { page: pages[5], name: "Helpful links" },
+  { page: pages[6], name: "Privacy & security" },
+  { page: pages[7], name: "My account" },
+  { page: pages[8], name: "History" },
+  { page: pages[9], name: "Admin" },
+] as const;
+
+describe("Rendered link navigation", () => {
+  it("visits signed-in pages through consecutive header links without remounting the app", async () => {
+    const user = userEvent.setup();
+    const router = await renderAt("/");
+    await expectDestination(router, pages[0]);
+    for (const { page, name } of navigationPages) {
+      const link = await within(screen.getByRole("navigation")).findByRole("link", { name });
+      expect(link).toHaveAttribute("href", page.path);
+      await user.click(link);
+      await expectDestination(router, page);
+    }
+    await user.click(screen.getByRole("link", { name: /^VA Navigator/ }));
+    await expectDestination(router, pages[0]);
+  });
+
+  it("follows signed-out navigation to sign-in and back to the home page", async () => {
+    fixtures.signedIn = false;
+    const user = userEvent.setup();
+    const router = await renderAt("/security");
+    const link = await within(screen.getByRole("navigation")).findByRole("link", { name: "Sign in" });
+    expect(link).toHaveAttribute("href", "/auth");
+    await user.click(link);
+    await expectDestination(router, pages[1]);
+    await user.click(screen.getByRole("link", { name: /^VA Navigator/ }));
+    await expectDestination(router, pages[0]);
+  });
+
+  it.each([
+    { name: "My search history", page: pages[8] },
+    { name: "My account", page: pages[7] },
+  ])("follows the privacy page's $name content link", async ({ name, page }) => {
+    const user = userEvent.setup();
+    const router = await renderAt("/security");
+    const link = within(screen.getByRole("main")).getByRole("link", { name });
+    expect(link).toHaveAttribute("href", page.path);
+    await user.click(link);
+    await expectDestination(router, page);
+  });
+
+  it("reopens a saved search through its real link and preserves its history parameter", async () => {
+    const user = userEvent.setup();
+    const router = await renderAt("/history");
+    await expectDestination(router, pages[8]);
+    await user.click(within(screen.getByRole("main")).getByRole("link", { name: "Reopen" }));
+    await expectDestination(router, pages[0]);
+    expect(router.state.location.search).toMatchObject({ h: "smoke-history" });
+    await waitFor(() => expect(fixtures.reopenCareSearch).toHaveBeenCalledWith({ data: { id: "smoke-history" } }));
+    expect(await screen.findByText("Saved care options checked again. Availability, insurance and appointments still need confirmation with the provider.")).toBeVisible();
+  });
+
+  it("requests the email-only reset destination, renders it, and follows its app links", async () => {
+    // Reset has no in-app entry link: the real Forgot password action sends
+    // an email. Assert its actual destination instead of inventing a nav link.
+    fixtures.signedIn = false;
+    const user = userEvent.setup();
+    await renderAt("/auth");
+    await user.type(screen.getByRole("textbox", { name: "Email" }), "smoke@example.test");
+    await user.click(screen.getByRole("button", { name: "Forgot password?" }));
+    await waitFor(() => expect(fixtures.resetPasswordForEmail).toHaveBeenCalledWith(
+      "smoke@example.test", { redirectTo: `${window.location.origin}/reset-password` },
+    ));
+    const options = fixtures.resetPasswordForEmail.mock.calls[0]?.[1] as { redirectTo: string } | undefined;
+    if (!options) throw new Error("No password-reset email destination was provided");
+    const destination = new URL(options.redirectTo);
+    cleanup();
+    const router = await renderAt(destination.pathname);
+    await expectDestination(router, pages[2]);
+    await user.click(within(screen.getByRole("navigation")).getByRole("link", { name: "Sign in" }));
+    await expectDestination(router, pages[1]);
+  });
+});
 
 // Accessible landmarks establish rendered content; route ID and leaf metadata
 // distinguish it from the sign-in page, a fallback, or another valid page.
