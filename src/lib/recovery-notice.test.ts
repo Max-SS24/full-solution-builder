@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lastRecoveryUse, needsFreshCodes, recoveryNoticeText } from "./recovery-notice";
+import { lastRecoveryUse, needsFreshCodes, recoveryEventLabel, recoveryNoticeText } from "./recovery-notice";
 
 describe("recovery code usage notice", () => {
   it("records the time of the latest successful recovery sign-in, ignoring failed tries", () => {
@@ -26,5 +26,13 @@ describe("recovery code usage notice", () => {
     expect(needsFreshCodes("2026-11-05T08:30:00Z", "2026-11-01T00:00:00Z")).toBe(true);
     expect(needsFreshCodes("2026-11-05T08:30:00Z", "2026-11-06T00:00:00Z")).toBe(false);
     expect(needsFreshCodes(null, "2026-11-06T00:00:00Z")).toBe(false);
+  });
+});
+
+describe("recovery code activity history", () => {
+  it("labels sign-ins, revocations and new sets", () => {
+    expect(recoveryEventLabel("sign_in")).toBe("Signed in with a recovery code");
+    expect(recoveryEventLabel("revoked")).toBe("Recovery codes revoked");
+    expect(recoveryEventLabel("regenerated")).toBe("New recovery codes made");
   });
 });
