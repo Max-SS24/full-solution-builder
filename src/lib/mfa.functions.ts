@@ -76,6 +76,7 @@ export const createRecoveryCodes = createServerFn({ method: "POST" })
     const rows = await Promise.all(codes.map(async (c) => ({ user_id: context.userId, code_hash: await hashRecoveryCode(context.userId, c) })));
     await supabaseAdmin.from("mfa_recovery_codes").delete().eq("user_id", context.userId);
     await supabaseAdmin.from("mfa_recovery_codes").insert(rows);
+    await supabaseAdmin.from("mfa_recovery_events").insert({ user_id: context.userId, kind: "regenerated" });
     return { codes };
   });
 
@@ -103,6 +104,7 @@ export const revokeRecoveryCodes = createServerFn({ method: "POST" })
     if (!recentCode(claims.amr, Date.now())) throw new Error("Enter the code we emailed you to revoke your recovery codes.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("mfa_recovery_codes").delete().eq("user_id", context.userId);
+    await supabaseAdmin.from("mfa_recovery_events").insert({ user_id: context.userId, kind: "revoked" });
     return { remaining: 0 };
   });
 
@@ -130,8 +132,18 @@ export const redeemRecoveryCode = createServerFn({ method: "POST" })
     if (!ok) throw new Error("That recovery code didn't work, or it was already used.");
     await supabaseAdmin.from("mfa_proofs").delete().eq("user_id", context.userId);
     await supabaseAdmin.from("mfa_sessions").upsert({ session_id: claims.session_id, user_id: context.userId });
+    await supabaseAdmin.from("mfa_recovery_events").insert({ user_id: context.userId, kind: "sign_in" });
     const { notifyRecoveryCodeUsed } = await import("./recovery-alert.server");
     await notifyRecoveryCodeUsed(context.userId).catch(() => {});
     const { count } = await supabaseAdmin.from("mfa_recovery_codes").select("id", { count: "exact", head: true }).eq("user_id", context.userId).is("used_at", null);
     return { remaining: count ?? 0 };
+  });
+
+/** This account's recovery-code activity, newest first (sign-ins, revocations, new sets). */
+export const recoveryHistory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin.from("mfa_recovery_events").select("kind, created_at").eq("user_id", context.userId).order("created_at", { ascending: false }).limit(50);
+    return { events: (data ?? []).map((e) => ({ kind: e.kind as string, at: e.created_at as string })) };
   });
