@@ -85,8 +85,25 @@ export const recoveryStatus = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { count } = await supabaseAdmin.from("mfa_recovery_codes").select("id", { count: "exact", head: true }).eq("user_id", context.userId).is("used_at", null);
-    const { data: last } = await supabaseAdmin.from("mfa_recovery_codes").select("used_at").eq("user_id", context.userId).not("used_at", "is", null).order("used_at", { ascending: false }).limit(1).maybeSingle();
-    return { remaining: count ?? 0, lastUsedAt: (last?.used_at as string | null) ?? null };
+    const { data: uses } = await supabaseAdmin.from("mfa_recovery_attempts").select("success, created_at").eq("user_id", context.userId).eq("success", true).order("created_at", { ascending: false }).limit(1);
+    const { data: newest } = await supabaseAdmin.from("mfa_recovery_codes").select("created_at").eq("user_id", context.userId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const { lastRecoveryUse, needsFreshCodes } = await import("./recovery-notice");
+    const lastUsedAt = lastRecoveryUse(uses ?? []);
+    const codesCreatedAt = (newest?.created_at as string | undefined) ?? null;
+    return { remaining: count ?? 0, lastUsedAt, needsFresh: needsFreshCodes(lastUsedAt, codesCreatedAt) };
+  });
+
+/** Revoke every recovery code on this account. Needs a cleared session plus a fresh emailed code. */
+export const revokeRecoveryCodes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const claims = context.claims as Claims;
+    const { data: cleared } = await context.supabase.rpc("has_mfa_cleared");
+    if (!cleared) throw new Error("Finish signing in first.");
+    if (!recentCode(claims.amr, Date.now())) throw new Error("Enter the code we emailed you to revoke your recovery codes.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("mfa_recovery_codes").delete().eq("user_id", context.userId);
+    return { remaining: 0 };
   });
 
 /** Finish a password sign-in with a one-time recovery code instead of the emailed code. */
