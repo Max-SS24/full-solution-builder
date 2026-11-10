@@ -44,7 +44,7 @@ export function SafetyBar() {
                   <li key={c.href}>
                     <a href={c.href} {...(c.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                       className="flex min-h-12 items-center rounded-2xl border-[3px] border-ink bg-cream px-4 py-3 font-bold shadow-hard">
-                      {c.label}{c.href.startsWith("http") ? " ↗" : ""}
+                      {c.label}{c.href.startsWith("http") ? <><span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></> : null}
                     </a>
                   </li>
                 ))}
