@@ -7,6 +7,19 @@ const days = [
   { day: "2026-11-10", sign_in: 4, revoked: 0, regenerated: 1 },
 ];
 describe("recovery reports", () => {
+  it("exports selected-period totals, daily trends and exact range alongside the snapshot", () => {
+    const stats: AnalyticsStats = { total_users: 10, active_users: 6, new_7d: 1, new_30d: 3, searches_total: 12, searches_7d: 4, users_with_prefs: 5, care_options: 1603, care_options_review: 2, top_needs: [], top_locations: [], recovery_daily: days, reported_at: "2026-11-10T06:00:00Z", range_from: "2026-11-09", range_to: "2026-11-10", signups_period: 2, searches_period: 5, activity_daily: [{ day: "2026-11-09", signups: 2, searches: 5 }] };
+    expect(analyticsCsv(stats)).toContain('"Selected period","Sign-ups","2","2026-11-10T06:00:00Z","2026-11-09","2026-11-10"');
+    expect(analyticsCsv(stats)).toContain('"Daily saved searches","2026-11-09","5"');
+  });
+  it("includes both UTC boundary dates and requires admin access to date-filtered data", () => {
+    const sql = readFileSync("drizzle/migrations/0023_analytics_date_range.sql", "utf8");
+    expect(sql).toContain("NOT public.has_role(auth.uid(), 'admin')");
+    expect(sql).toContain("_from > _to");
+    expect(sql).toContain("lo := _from::timestamp AT TIME ZONE 'UTC'");
+    expect(sql).toContain("hi := (_to + 1)::timestamp AT TIME ZONE 'UTC'");
+    expect(sql.match(/created_at >= lo and created_at < hi/g)?.length).toBe(7);
+  });
   it("exports all three event types with exact UTC timestamps, without a 50-event cap", () => {
     const events = Array.from({ length: 60 }, (_, i) => ({ kind: i % 3 === 0 ? "sign_in" : i % 3 === 1 ? "revoked" : "regenerated", at: "2026-11-10T01:30:00-05:00" }));
     const csv = recoveryHistoryCsv(events);
