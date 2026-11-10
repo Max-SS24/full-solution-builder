@@ -67,7 +67,7 @@ function Home() {
     if (wasOpen.current && !focused) sendRef.current?.focus();
     wasOpen.current = focused;
   }, [focused]);
-  const trapDialogKeys = (e: React.KeyboardEvent<HTMLFormElement>) => {
+  const trapDialogKeys = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape") { e.preventDefault(); setFocused(false); return; }
     if (e.key !== "Tab") return;
     const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>("button:not([disabled]), textarea, a[href], input"));
@@ -590,12 +590,8 @@ function Home() {
       </section>
 
       {focused && (
-        <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink/60 p-3 backdrop-blur-sm sm:p-6" onClick={() => setFocused(false)}>
+        <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink/60 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-labelledby="msg-big-title" onKeyDown={trapDialogKeys} onClick={() => setFocused(false)}>
           <form
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="msg-big-title"
-            onKeyDown={trapDialogKeys}
             onSubmit={send}
             onClick={(e) => e.stopPropagation()}
             className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-y-auto rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg animate-in zoom-in-95 fade-in duration-200 sm:max-h-[calc(100dvh-3rem)] sm:rounded-[30px] sm:p-6 sm:shadow-[10px_10px_0_var(--ink)]"
