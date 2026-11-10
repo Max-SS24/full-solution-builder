@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Add deterministic rendered-page smoke tests for all 10 content routes and retain the not-found check.
 - [x] Add shared custom UTC dates to admin trends, recovery charts, rankings, and matching exports; test period boundaries.
 - [x] Chart recovery-code events over time in admin analytics, with CSV exports for all displayed analytics.
 - [x] Export complete personal recovery activity with event types and timestamps; verify downloads and access controls.
