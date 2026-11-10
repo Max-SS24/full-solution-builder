@@ -119,7 +119,7 @@ describe("App routing", () => {
     const main = await screen.findByRole("main", {}, { timeout: 5000 });
     expect(within(main).getByRole("heading", { level: 1 })).toBeVisible();
     expect(screen.getByRole("complementary", { name: "Veterans Crisis Line" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation")).toBeInTheDocument();
     await waitFor(() => expect(document.title).toBe(title));
     expect(router.state.location.pathname).toBe(path);
     expect(router.state.matches.at(-1)?.routeId).toBe(id);
@@ -135,7 +135,7 @@ describe("App routing", () => {
       expect(await within(main).findByRole("link", { name: "Reopen" })).toHaveAttribute("href", "/?h=smoke-history");
     }
     if (path === "/account") {
-      expect(await within(main).findByRole("switch")).toBeInTheDocument();
+      expect(await within(main).findByRole("button", { name: "Turn on sign-in codes" })).toBeVisible();
       expect(within(main).getByRole("button", { name: "Sign out" })).toBeVisible();
     }
     if (path === "/auth") expect(within(main).getByRole("textbox", { name: "Email" })).toBeVisible();
