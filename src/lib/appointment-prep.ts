@@ -169,10 +169,11 @@ export type PrepCheck = { id: string; ok: boolean; checkedAt: string };
 export type PrepView = { fact: PrepFact; verified: true; checkedAt: string } | { fact: PrepFact; verified: false };
 
 /** Only facts with a passing check are marked verified; anything else is withheld. */
-export function applyChecks(facts: PrepFact[], checks: PrepCheck[]): PrepView[] {
+export function applyChecks(facts: PrepFact[], checks: PrepCheck[], now = Date.now()): PrepView[] {
   const byId = new Map(checks.map((c) => [c.id, c]));
   return facts.map((fact) => {
     const c = byId.get(fact.id);
-    return c?.ok ? { fact, verified: true, checkedAt: c.checkedAt } : { fact, verified: false };
+    const age = c ? now - Date.parse(c.checkedAt) : NaN;
+    return c?.ok && age >= 0 && age < PREP_CACHE_MS ? { fact, verified: true, checkedAt: c.checkedAt } : { fact, verified: false };
   });
 }

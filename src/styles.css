@@ -107,9 +107,20 @@
 
 @media print {
   @page { size: letter; margin: 12mm; }
-  body * { visibility: hidden; }
-  #care-card, #care-card * { visibility: visible; }
-  #care-card { position: absolute; inset: 0 auto auto 0; width: 100%; border: none; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  body:has(#care-card) *:not(:has(#care-card)):not(#care-card):not(#care-card *) { display: none !important; }
+  body:has(#care-card) *:has(#care-card) {
+    display: block !important; position: static !important; min-height: 0 !important;
+    margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important;
+    width: auto !important; max-width: none !important; overflow: visible !important;
+  }
+  #care-card {
+    margin: 0; padding: 0; width: 100%; border: none;
+    color: var(--ink); background: var(--paper); font-family: Arial, sans-serif;
+    font-size: 10pt; line-height: 1.3;
+  }
+  #care-card .text-xs { font-size: 8pt; }
+  #care-card .text-lg { font-size: 14pt; }
+  #care-card a { color: inherit; }
 }
 
 /* Display settings (see src/lib/a11y-prefs.ts). Tailwind sizes use rem, so these scale the whole app. */
