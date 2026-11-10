@@ -30,7 +30,7 @@ export function SafetyBar() {
       <aside aria-label="Veterans Crisis Line" className="sticky top-0 z-40 border-b-[3px] border-ink bg-navy text-cream">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 text-sm sm:px-6">
           <span className="font-bold">In crisis?</span>
-          <a href={CRISIS.call.href} className="inline-flex min-h-11 items-center rounded-full bg-cream px-3 font-bold text-ink underline-offset-2 hover:underline">📞 Dial 988, press 1</a>
+          <a href={CRISIS.call.href} className="inline-flex min-h-11 items-center rounded-full bg-cream px-3 font-bold text-ink underline-offset-2 hover:underline"><span aria-hidden="true">📞 </span>Dial 988, press 1</a>
           <a href={CRISIS.text.href} className="hidden min-h-11 items-center font-semibold underline sm:inline-flex">Text 838255</a>
           <Sheet>
             <SheetTrigger className="inline-flex min-h-11 items-center font-semibold underline">More ways to get help</SheetTrigger>

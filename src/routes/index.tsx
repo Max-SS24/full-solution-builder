@@ -301,12 +301,12 @@ function Home() {
             </p>
             <p className="mt-1 font-semibold">You don't have to go through this alone, please reach out to one of these right now. They're free, confidential and open 24/7.</p>
             <div className="mt-3 grid gap-2 text-sm font-bold sm:grid-cols-2 lg:grid-cols-3">
-              <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">📞 Veterans Crisis Line<br />Call 988, then press 1</a>
-              <a href="sms:838255" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">💬 Text the Veterans Crisis Line<br />838255</a>
-              <a href="https://www.veteranscrisisline.net/get-help-now/chat/" target="_blank" rel="noreferrer" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">🖥️ Veterans Crisis Line chat<br />Chat online now</a>
-              <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">☎️ 988 Suicide &amp; Crisis Lifeline<br />Call or text 988</a>
-              <a href="sms:741741?&body=HOME" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">✉️ Crisis Text Line<br />Text HOME to 741741</a>
-              <a href="tel:911" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">🚨 Emergency Services<br />Call 911 or go to the nearest ER{danger === "others" ? " if anyone is in danger" : ""}</a>
+              <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">📞 </span>Veterans Crisis Line<br />Call 988, then press 1</a>
+              <a href="sms:838255" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">💬 </span>Text the Veterans Crisis Line<br />838255</a>
+              <a href="https://www.veteranscrisisline.net/get-help-now/chat/" target="_blank" rel="noreferrer" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">🖥️ </span>Veterans Crisis Line chat<br />Chat online now</a>
+              <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">☎️ </span>988 Suicide &amp; Crisis Lifeline<br />Call or text 988</a>
+              <a href="sms:741741?&body=HOME" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">✉️ </span>Crisis Text Line<br />Text HOME to 741741</a>
+              <a href="tel:911" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">🚨 </span>Emergency Services<br />Call 911 or go to the nearest ER{danger === "others" ? " if anyone is in danger" : ""}</a>
             </div>
             <p className="mt-3 text-sm font-semibold">Your closest care matches are listed below too.</p>
           </div>
@@ -672,7 +672,7 @@ function VaAvailability({ status, checkedAt, location, vaResults }: { status: Va
           <a href={locator} target="_blank" rel="noreferrer" className="rounded-full border-[3px] border-ink bg-navy px-4 py-2.5 text-center font-bold text-cream shadow-hard">
             Find VA locations near {location ?? "you"} on VA.gov ↗
           </a>
-          <a href="tel:8772228387" className="rounded-full border-[3px] border-ink bg-paper px-4 py-2.5 text-center font-bold shadow-hard">📞 Call VA: 877-222-8387</a>
+          <a href="tel:8772228387" className="rounded-full border-[3px] border-ink bg-paper px-4 py-2.5 text-center font-bold shadow-hard"><span aria-hidden="true">📞 </span>Call VA: 877-222-8387</a>
         </div>
       )}
     </div>
