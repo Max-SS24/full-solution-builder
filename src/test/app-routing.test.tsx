@@ -13,6 +13,7 @@ const fixtures = vi.hoisted(() => ({
   rpc: vi.fn(),
   from: vi.fn(),
   resetPasswordForEmail: vi.fn(),
+  reopenCareSearch: vi.fn(),
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -37,6 +38,11 @@ vi.mock("@/lib/mfa.functions", () => ({
 
 vi.mock("@/lib/appointment-prep.functions", () => ({
   verifyPrepFacts: vi.fn(async () => ({ checks: [] })),
+}));
+
+vi.mock("@/lib/reopened-care.functions", () => ({
+  reopenCareSearch: fixtures.reopenCareSearch,
+  replaceSavedCare: vi.fn(),
 }));
 
 import { routeTree } from "@/routeTree.gen";
@@ -71,6 +77,10 @@ beforeEach(() => {
   fixtures.signedIn = true;
   fixtures.getUser.mockImplementation(async () => ({ data: { user: fixtures.signedIn ? fixtures.user : null }, error: null }));
   fixtures.resetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
+  fixtures.reopenCareSearch.mockResolvedValue({
+    messages: [{ role: "assistant", content: "Saved test conversation restored." }],
+    variables: {}, results: [],
+  });
   fixtures.rpc.mockImplementation(async (name: string) => {
     if (name === "is_admin" || name === "claim_first_admin") return { data: true, error: null };
     if (name === "admin_analytics") return { data: {
@@ -168,7 +178,7 @@ describe("Rendered link navigation", () => {
     const router = await renderAt("/");
     await expectDestination(router, pages[0]);
     for (const { page, name } of navigationPages) {
-      const link = await within(screen.getByRole("navigation")).findByRole("link", { name, exact: true });
+      const link = await within(screen.getByRole("navigation")).findByRole("link", { name });
       expect(link).toHaveAttribute("href", page.path);
       await user.click(link);
       await expectDestination(router, page);
@@ -181,7 +191,7 @@ describe("Rendered link navigation", () => {
     fixtures.signedIn = false;
     const user = userEvent.setup();
     const router = await renderAt("/security");
-    const link = await within(screen.getByRole("navigation")).findByRole("link", { name: "Sign in", exact: true });
+    const link = await within(screen.getByRole("navigation")).findByRole("link", { name: "Sign in" });
     expect(link).toHaveAttribute("href", "/auth");
     await user.click(link);
     await expectDestination(router, pages[1]);
@@ -195,7 +205,7 @@ describe("Rendered link navigation", () => {
   ])("follows the privacy page's $name content link", async ({ name, page }) => {
     const user = userEvent.setup();
     const router = await renderAt("/security");
-    const link = within(screen.getByRole("main")).getByRole("link", { name, exact: true });
+    const link = within(screen.getByRole("main")).getByRole("link", { name });
     expect(link).toHaveAttribute("href", page.path);
     await user.click(link);
     await expectDestination(router, page);
@@ -208,6 +218,8 @@ describe("Rendered link navigation", () => {
     await user.click(within(screen.getByRole("main")).getByRole("link", { name: "Reopen" }));
     await expectDestination(router, pages[0]);
     expect(router.state.location.search).toMatchObject({ h: "smoke-history" });
+    await waitFor(() => expect(fixtures.reopenCareSearch).toHaveBeenCalledWith({ data: { id: "smoke-history" } }));
+    expect(await screen.findByText("Saved care options checked again. Availability, insurance and appointments still need confirmation with the provider.")).toBeVisible();
   });
 
   it("requests the email-only reset destination, renders it, and follows its app links", async () => {
@@ -227,7 +239,7 @@ describe("Rendered link navigation", () => {
     cleanup();
     const router = await renderAt(destination.pathname);
     await expectDestination(router, pages[2]);
-    await user.click(within(screen.getByRole("navigation")).getByRole("link", { name: "Sign in", exact: true }));
+    await user.click(within(screen.getByRole("navigation")).getByRole("link", { name: "Sign in" }));
     await expectDestination(router, pages[1]);
   });
 });
