@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 # Architecture rules
-- Routing tests render the real document/tree with mocked services; click real app links and check leaf identity, landmarks and protected content. Reset entry uses the email action's URL because no app link exists.
+- Routing tests use the real document/tree and mocked services; live Python Playwright checks real back/forward and reloads with a managed session. Check leaf identity, landmarks and protected content; reset entry is email-only.
 - Analytics use URL-held inclusive UTC dates and admin_analytics aggregates; snapshot totals stay current. Owner/MFA-checked recovery_activity() provides personal exports; CSVs match displayed data.
 - Community homepages use source-supplied provider_website (separate from source_url); checks use public DNS and manual redirects and flag foreign domains without following.
 - Sunday homepage checks run in bounded batches, storing URL-bound outcomes and attempt times in care_options; website failures never change care status or verification dates.
