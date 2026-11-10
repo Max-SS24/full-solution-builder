@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -173,6 +173,36 @@ const navigationPages = [
 ] as const;
 
 describe("Rendered link navigation", () => {
+  it("restores every signed-in destination when moving back and forward through link history", async () => {
+    const user = userEvent.setup();
+    const router = await renderAt("/");
+    const journey = [pages[0], ...navigationPages.map(({ page }) => page)];
+    for (const { page, name } of navigationPages) {
+      await user.click(await within(screen.getByRole("navigation")).findByRole("link", { name }));
+      await expectDestination(router, page);
+    }
+    for (const page of journey.slice(0, -1).reverse()) {
+      await act(async () => { router.history.back(); });
+      await expectDestination(router, page);
+    }
+    for (const page of journey.slice(1)) {
+      await act(async () => { router.history.forward(); });
+      await expectDestination(router, page);
+    }
+  });
+
+  it.each(pages)("cold-loads $path again with a fresh router and query cache", async (page) => {
+    const initial = await renderAt(page.path);
+    await expectDestination(initial, page);
+    const url = initial.state.location.href;
+    cleanup();
+    for (const client of clients.splice(0)) client.clear();
+    document.title = "";
+    const refreshed = await renderAt(url);
+    expect(refreshed).not.toBe(initial);
+    await expectDestination(refreshed, page);
+  });
+
   it("visits signed-in pages through consecutive header links without remounting the app", async () => {
     const user = userEvent.setup();
     const router = await renderAt("/");
