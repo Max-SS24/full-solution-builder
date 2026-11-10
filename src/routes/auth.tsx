@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { checkPassword, emailSchema } from "@/lib/password-rules";
 import { EmailCodeStep } from "@/components/EmailCodeStep";
-import { beginMfa, completeMfa } from "@/lib/mfa.functions";
+import { beginMfa, completeMfa, redeemRecoveryCode } from "@/lib/mfa.functions";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): { step?: "code" } => (s["step"] === "code" ? { step: "code" } : {}),
@@ -74,6 +74,7 @@ function AuthPage() {
           <div className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[30px] sm:p-8">
             <h1 className="mb-4 font-display text-3xl font-bold">Check your email</h1>
             <EmailCodeStep email={codeFor} onVerified={async () => { await completeMfa(); nav({ to: "/" }); }}
+              onRecovery={async (c) => { const r = await redeemRecoveryCode({ data: { code: c } }); toast.success(`Signed in. You have ${r.remaining} recovery codes left.`); nav({ to: "/" }); }}
               onCancel={async () => { await supabase.auth.signOut(); setCodeFor(null); nav({ to: "/auth", search: {} }); }} />
           </div>
         ) : (

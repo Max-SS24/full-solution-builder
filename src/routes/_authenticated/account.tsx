@@ -9,7 +9,7 @@ import { deleteMyAccount } from "@/lib/privacy.functions";
 import { visibleQuestions } from "@/lib/questionnaire";
 import { useEffect, useState } from "react";
 import { EmailCodeStep } from "@/components/EmailCodeStep";
-import { mfaStatus, setEmailMfa } from "@/lib/mfa.functions";
+import { createRecoveryCodes, mfaStatus, recoveryStatus, setEmailMfa } from "@/lib/mfa.functions";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -177,6 +177,49 @@ function SignInSecurity({ email }: { email: string }) {
             onVerified={async () => { await setEmailMfa({ data: { enabled: false } }); setEnabled(false); setConfirmOff(false); toast.success("Sign-in codes are off."); }} />
         </div>
       )}
+      {enabled && <RecoveryCodes email={email} />}
     </section>
+  );
+}
+
+function RecoveryCodes({ email }: { email: string }) {
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const [codes, setCodes] = useState<string[] | null>(null);
+  const [confirm, setConfirm] = useState(false);
+  useEffect(() => { recoveryStatus().then((s) => setRemaining(s.remaining)).catch(() => setRemaining(null)); }, []);
+  async function make() {
+    try { const r = await createRecoveryCodes(); setCodes(r.codes); setRemaining(r.codes.length); setConfirm(false); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Couldn't make recovery codes."); }
+  }
+  function download() {
+    if (!codes) return;
+    const blob = new Blob([`Recovery codes for ${email}\nEach code works once.\n\n${codes.join("\n")}\n`], { type: "text/plain" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "recovery-codes.txt"; a.click(); URL.revokeObjectURL(a.href);
+  }
+  return (
+    <div className="mt-5 border-t-2 border-ink/15 pt-4">
+      <h3 className="font-bold">Recovery codes</h3>
+      <p className="mt-1 text-sm">If you lose access to your email, you can sign in with one of these instead. {remaining != null && <strong>{remaining} left.</strong>}</p>
+      {remaining === 0 && !codes && <p className="mt-2 rounded-xl bg-cream p-2 text-sm font-semibold">You don't have recovery codes yet. Make them now so you can't get locked out.</p>}
+      {codes && (
+        <div className="mt-3 rounded-xl border-2 border-ink bg-cream p-3">
+          <p className="text-sm font-bold">Save these somewhere safe. You won't see them again.</p>
+          <ul className="mt-2 grid grid-cols-2 gap-1 font-mono text-sm">{codes.map((c) => <li key={c}>{c}</li>)}</ul>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button onClick={() => { void navigator.clipboard.writeText(codes.join("\n")); toast.success("Copied."); }} className="rounded-full border-[3px] border-ink px-3 py-1 text-sm font-semibold">Copy</button>
+            <button onClick={download} className="rounded-full border-[3px] border-ink px-3 py-1 text-sm font-semibold">Download</button>
+            <button onClick={() => setCodes(null)} className="rounded-full border-[3px] border-ink bg-navy px-3 py-1 text-sm font-bold text-cream">I saved them</button>
+          </div>
+        </div>
+      )}
+      {!codes && remaining === 0 && <button onClick={make} className="mt-3 rounded-full border-[3px] border-ink bg-navy px-4 py-1.5 text-sm font-bold text-cream">Make recovery codes</button>}
+      {!codes && !!remaining && !confirm && <button onClick={() => setConfirm(true)} className="mt-3 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Make new recovery codes</button>}
+      {confirm && (
+        <div className="mt-3">
+          <EmailCodeStep email={email} intro="To make new codes, enter the 6-digit code we just emailed you. Your old recovery codes will stop working."
+            onCancel={() => setConfirm(false)} onVerified={make} />
+        </div>
+      )}
+    </div>
   );
 }

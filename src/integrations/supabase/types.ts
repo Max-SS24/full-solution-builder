@@ -412,6 +412,51 @@ export type Database = {
         }
         Relationships: []
       }
+      mfa_recovery_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          success?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mfa_recovery_codes: {
+        Row: {
+          code_hash: string
+          created_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       mfa_sessions: {
         Row: {
           cleared_at: string

@@ -30,7 +30,7 @@
 - Admin analytics come only from the admin_analytics() security-definer RPC (has_role checked inside, totals only).
 - Sign-up password rules live in src/lib/password-rules.ts (sign-in unchanged); DB access is parameterized client/RPC calls only — never build raw SQL from user input.
 - VA care guide text is fixed, VA.gov-verified content in src/lib/va-guide.ts (never AI-generated); shown when va_vs_community === 'va'. Admin password resets are logged via log_password_reset() RPC before the email is sent.
-- VA facilities come keyless from VA.gov: ~1,600 listings (every VA.gov facility/Vet Center page, all states + territories) live in care_options with a www.va.gov website; the Sunday validate-va-directory schedule ({"part":"va"}) re-reads each page in 40-row batches, refreshing address/phone/coordinates from its structured data (contact changes set contact_changed_at, flagged 7 days); the Sunday va-discover schedule adds new facility pages found in VA.gov's sitemaps. VA results are sorted by straight-line distance from the person's ZIP or city (care-rules.ts). The Lighthouse connector stays dormant without VA_API_KEY.
+- VA facilities come keyless from VA.gov pages (~1,600 rows in care_options); Sunday validate-va-directory (40-row batches) refreshes contacts (contact_changed_at flags 7 days) and va-discover adds new pages from sitemaps; results sorted by distance (care-rules.ts); Lighthouse connector dormant without VA_API_KEY.
 - link_checks table is filled by the Sunday validate-care-options job (link-checks.server.ts); /helpful-links reads it to show each link's verified date.
 - Supported areas (50 states, DC, PR, GU, VI, AS, MP) live in src/lib/us-areas.ts; territories are geocoded by name because OpenStreetMap treats them as separate countries.
 
@@ -38,3 +38,4 @@
 - Navigator AI returns intent (search|refine|question|chat); chat/question turns get the AI reply only, with no checklist text, guide notes or results prompt appended, so conversation stays natural.
 - Optional email sign-in codes: user_security.email_mfa per user; a password sign-in records an mfa_proofs row, the emailed-code session (JWT amr otp) within 10 minutes clears that session_id in mfa_sessions; has_mfa_cleared() gates personal-data RLS and has_role, so locked sessions are blocked server-side, not just in the UI.
 - In-person searches with a location show straight-line miles from the area center (wantsDistance/withDistances in care-rules.ts); listings without directory coordinates get a ZIP-center estimate saved with geo_estimated, never an invented distance.
+- MFA recovery codes: hashed only, service_role table; redeem needs password session + fresh proof, rate limited, clears via mfa_sessions.
