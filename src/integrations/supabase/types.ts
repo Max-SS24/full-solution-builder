@@ -496,6 +496,30 @@ export type Database = {
         }
         Relationships: []
       }
+      prep_fact_checks: {
+        Row: {
+          checked_at: string
+          fact_id: string
+          http_status: number | null
+          ok: boolean
+          source_url: string
+        }
+        Insert: {
+          checked_at?: string
+          fact_id: string
+          http_status?: number | null
+          ok: boolean
+          source_url: string
+        }
+        Update: {
+          checked_at?: string
+          fact_id?: string
+          http_status?: number | null
+          ok?: boolean
+          source_url?: string
+        }
+        Relationships: []
+      }
       search_history: {
         Row: {
           created_at: string

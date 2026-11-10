@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AppointmentPrepRouteImport } from './routes/appointment-prep'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as HelpfulLinksRouteImport } from './routes/helpful-links'
 import { Route as QuestionnaireRouteImport } from './routes/questionnaire'
@@ -28,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppointmentPrepRoute = AppointmentPrepRouteImport.update({
+  id: '/appointment-prep',
+  path: '/appointment-prep',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -79,6 +85,7 @@ const ApiPublicJobsValidateCareOptionsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/appointment-prep': typeof AppointmentPrepRoute
   '/auth': typeof AuthRoute
   '/helpful-links': typeof HelpfulLinksRoute
   '/questionnaire': typeof QuestionnaireRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/appointment-prep': typeof AppointmentPrepRoute
   '/auth': typeof AuthRoute
   '/helpful-links': typeof HelpfulLinksRoute
   '/questionnaire': typeof QuestionnaireRoute
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/appointment-prep': typeof AppointmentPrepRoute
   '/auth': typeof AuthRoute
   '/helpful-links': typeof HelpfulLinksRoute
   '/questionnaire': typeof QuestionnaireRoute
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/appointment-prep'
     | '/auth'
     | '/helpful-links'
     | '/questionnaire'
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/appointment-prep'
     | '/auth'
     | '/helpful-links'
     | '/questionnaire'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/appointment-prep'
     | '/auth'
     | '/helpful-links'
     | '/questionnaire'
@@ -158,6 +170,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AppointmentPrepRoute: typeof AppointmentPrepRoute
   AuthRoute: typeof AuthRoute
   HelpfulLinksRoute: typeof HelpfulLinksRoute
   QuestionnaireRoute: typeof QuestionnaireRoute
@@ -180,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/appointment-prep': {
+      id: '/appointment-prep'
+      path: '/appointment-prep'
+      fullPath: '/appointment-prep'
+      preLoaderRoute: typeof AppointmentPrepRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -266,6 +286,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AppointmentPrepRoute: AppointmentPrepRoute,
   AuthRoute: AuthRoute,
   HelpfulLinksRoute: HelpfulLinksRoute,
   QuestionnaireRoute: QuestionnaireRoute,

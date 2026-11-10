@@ -22,8 +22,9 @@ export const Route = createFileRoute("/api/public/jobs/validate-care-options")({
         }
         const { validateAll } = await import("@/lib/care-options.server");
         const { checkHelpfulLinks } = await import("@/lib/link-checks.server");
-        const [result, links] = await Promise.all([validateAll(), checkHelpfulLinks()]);
-        return Response.json({ success: true, ...result, ...links });
+        const { checkPrepFacts } = await import("@/lib/appointment-prep.server");
+        const [result, links, prep] = await Promise.all([validateAll(), checkHelpfulLinks(), checkPrepFacts()]);
+        return Response.json({ success: true, ...result, ...links, ...prep });
       },
     },
   },
