@@ -124,7 +124,7 @@ function Home() {
       hasRenderedMessages.current = true;
       return;
     }
-    endRef.current?.scrollIntoView({ block: "nearest" });
+    const box = endRef.current?.parentElement; if (box) box.scrollTop = box.scrollHeight;
   }, [messages]);
   const { h } = Route.useSearch();
   useEffect(() => {
