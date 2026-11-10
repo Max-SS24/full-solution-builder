@@ -5,6 +5,9 @@ import axe from "axe-core";
 import { SafetyBar } from "@/components/SafetyBar";
 import { chatTriggerKey, handleDialogKeys } from "@/lib/dialog-keys";
 
+// jsdom has no canvas; axe only uses it for an icon-font heuristic.
+HTMLCanvasElement.prototype.getContext = (() => null) as never;
+
 async function axeViolations(node: Element) {
   // color-contrast needs real layout, which jsdom does not have.
   const r = await axe.run(node, { rules: { "color-contrast": { enabled: false }, region: { enabled: false } } });
