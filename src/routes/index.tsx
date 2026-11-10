@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import type { RecheckedCareResult } from "@/lib/reopened-care";
 import { communityHomepage } from "@/lib/care-links";
 import { isVaKind } from "@/lib/care-rules";
+import { CareCard } from "@/components/CareCard";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -466,6 +467,7 @@ function Home() {
               <p className="mt-4 text-xs font-semibold text-ink/55">Source: VA.gov, checked {new Date(VA_GUIDE_CHECKED + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
             </section>
           )}
+          {results && results.length > 0 && <CareCard facility={myFacility} results={results} stage={vaStage} facilityUnknown={facilityUnknown} />}
           {results && results.length > 0 && (
             <section aria-label="Appointment preparation" className="mt-8 rounded-[22px] border-[3px] border-ink bg-minttint p-5 shadow-hard">
               <p className="font-display text-xl font-bold">Would you like to see how to prepare for your appointment?</p>
