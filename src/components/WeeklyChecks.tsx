@@ -30,11 +30,11 @@ export function WeeklyCheckAlert({ onOpen }: { onOpen: () => void }) {
   const websiteIssues = rows.filter((r) => ["unavailable", "unexpected_redirect", "unconfirmed"].includes(r.homepage_status)).length;
   const careIssues = rows.filter((r) => r.care_status !== "listed").length;
   if (!websiteIssues && !careIssues) return null;
-  return <aside role="alert" className="mt-6 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-l-4 border-coral bg-soft p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+  return <div role="alert" className="mt-6 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-l-4 border-coral bg-soft p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
     <AlertTriangle className="size-5 shrink-0" />
     <div className="min-w-0 flex-1"><p className="font-bold">Weekly community care alert · {latest}</p><p className="text-sm">{websiteIssues} website issues · {careIssues} care listings need confirmation</p></div>
     <Button variant="outline" className="col-span-2 sm:col-span-1" onClick={onOpen}>Review weekly checks</Button>
-  </aside>;
+  </div>;
 }
 
 export function WeeklyChecks() {

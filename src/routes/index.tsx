@@ -60,6 +60,22 @@ function Home() {
   const run = useServerFn(navigate);
   const { user, prefs, savePrefs } = useAccount();
   const [focused, setFocused] = useState(false);
+  const sendRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    // Return keyboard focus to the chat when the message box closes.
+    if (wasOpen.current && !focused) sendRef.current?.focus();
+    wasOpen.current = focused;
+  }, [focused]);
+  const trapDialogKeys = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") { e.preventDefault(); setFocused(false); return; }
+    if (e.key !== "Tab") return;
+    const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>("button:not([disabled]), textarea, a[href], input"));
+    if (!items.length) return;
+    const first = items[0]!, last = items[items.length - 1]!;
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: "Hi, I'm here to help you find care. Tell me what's going on and where you are, in your own words." },
   ]);
@@ -271,8 +287,9 @@ function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-cream text-ink">
+    <div className="min-h-dvh bg-cream text-ink">
       <SiteHeader />
+      <main id="main">
 
       {crisis && (
         <div role="alert" className="border-b-[3px] border-ink bg-coral px-4 py-5 text-paper sm:px-6">
@@ -365,10 +382,12 @@ function Home() {
                 readOnly
                 onFocus={() => setFocused(true)}
                 onClick={() => setFocused(true)}
+                aria-haspopup="dialog"
+                aria-description="Opens the message box"
                 placeholder="Type your situation…"
-                className="min-w-0 cursor-text rounded-full border-[3px] border-ink bg-cream px-4 py-2.5 text-sm placeholder:text-ink/45 focus:outline-none"
+                className="min-w-0 cursor-text rounded-full border-[3px] border-ink bg-cream px-4 py-2.5 text-sm placeholder:text-ink/45 focus:outline-none focus-visible:ring-4 focus-visible:ring-sky focus-visible:ring-offset-2"
               />
-               <button disabled={busy} className="shrink-0 rounded-full border-[3px] border-ink bg-mint px-4 py-2.5 text-sm font-bold text-paper shadow-hard disabled:opacity-60 sm:px-5">Send →</button>
+               <button ref={sendRef} disabled={busy} className="shrink-0 rounded-full border-[3px] border-ink bg-mint px-4 py-2.5 text-sm font-bold text-paper shadow-hard disabled:opacity-60 sm:px-5">Send →</button>
             </form>
             {user && (
               <label className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold sm:px-6">
@@ -571,13 +590,13 @@ function Home() {
       </section>
 
       {focused && (
-        <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink/60 p-3 backdrop-blur-sm sm:p-6" onClick={() => setFocused(false)}>
+        <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink/60 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-labelledby="msg-big-title" onKeyDown={trapDialogKeys} onClick={() => setFocused(false)}>
           <form
             onSubmit={send}
             onClick={(e) => e.stopPropagation()}
             className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-y-auto rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg animate-in zoom-in-95 fade-in duration-200 sm:max-h-[calc(100dvh-3rem)] sm:rounded-[30px] sm:p-6 sm:shadow-[10px_10px_0_var(--ink)]"
           >
-            <label htmlFor="msg-big" className="font-display text-xl font-bold sm:text-2xl">Tell us what's going on</label>
+            <label id="msg-big-title" htmlFor="msg-big" className="font-display text-xl font-bold sm:text-2xl">Tell us what's going on</label>
             <p className="mt-1 text-sm text-ink/60">Where you are, what you need, how you'd like to be seen. Press Enter to send, Shift+Enter for a new line, Esc to close.</p>
             <div className="mt-4 max-h-64 space-y-2 overflow-y-auto">
               {messages.slice(-6).map((m, i) => (
@@ -593,11 +612,10 @@ function Home() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Escape") setFocused(false);
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); }
               }}
               placeholder="e.g. I'm a veteran in Atlanta, GA dealing with PTSD. I'd prefer telehealth and have Tricare."
-              className="mt-4 w-full resize-none rounded-[18px] border-[3px] border-ink bg-cream p-4 text-base leading-relaxed placeholder:text-ink/40 focus:outline-none sm:rounded-[22px] sm:p-5 sm:text-lg"
+              className="mt-4 w-full resize-none rounded-[18px] border-[3px] border-ink bg-cream p-4 text-base leading-relaxed placeholder:text-ink/40 focus:outline-none focus-visible:ring-4 focus-visible:ring-sky focus-visible:ring-offset-2 sm:rounded-[22px] sm:p-5 sm:text-lg"
             />
             <div className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
               {pending && !busy && (
@@ -610,6 +628,7 @@ function Home() {
         </div>
       )}
 
+      </main>
       <CrisisBar />
        <footer className="mx-auto max-w-6xl px-4 py-8 text-center text-xs font-semibold text-ink/40 sm:px-6">
         Every option links to its source and verification date. Nothing here is a substitute for emergency care. <Link to="/security" className="underline">How we store and protect your data</Link>

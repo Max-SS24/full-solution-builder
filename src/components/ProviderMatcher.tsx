@@ -31,7 +31,7 @@ export function ProviderMatcher({ candidates, payment }: { candidates: CareResul
       <form onSubmit={go} className="mt-4 grid gap-3">
         <label htmlFor="prio" className="sr-only">What matters most to you</label>
         <textarea id="prio" rows={3} value={text} onChange={(e) => setText(e.target.value)} maxLength={1500}
-          className="w-full resize-none rounded-[18px] border-[3px] border-ink bg-cream p-4 text-base focus:outline-none" />
+          className="w-full resize-none rounded-[18px] border-[3px] border-ink bg-cream p-4 text-base focus:outline-none focus-visible:ring-4 focus-visible:ring-sky focus-visible:ring-offset-2" />
         <button disabled={busy || text.trim().length < 3} className="justify-self-end rounded-full border-[3px] border-ink bg-mint px-6 py-2.5 text-sm font-bold text-paper shadow-hard disabled:opacity-60">
           {busy ? "Comparing listings… (up to 30 seconds)" : "Find my best matches →"}
         </button>
