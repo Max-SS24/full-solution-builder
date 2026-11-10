@@ -9,6 +9,8 @@ export type AnalyticsStats = {
   top_needs: { label: string; count: number }[];
   top_locations: { label: string; count: number }[];
   recovery_daily: RecoveryDay[]; reported_at: string;
+  range_from?: string; range_to?: string; signups_period?: number; searches_period?: number;
+  activity_daily?: { day: string; signups: number; searches: number }[];
 };
 export function reportCsv(rows: unknown[][]) {
   return rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
@@ -30,10 +32,14 @@ export function analyticsCsv(d: AnalyticsStats) {
     "Searches (7 days)": d.searches_7d, "Users with saved preferences": d.users_with_prefs,
     "Care options on file": d.care_options, "Options needing review": d.care_options_review,
   };
-  return reportCsv([["Category", "Metric", "Count", "Report timestamp (UTC)"],
-    ...Object.entries(metrics).map(([k, v]) => ["Summary", k, v, d.reported_at]),
-    ...d.top_needs.map((r) => ["Most requested needs", r.label, r.count, d.reported_at]),
-    ...d.top_locations.map((r) => ["Most searched locations", r.label, r.count, d.reported_at])]);
+  const scope = d.range_from ? [d.range_from, d.range_to] : [];
+  const period = d.range_from ? [["Selected period", "Sign-ups", d.signups_period, d.reported_at, ...scope], ["Selected period", "Saved searches", d.searches_period, d.reported_at, ...scope]] : [];
+  return reportCsv([["Category", "Metric", "Count", "Report timestamp (UTC)", ...(scope.length ? ["From (UTC)", "To (UTC)"] : [])],
+    ...Object.entries(metrics).map(([k, v]) => ["Current snapshot", k, v, d.reported_at, ...scope]),
+    ...period,
+    ...d.top_needs.map((r) => ["Most requested needs", r.label, r.count, d.reported_at, ...scope]),
+    ...d.top_locations.map((r) => ["Most searched locations", r.label, r.count, d.reported_at, ...scope]),
+    ...(d.activity_daily ?? []).flatMap((r) => [["Daily sign-ups", r.day, r.signups, d.reported_at, ...scope], ["Daily saved searches", r.day, r.searches, d.reported_at, ...scope]])]);
 }
 export function downloadCsv(csv: string, filename: string) {
   const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));

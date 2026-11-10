@@ -21,7 +21,7 @@ describe("recovery reports", () => {
   it("exports summary totals and both rankings safely", () => {
     const stats: AnalyticsStats = { total_users: 10, active_users: 6, new_7d: 1, new_30d: 3, searches_total: 12, searches_7d: 4, users_with_prefs: 5, care_options: 1603, care_options_review: 2, top_needs: [{ label: '=HYPERLINK("bad")', count: 2 }], top_locations: [{ label: "Atlanta", count: 7 }], recovery_daily: days, reported_at: "2026-11-10T06:00:00Z" };
     const csv = analyticsCsv(stats);
-    expect(csv).toContain('"Summary","Inactive users","4"');
+    expect(csv).toContain('"Current snapshot","Inactive users","4"');
     expect(csv).toContain('"Most searched locations","Atlanta","7"');
     expect(csv).toContain('"Most requested needs","\'=HYPERLINK(""bad"")","2"');
     expect(csv.split("\r\n")).toHaveLength(13);

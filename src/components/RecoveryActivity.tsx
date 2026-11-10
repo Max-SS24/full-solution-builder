@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Download, RefreshCw } from "lucide-react";
-import { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { recoveryHistory } from "@/lib/mfa.functions";
@@ -24,12 +23,10 @@ export function PersonalRecoveryActivity() {
 }
 
 export function RecoveryTrends({ days, reportedAt, refresh, refreshing }: { days: RecoveryDay[]; reportedAt: string; refresh: () => void; refreshing: boolean }) {
-  const [period, setPeriod] = useState("30");
-  const rows = days.slice(-Number(period));
+  const rows = days;
   const totals = recoveryTotals(rows);
   return <section className="mt-8 min-w-0 border-t-2 border-ink pt-6" aria-label="Recovery-code analytics">
     <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-display text-2xl font-bold">Recovery-code activity</h2><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!rows.length} onClick={() => downloadCsv(recoveryTrendsCsv(rows, reportedAt), `recovery-trends-${rows[0]?.day}_to_${rows.at(-1)?.day}.csv`)}><Download />Export recovery trends CSV</Button><Button variant="outline" size="icon" aria-label="Refresh analytics" title="Refresh analytics" onClick={refresh} disabled={refreshing}><RefreshCw /></Button></div></div>
-    <label className="mt-4 block text-sm font-semibold">Period<select aria-label="Recovery chart period" className="ml-3 rounded-md border-2 border-ink bg-paper p-2" value={period} onChange={(e) => setPeriod(e.target.value)}><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></label>
     <p className="mt-2 text-xs text-ink/60">{rows[0]?.day} to {rows.at(-1)?.day} · UTC · updated {new Date(reportedAt).toLocaleString()}</p>
     <div className="mt-4 grid grid-cols-1 gap-4 border-y-2 border-ink/20 py-4 sm:grid-cols-3">{[["Sign-ins", totals.sign_in], ["Revocations", totals.revoked], ["Code sets generated", totals.regenerated]].map(([label, n]) => <div key={label}><p className="font-display text-3xl font-bold">{n}</p><p className="text-sm font-semibold">{label}</p></div>)}</div>
     <div className="mt-4 h-72 w-full min-w-0"><ResponsiveContainer width="100%" height="100%"><LineChart data={rows} margin={{ top: 12, right: 16, left: 0, bottom: 10 }}><CartesianGrid stroke="var(--color-ink)" opacity={0.15} /><XAxis dataKey="day" tickFormatter={(s: string) => s.slice(5)} minTickGap={28} /><YAxis allowDecimals={false} width={35} /><Tooltip /><Line name="Sign-ins" dataKey="sign_in" stroke="var(--color-mint)" strokeWidth={2} isAnimationActive={false} /><Line name="Revocations" dataKey="revoked" stroke="var(--color-coral)" strokeWidth={2} isAnimationActive={false} /><Line name="Code sets generated" dataKey="regenerated" stroke="var(--color-ink)" strokeWidth={2} isAnimationActive={false} /></LineChart></ResponsiveContainer></div>
