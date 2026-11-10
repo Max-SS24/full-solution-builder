@@ -148,6 +148,13 @@
       "when": 1794272711954,
       "tag": "0020_mfa_recovery_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794279353139,
+      "tag": "0021_mfa_recovery_events",
+      "breakpoints": true
     }
   ]
 }
