@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 # Architecture rules
-- Routing smoke tests render the real document and route tree with mocked service boundaries; check leaf identity, landmarks and protected content to catch routing failures without live-service dependence.
+- Routing tests render the real document/tree with mocked services; click real app links and check leaf identity, landmarks and protected content. Reset entry uses the email action's URL because no app link exists.
 - Analytics use URL-held inclusive UTC dates and admin_analytics aggregates; snapshot totals stay current. Owner/MFA-checked recovery_activity() provides personal exports; CSVs match displayed data.
 - Community homepages use source-supplied provider_website (separate from source_url); checks use public DNS and manual redirects and flag foreign domains without following.
 - Sunday homepage checks run in bounded batches, storing URL-bound outcomes and attempt times in care_options; website failures never change care status or verification dates.
