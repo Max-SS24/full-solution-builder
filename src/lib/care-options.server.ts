@@ -1,3 +1,4 @@
+import { formatHours } from "./va-hours";
 // Stored "care options sheet": verified listings saved by area → VA/community → insurance.
 import type { CareResult, Variables } from "./navigator.functions";
 import { nextStatus, toOptionRow, newFacilityUrls, type OptionStatus } from "./care-rules";

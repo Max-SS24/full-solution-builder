@@ -43,6 +43,8 @@ export type CareResult = {
   lon?: number | null;
   zip?: string | null;
   geo_estimated?: boolean;
+  /** Opening hours from the VA.gov page (VA rows only). */
+  hours?: string | null;
   review?: "page_missing" | "contact_changed" | null;
 };
 
@@ -276,7 +278,7 @@ export const navigate = createServerFn({ method: "POST" })
     const { findTreatment, npiClinicians, vaFacilities } = await import("./connectors.server");
     let liveError = false;
     let vaStatus: VaStatus = null;
-    let myFacility: { name: string; address: string | null; phone: string | null; url: string | null; found: boolean } | null = null;
+    let myFacility: { name: string; address: string | null; phone: string | null; url: string | null; hours?: string | null; found: boolean } | null = null;
     const liveRows = (await Promise.all((live ?? []).map(async (s) => {
       try {
         if (s.connector === "findtreatment") return await findTreatment(city0, state0, variables, s.name);
@@ -321,7 +323,7 @@ export const navigate = createServerFn({ method: "POST" })
         review: o.va_vs_community === "va" ? reviewReason(o.status, o.contact_changed_at) : null,
         id: o.external_id, name: o.name, kind: o.kind, city: o.city, state: o.state, formats: o.formats, needs: o.needs,
         care_types: o.care_types, payment: o.insurance, veteran_focus: o.veteran_focus, phone: o.phone, source_url: o.website, provider_website: o.provider_website,
-        lat: o.lat, lon: o.lon, geo_estimated: o.geo_estimated,
+        lat: o.lat, lon: o.lon, geo_estimated: o.geo_estimated, hours: o.hours,
         verified: true, last_checked: o.last_validated, source_name: (o.data_sources as { name: string } | null)?.name ?? "Saved listing", bio: o.bio, freshness: "saved" as const,
       }));
     }
@@ -397,7 +399,7 @@ export const navigate = createServerFn({ method: "POST" })
         const own = pool.find((r) => (r.kind.includes("VA") || r.kind === "Vet Center") && facilityMatches(v.va_facility!, r.name, city));
         if (own) results = [own, ...results.filter((r) => r.id !== own.id)].slice(0, 6);
         myFacility = own
-          ? { name: own.name, address: addressOf(own.bio), phone: own.phone, url: own.source_url, found: true }
+          ? { name: own.name, address: addressOf(own.bio), phone: own.phone, url: own.source_url, hours: own.hours ?? null, found: true }
           : { name: v.va_facility, address: null, phone: null, url: null, found: false };
       }
     }
