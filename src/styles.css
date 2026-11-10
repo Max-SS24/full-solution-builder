@@ -104,3 +104,10 @@
     outline-offset: 2px;
   }
 }
+
+@media print {
+  @page { size: letter; margin: 12mm; }
+  body * { visibility: hidden; }
+  #care-card, #care-card * { visibility: visible; }
+  #care-card { position: absolute; inset: 0 auto auto 0; width: 100%; border: none; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
