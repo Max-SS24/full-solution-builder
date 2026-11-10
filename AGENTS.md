@@ -32,7 +32,7 @@
 - Sign-up password rules live in src/lib/password-rules.ts (sign-in unchanged); DB access is parameterized client/RPC calls only — never build raw SQL from user input.
 - VA care guide text is fixed, VA.gov-verified content in src/lib/va-guide.ts (never AI-generated); shown when va_vs_community === 'va'. Admin password resets are logged via log_password_reset() RPC before the email is sent.
 - VA facilities come keyless from VA.gov pages (~1,600 rows in care_options); Sunday validate-va-directory (40-row batches) refreshes contacts (contact_changed_at flags 7 days) and va-discover adds new pages from sitemaps; results sorted by distance (care-rules.ts); Lighthouse connector dormant without VA_API_KEY.
-- link_checks table is filled by the Sunday validate-care-options job (link-checks.server.ts); /helpful-links reads it to show each link's verified date.
+- link_checks is filled by the Sunday job; /helpful-links shows each link's verified date.
 - Supported areas (50 states, DC, PR, GU, VI, AS, MP) live in src/lib/us-areas.ts; territories are geocoded by name because OpenStreetMap treats them as separate countries.
 
 - Territory fallback next steps (fixed, official contacts) live in src/lib/territory-guidance.ts and show only when a territory search finds no providers.- Results are held client-side until the person confirms ("Would you like to see your results now?"); the server only flags readyToShow. The VA guide is filtered by stage via guideFor() in src/lib/va-guide.ts; the latest VA/community choice in the chat overrides earlier ones; optional /questionnaire answers live in sessionStorage (van_quiz) and are sent as prefs.
