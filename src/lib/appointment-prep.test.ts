@@ -7,13 +7,21 @@ describe("appointment prep", () => {
     expect(v.every((x) => !x.verified)).toBe(true);
   });
   it("marks only passing facts verified", () => {
-    const v = applyChecks(PREP_FACTS, [{ id: "elig-access", ok: true, checkedAt: "x" }]);
+    const v = applyChecks(PREP_FACTS, [{ id: "elig-access", ok: true, checkedAt: new Date().toISOString() }]);
     expect(v.filter((x) => x.verified).map((x) => x.fact.id)).toEqual(["elig-access"]);
   });
   it("only allows official VA.gov sources", () => {
     expect(isPrepUrl("https://evil.example/va")).toBe(false);
     expect(isPrepUrl("http://www.va.gov/x")).toBe(false);
     expect(PREP_FACTS.every((f) => isPrepUrl(f.sourceUrl))).toBe(true);
+  });
+  it("withholds guidance after the one-hour verification window", () => {
+    const now = Date.parse("2026-11-10T06:37:00Z");
+    const check = (checkedAt: string) => applyChecks(PREP_FACTS, [{ id: "elig-basic", ok: true, checkedAt }], now)[0]?.verified;
+    expect(check("2026-11-10T05:37:01Z")).toBe(true);
+    expect(check("2026-11-10T05:37:00Z")).toBe(false);
+    expect(check("invalid")).toBe(false);
+    expect(check("2026-11-10T06:38:00Z")).toBe(false);
   });
   it("rejects a fact when the page changed or failed", () => {
     const f = PREP_FACTS.find((x) => x.id === "elig-access")!;
