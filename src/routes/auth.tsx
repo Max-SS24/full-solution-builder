@@ -99,6 +99,9 @@ function AuthPage() {
               <span>Also email me a sign-in code each time I log in (extra security)</span>
             </label>
           )}
+          {mode === "up" && wantMfa && (
+            <p className="mt-1 pl-6 text-xs text-ink/60">Make sure to check your spam folder for the code email.</p>
+          )}
           <button disabled={busy || !canSubmit} className="mt-6 w-full rounded-full border-[3px] border-ink bg-navy py-3 font-bold text-cream shadow-hard disabled:opacity-60">
             {mode === "in" ? "Sign in" : "Sign up"}
           </button>

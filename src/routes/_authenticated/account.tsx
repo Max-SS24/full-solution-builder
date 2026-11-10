@@ -168,6 +168,7 @@ function SignInSecurity({ email }: { email: string }) {
       <h2 className="font-display text-xl font-bold">Sign-in security</h2>
       <p className="mt-1 text-sm">Email me a code each time I log in: <strong>{enabled == null ? "…" : enabled ? "On" : "Off"}</strong></p>
       {enabled === false && <button onClick={turnOn} className="mt-3 rounded-full border-[3px] border-ink bg-navy px-4 py-1.5 text-sm font-bold text-cream">Turn on sign-in codes</button>}
+      {enabled === false && <p className="mt-2 text-xs text-ink/60">Make sure to check your spam folder for the code email.</p>}
       {enabled && !confirmOff && <button onClick={() => setConfirmOff(true)} className="mt-3 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Turn off sign-in codes</button>}
       {enabled && confirmOff && (
         <div className="mt-3">
