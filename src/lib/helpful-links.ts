@@ -21,7 +21,14 @@ export const FORMS: HelpfulLink[] = [
   { title: "Search all VA forms", detail: "Look up any other VA form by name or number.", url: "https://www.va.gov/find-forms/", expect: "form" },
 ];
 
-export const ALL_LINKS = [...LOCATORS, ...FORMS];
+// Source pages linked from the Appointment prep page; checked weekly with the links above.
+export const PREP_LINKS: HelpfulLink[] = [
+  { title: "Eligibility for community care outside VA", detail: "Appointment prep source.", url: "https://www.va.gov/resources/eligibility-for-community-care-outside-va/", expect: "community care" },
+  { title: "Community care referrals and appointments", detail: "Appointment prep source.", url: "https://www.va.gov/resources/how-to-get-community-care-referrals-and-schedule-appointments/", expect: "referral" },
+  { title: "Getting urgent care at VA or in-network providers", detail: "Appointment prep source.", url: "https://www.va.gov/resources/getting-urgent-care-at-va-or-in-network-community-providers/", expect: "urgent care" },
+];
+
+export const ALL_LINKS = [...LOCATORS, ...FORMS, ...PREP_LINKS];
 
 /** A link is verified only if the page loads (2xx) and still contains the expected text. */
 export function isLinkCurrent(status: number, body: string, expect: string): boolean {
