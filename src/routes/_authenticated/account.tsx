@@ -177,6 +177,7 @@ function SignInSecurity({ email }: { email: string }) {
             onVerified={async () => { await setEmailMfa({ data: { enabled: false } }); setEnabled(false); setConfirmOff(false); toast.success("Sign-in codes are off."); }} />
         </div>
       )}
+      {enabled && <RecoveryCodes email={email} />}
     </section>
   );
 }
