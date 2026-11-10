@@ -85,7 +85,8 @@ export const recoveryStatus = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { count } = await supabaseAdmin.from("mfa_recovery_codes").select("id", { count: "exact", head: true }).eq("user_id", context.userId).is("used_at", null);
-    return { remaining: count ?? 0 };
+    const { data: last } = await supabaseAdmin.from("mfa_recovery_codes").select("used_at").eq("user_id", context.userId).not("used_at", "is", null).order("used_at", { ascending: false }).limit(1).maybeSingle();
+    return { remaining: count ?? 0, lastUsedAt: (last?.used_at as string | null) ?? null };
   });
 
 /** Finish a password sign-in with a one-time recovery code instead of the emailed code. */
@@ -112,6 +113,8 @@ export const redeemRecoveryCode = createServerFn({ method: "POST" })
     if (!ok) throw new Error("That recovery code didn't work, or it was already used.");
     await supabaseAdmin.from("mfa_proofs").delete().eq("user_id", context.userId);
     await supabaseAdmin.from("mfa_sessions").upsert({ session_id: claims.session_id, user_id: context.userId });
+    const { notifyRecoveryCodeUsed } = await import("./recovery-alert.server");
+    await notifyRecoveryCodeUsed(context.userId).catch(() => {});
     const { count } = await supabaseAdmin.from("mfa_recovery_codes").select("id", { count: "exact", head: true }).eq("user_id", context.userId).is("used_at", null);
     return { remaining: count ?? 0 };
   });
