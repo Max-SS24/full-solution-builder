@@ -81,7 +81,7 @@ export function CareCard({ facility, results, stage }: {
               <p><strong>Finding:</strong> {v.fact.finding}</p>
               <p><strong>Suggestion:</strong> {v.fact.suggests}</p>
               <a href={v.fact.sourceUrl} className="block break-all text-xs underline">{v.fact.sourceUrl}</a>
-              <p className="text-xs">Source confirmed: {day(v.checkedAt)}</p>
+              <p className="text-xs">Source confirmed: {v.verified ? day(v.checkedAt) : "Not confirmed"}</p>
             </li>)}
           </ol> : <p>Current appointment steps are not confirmed for your stated VA status. Review official guidance at <a className="break-all underline" href="https://www.va.gov/health-care/">https://www.va.gov/health-care/</a> or contact your VA team.</p>}
         </section>
