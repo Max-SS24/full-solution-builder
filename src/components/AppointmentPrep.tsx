@@ -3,6 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { verifyPrepFacts } from "@/lib/appointment-prep.functions";
 import { PREP_DISCLAIMER, PREP_TOPICS, PREP_UNCONFIRMED, applyChecks, factsFor, type PrepTopic, type PrepView } from "@/lib/appointment-prep";
 import type { VaStage } from "@/lib/va-guide";
+import { PREP_LINKS } from "@/lib/helpful-links";
+import { supabase } from "@/integrations/supabase/client";
 
 const fmt = (d: string) => new Date(d).toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -17,6 +19,11 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
   useEffect(() => {
     verify().then((r) => setViews(applyChecks(factsFor(stage), r.checks))).catch(() => { setFailed(true); setViews(applyChecks(factsFor(stage), [])); });
   }, [stage, verify]);
+  const [links, setLinks] = useState<Record<string, { ok: boolean; checked_at: string }>>({});
+  useEffect(() => {
+    supabase.from("link_checks").select("url, ok, checked_at").in("url", PREP_LINKS.map((l) => l.url))
+      .then(({ data }) => setLinks(Object.fromEntries((data ?? []).map((c) => [c.url, c]))));
+  }, []);
 
   if (!views) return <p className="text-sm font-semibold text-ink/70" aria-live="polite">Checking each fact against the live VA.gov pages…</p>;
   const ok = views.filter((v) => v.verified);
@@ -68,6 +75,23 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
           </ul>
         </section>
       )}
+      <section className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard">
+        <h2 className="font-display text-2xl font-bold">VA.gov sources and weekly checks</h2>
+        <p className="mt-1 text-sm text-ink/70">Every Sunday we check that each page still loads and still covers its topic.</p>
+        <ul className="mt-4 space-y-3">
+          {PREP_LINKS.map((l) => {
+            const c = links[l.url];
+            return (
+              <li key={l.url} className="rounded-xl border-2 border-ink/20 bg-cream px-3 py-2 text-sm">
+                <a href={l.url} target="_blank" rel="noreferrer" className="break-all font-bold underline">{l.title} ↗</a>
+                <span className={`block text-xs font-semibold ${c && !c.ok ? "text-coral" : "text-ink/70"}`}>
+                  {!c ? "Not checked yet" : c.ok ? `✓ Verified · ${fmt(c.checked_at)}` : `Needs review: couldn't confirm on ${fmt(c.checked_at)}`}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
       <PrepDisclaimer />
     </div>
   );
