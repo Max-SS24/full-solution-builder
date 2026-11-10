@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 # Architecture rules
+- Care Card uses the same fresh evidence checks as appointment prep, rechecks before printing, and preserves listing uncertainty; print CSS removes unrelated layout rather than hiding it.
 - Routing tests use the real document/tree and mocked services; live Python Playwright checks real back/forward and reloads with a managed session. Check leaf identity, landmarks and protected content; reset entry is email-only.
 - Analytics use URL-held inclusive UTC dates and admin_analytics aggregates; snapshot totals stay current. Owner/MFA-checked recovery_activity() provides personal exports; CSVs match displayed data.
 - Community homepages use source-supplied provider_website (separate from source_url); checks use public DNS and manual redirects and flag foreign domains without following.

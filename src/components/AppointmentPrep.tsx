@@ -17,7 +17,15 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
   const [views, setViews] = useState<PrepView[] | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    verify().then((r) => setViews(applyChecks(factsFor(stage), r.checks))).catch(() => { setFailed(true); setViews(applyChecks(factsFor(stage), [])); });
+    let active = true;
+    const refresh = () => {
+      setViews(null);
+      setFailed(false);
+      verify().then((r) => { if (active) setViews(applyChecks(factsFor(stage), r.checks)); }).catch(() => { if (active) { setFailed(true); setViews(applyChecks(factsFor(stage), [])); } });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 60 * 1000);
+    return () => { active = false; window.clearInterval(timer); };
   }, [stage, verify]);
   const [links, setLinks] = useState<Record<string, { ok: boolean; checked_at: string }>>({});
   useEffect(() => {
@@ -77,7 +85,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
       )}
       <section className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard">
         <h2 className="font-display text-2xl font-bold">VA.gov sources and weekly checks</h2>
-        <p className="mt-1 text-sm text-ink/70">Every Sunday we check that each page still loads and still covers its topic.</p>
+        <p className="mt-1 text-sm text-ink/70">Every Sunday we check these links. A working link alone does not confirm guidance; the facts above require a separate recent evidence check.</p>
         <ul className="mt-4 space-y-3">
           {PREP_LINKS.map((l) => {
             const c = links[l.url];
