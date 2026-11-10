@@ -34,6 +34,10 @@ LINKS = [
 
 async def check_destination(page, index):
     path, title, heading = PAGES[index]
+    # Wait for document scripts and hydration before accepting SSR landmarks
+    # or starting another navigation. Otherwise the previous document can
+    # still hydrate after the next URL has already been requested.
+    await page.wait_for_load_state("networkidle", timeout=30000)
     await expect(page).to_have_title(title, timeout=20000)
     assert urlparse(page.url).path == path, f"Wrong destination for {path}"
     main = page.get_by_role("main")
@@ -44,6 +48,7 @@ async def check_destination(page, index):
     await expect(page.get_by_role("complementary", name="Veterans Crisis Line")).to_be_visible()
     if path == "/account":
         await expect(main.get_by_role("button", name="Sign out", exact=True)).to_be_visible()
+        await expect(main.get_by_role("button", name="Turn on sign-in codes", exact=True)).to_be_visible(timeout=20000)
     if path == "/history":
         # A list or the real empty state must finish loading.
         await expect(main.get_by_text("Loading…", exact=True)).to_have_count(0)
