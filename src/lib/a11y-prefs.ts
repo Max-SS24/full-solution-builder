@@ -17,9 +17,9 @@ export function readPrefs(raw: string | null): A11yPrefs {
 }
 
 export function applyPrefs(p: A11yPrefs, el: HTMLElement = document.documentElement) {
-  el.dataset.contrast = p.contrast ? "high" : "normal";
-  el.dataset.text = p.text;
-  el.dataset.motion = p.motion ? "reduce" : "normal";
+  el.dataset["contrast"] = p.contrast ? "high" : "normal";
+  el.dataset["text"] = p.text;
+  el.dataset["motion"] = p.motion ? "reduce" : "normal";
 }
 
 /** Runs in <head> before paint so the saved look shows without a flash. */
