@@ -3,6 +3,7 @@ import type { TerritoryHelp } from "@/lib/territory-guidance";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState, useEffect } from "react";
+import { chatTriggerKey, handleDialogKeys } from "@/lib/dialog-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { navigate, getProviders, type VaStatus, type CareResult, type Variables, type Provider } from "@/lib/navigator.functions";
 import { SiteHeader, CrisisBar } from "@/components/SiteHeader";
@@ -67,15 +68,7 @@ function Home() {
     if (wasOpen.current && !focused) sendRef.current?.focus();
     wasOpen.current = focused;
   }, [focused]);
-  const trapDialogKeys = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Escape") { e.preventDefault(); setFocused(false); return; }
-    if (e.key !== "Tab") return;
-    const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>("button:not([disabled]), textarea, a[href], input"));
-    if (!items.length) return;
-    const first = items[0]!, last = items[items.length - 1]!;
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-  };
+  const trapDialogKeys = (e: React.KeyboardEvent<HTMLDivElement>) => handleDialogKeys(e, e.currentTarget, () => setFocused(false));
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: "Hi, I'm here to help you find care. Tell me what's going on and where you are, in your own words." },
   ]);
@@ -383,8 +376,8 @@ function Home() {
                 onClick={() => setFocused(true)}
                 onKeyDown={(e) => {
                   // Open on purpose (Enter, Space or typing), never just on focus (WCAG 3.2.1).
-                  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFocused(true); }
-                  else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setInput((v) => v + e.key); setFocused(true); }
+                  const k = chatTriggerKey(e);
+                  if (k.open) { e.preventDefault(); if (k.append) setInput((v) => v + k.append); setFocused(true); }
                 }}
                 aria-haspopup="dialog"
                 aria-description="Press Enter or start typing to open the message box"
