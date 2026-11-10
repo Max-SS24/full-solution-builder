@@ -74,7 +74,7 @@ function AuthPage() {
           <div className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[30px] sm:p-8">
             <h1 className="mb-4 font-display text-3xl font-bold">Check your email</h1>
             <EmailCodeStep email={codeFor} onVerified={async () => { await completeMfa(); nav({ to: "/" }); }}
-              onRecovery={async (c) => { const r = await redeemRecoveryCode({ data: { code: c } }); toast.success(`Signed in. You have ${r.remaining} recovery codes left.`); nav({ to: "/" }); }}
+              onRecovery={async (c) => { const r = await redeemRecoveryCode({ data: { code: c } }); window.__lovableEvents?.track?.("project.recovery_code_sign_in", { codes_left: r.remaining }); toast.success(`Signed in. You have ${r.remaining} recovery codes left.`); nav({ to: "/" }); }}
               onCancel={async () => { await supabase.auth.signOut(); setCodeFor(null); nav({ to: "/auth", search: {} }); }} />
           </div>
         ) : (

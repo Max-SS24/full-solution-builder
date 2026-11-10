@@ -21,3 +21,14 @@ export function recoveryNoticeText(lastUsedAt: string | null, format: (d: Date) 
   if (!lastUsedAt) return null;
   return `A recovery code was used to sign in on ${format(new Date(lastUsedAt))}. If that wasn't you, change your password and make new recovery codes.`;
 }
+
+const LABELS: Record<string, string> = {
+  sign_in: "Signed in with a recovery code",
+  revoked: "Recovery codes revoked",
+  regenerated: "New recovery codes made",
+};
+
+/** Plain label for one recovery-code activity entry. */
+export function recoveryEventLabel(kind: string): string {
+  return LABELS[kind] ?? "Recovery code activity";
+}

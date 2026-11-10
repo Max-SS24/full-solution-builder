@@ -457,6 +457,27 @@ export type Database = {
         }
         Relationships: []
       }
+      mfa_recovery_events: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mfa_sessions: {
         Row: {
           cleared_at: string
