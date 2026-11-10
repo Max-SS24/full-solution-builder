@@ -55,6 +55,63 @@
         }
       }
     },
+    "project.recovery_code_sign_in": {
+      "event_schema_version": 1,
+      "description": "A person finished signing in using a recovery code.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "codes_left"
+        ],
+        "properties": {
+          "codes_left": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "project.recovery_codes_generated": {
+      "event_schema_version": 1,
+      "description": "A person made a new set of recovery codes (first set or replacement).",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "first_set",
+          "after_use"
+        ],
+        "properties": {
+          "first_set": {
+            "type": "boolean"
+          },
+          "after_use": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "project.recovery_codes_revoked": {
+      "event_schema_version": 1,
+      "description": "A person revoked all of their recovery codes from the account page.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      }
+    },
     "project.reopened_care_options_checked": {
       "event_schema_version": 1,
       "description": "A saved chat finishes rechecking its care options; counts include unavailable options. Fires once per completed reopen.",
