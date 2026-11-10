@@ -12,4 +12,10 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Pre-bundle Radix packages with React so a late dependency re-scan can't load a second React copy.
+  vite: {
+    optimizeDeps: {
+      include: ["react", "react-dom", "@radix-ui/react-dialog", "@radix-ui/react-switch"],
+    },
+  },
 });
