@@ -1,10 +1,12 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { routeTree } from "@/routeTree.gen";
 
+// The root route renders a full <html> document, so mount into `document`
+// itself (a <div> container can't hold <html>, which left it empty).
 function renderAt(path: string) {
   const queryClient = new QueryClient();
   const router = createRouter({
@@ -12,7 +14,7 @@ function renderAt(path: string) {
     context: { queryClient },
     history: createMemoryHistory({ initialEntries: [path] }),
   });
-  return render(<RouterProvider router={router} />);
+  return render(<RouterProvider router={router} />, { container: document as unknown as HTMLElement });
 }
 
 afterEach(() => {
@@ -20,20 +22,18 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// Assert only that the router mounts and paints, never page content:
-// routes are rewritten as the app is built and this must keep passing.
+// Use landmarks and roles, not copy, so routine text edits keep these passing.
 describe("App routing", () => {
   it("renders the index route", async () => {
-    const { container } = renderAt("/");
-
-    await waitFor(() => expect(container.firstChild ?? (document.body.textContent?.trim() || null)).not.toBeNull());
+    renderAt("/");
+    expect(await screen.findByRole("main", {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Veterans Crisis Line" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
   });
 
   it("renders the not-found route", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
-
-    const { container } = renderAt("/this-route-does-not-exist");
-
-    await waitFor(() => expect(container.firstChild ?? (document.body.textContent?.trim() || null)).not.toBeNull());
+    renderAt("/this-route-does-not-exist");
+    expect(await screen.findByRole("heading", { level: 1, name: "404" }, { timeout: 5000 })).toBeInTheDocument();
   });
 });
