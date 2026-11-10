@@ -27,7 +27,7 @@ describe("App routing", () => {
   it("renders the index route", async () => {
     renderAt("/");
     await new Promise((r) => setTimeout(r, 1500));
-    console.log("DBG", document.documentElement.outerHTML.slice(0, 1500));
+    console.log("DBG", document.body.outerHTML.slice(0, 1500));
     expect(await screen.findByRole("main", {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: "Veterans Crisis Line" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
