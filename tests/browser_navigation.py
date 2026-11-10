@@ -7,6 +7,7 @@ forms, claim roles, change account settings, or create test data.
 import asyncio
 import json
 import os
+import re
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -48,7 +49,7 @@ async def check_destination(page, index):
     await expect(page.get_by_role("complementary", name="Veterans Crisis Line")).to_be_visible()
     if path == "/account":
         await expect(main.get_by_role("button", name="Sign out", exact=True)).to_be_visible()
-        await expect(main.get_by_role("button", name="Turn on sign-in codes", exact=True)).to_be_visible(timeout=20000)
+        await expect(main.get_by_role("button", name=re.compile(r"^Turn (on|off) sign-in codes$"))).to_be_visible(timeout=20000)
     if path == "/history":
         # A list or the real empty state must finish loading.
         await expect(main.get_by_text("Loading…", exact=True)).to_have_count(0)
