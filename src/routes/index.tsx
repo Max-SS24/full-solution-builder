@@ -380,10 +380,14 @@ function Home() {
                 id="msg"
                 value={input}
                 readOnly
-                onFocus={() => setFocused(true)}
                 onClick={() => setFocused(true)}
+                onKeyDown={(e) => {
+                  // Open on purpose (Enter, Space or typing), never just on focus (WCAG 3.2.1).
+                  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFocused(true); }
+                  else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setInput((v) => v + e.key); setFocused(true); }
+                }}
                 aria-haspopup="dialog"
-                aria-description="Opens the message box"
+                aria-description="Press Enter or start typing to open the message box"
                 placeholder="Type your situation…"
                 className="min-w-0 cursor-text rounded-full border-[3px] border-ink bg-cream px-4 py-2.5 text-sm placeholder:text-ink/45 focus:outline-none focus-visible:ring-4 focus-visible:ring-sky focus-visible:ring-offset-2"
               />
