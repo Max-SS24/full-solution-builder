@@ -58,7 +58,7 @@ function Questionnaire() {
                 </div>
               ) : (
                 <input value={a[q.key] ?? ""} onChange={(e) => set(q.key, e.target.value.slice(0, 120))} placeholder={q.placeholder}
-                  className="mt-3 w-full rounded-full border-[3px] border-ink bg-cream px-4 py-2 text-sm focus:outline-none" />
+                  className="mt-3 w-full rounded-full border-[3px] border-ink bg-cream px-4 py-2 text-sm focus:outline-none focus-visible:ring-4 focus-visible:ring-sky focus-visible:ring-offset-2" />
               )}
             </fieldset>
           ))}

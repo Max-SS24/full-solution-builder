@@ -41,7 +41,7 @@ export function SiteHeader() {
 
 export function CrisisBar() {
   return (
-    <section className="bg-coral text-paper">
+    <aside aria-label="Crisis support" className="bg-coral text-paper">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-7 text-center sm:px-6 md:flex-row md:justify-between md:text-left">
         <div>
           <div className="font-display text-2xl font-bold">In a crisis right now?</div>
@@ -52,6 +52,6 @@ export function CrisisBar() {
           <a href="sms:838255" className="rounded-full border-[3px] border-ink bg-ink px-5 py-3 text-center text-sm font-bold text-paper">💬 Text 838255</a>
         </div>
       </div>
-    </section>
+    </aside>
   );
 }
