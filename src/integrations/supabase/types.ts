@@ -82,6 +82,7 @@ export type Database = {
           geo_estimated: boolean
           homepage_check: Json | null
           homepage_checked_at: string | null
+          hours: string | null
           id: string
           insurance: string[]
           kind: string
@@ -114,6 +115,7 @@ export type Database = {
           geo_estimated?: boolean
           homepage_check?: Json | null
           homepage_checked_at?: string | null
+          hours?: string | null
           id?: string
           insurance?: string[]
           kind: string
@@ -146,6 +148,7 @@ export type Database = {
           geo_estimated?: boolean
           homepage_check?: Json | null
           homepage_checked_at?: string | null
+          hours?: string | null
           id?: string
           insurance?: string[]
           kind?: string
