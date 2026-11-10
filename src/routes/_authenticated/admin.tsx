@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: Admin,
   validateSearch: (search: Record<string, unknown>): { from?: string; to?: string } => {
     const valid = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v;
-    return { from: valid(search.from) ? String(search.from) : undefined, to: valid(search.to) ? String(search.to) : undefined };
+    return { ...(valid(search["from"]) ? { from: String(search["from"]) } : {}), ...(valid(search["to"]) ? { to: String(search["to"]) } : {}) };
   },
 });
 
@@ -275,7 +275,7 @@ function Analytics() {
       {dates}
       <h3 className="font-display text-xl font-bold">Selected period · {from} to {to}</h3>
       <div className="my-4 grid grid-cols-2 gap-4 border-y-2 border-ink/20 py-4"><div><p className="font-display text-3xl font-bold">{d.signups_period}</p><p className="text-sm font-semibold">Sign-ups in selected period</p></div><div><p className="font-display text-3xl font-bold">{d.searches_period}</p><p className="text-sm font-semibold">Saved searches in selected period</p></div></div>
-      <div className="h-64 min-w-0"><ResponsiveContainer width="100%" height="100%"><LineChart data={d.activity_daily}><CartesianGrid stroke="var(--color-ink)" opacity={0.15} /><XAxis dataKey="day" tickFormatter={(s: string) => s.slice(5)} minTickGap={28} /><YAxis allowDecimals={false} width={35} /><Tooltip /><Line name="Sign-ups" dataKey="signups" stroke="var(--color-mint)" strokeWidth={2} isAnimationActive={false} /><Line name="Saved searches" dataKey="searches" stroke="var(--color-ink)" strokeWidth={2} isAnimationActive={false} /></LineChart></ResponsiveContainer></div>
+      <div className="h-64 min-w-0"><ResponsiveContainer width="100%" height="100%"><LineChart data={d.activity_daily ?? []}><CartesianGrid stroke="var(--color-ink)" opacity={0.15} /><XAxis dataKey="day" tickFormatter={(s: string) => s.slice(5)} minTickGap={28} /><YAxis allowDecimals={false} width={35} /><Tooltip /><Line name="Sign-ups" dataKey="signups" stroke="var(--color-mint)" strokeWidth={2} isAnimationActive={false} /><Line name="Saved searches" dataKey="searches" stroke="var(--color-ink)" strokeWidth={2} isAnimationActive={false} /></LineChart></ResponsiveContainer></div>
       <div className="mb-6 flex gap-4 text-xs font-semibold"><span className="text-mint">● Sign-ups</span><span>● Saved searches</span></div>
       <h3 className="font-display text-xl font-bold">Current snapshot</h3>
       <p className="text-sm text-ink/60">Current account and care totals; not historical snapshots. "Active" means signed in during the last 30 days.</p>
