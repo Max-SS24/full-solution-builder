@@ -124,7 +124,7 @@ function Home() {
       hasRenderedMessages.current = true;
       return;
     }
-    endRef.current?.scrollIntoView({ block: "nearest" });
+    const box = endRef.current?.parentElement; if (box) box.scrollTop = box.scrollHeight;
   }, [messages]);
   const { h } = Route.useSearch();
   useEffect(() => {
@@ -301,12 +301,12 @@ function Home() {
             </p>
             <p className="mt-1 font-semibold">You don't have to go through this alone, please reach out to one of these right now. They're free, confidential and open 24/7.</p>
             <div className="mt-3 grid gap-2 text-sm font-bold sm:grid-cols-2 lg:grid-cols-3">
-              <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">📞 Veterans Crisis Line<br />Call 988, then press 1</a>
-              <a href="sms:838255" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">💬 Text the Veterans Crisis Line<br />838255</a>
-              <a href="https://www.veteranscrisisline.net/get-help-now/chat/" target="_blank" rel="noreferrer" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">🖥️ Veterans Crisis Line chat<br />Chat online now</a>
-              <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">☎️ 988 Suicide &amp; Crisis Lifeline<br />Call or text 988</a>
-              <a href="sms:741741?&body=HOME" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">✉️ Crisis Text Line<br />Text HOME to 741741</a>
-              <a href="tel:911" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard">🚨 Emergency Services<br />Call 911 or go to the nearest ER{danger === "others" ? " if anyone is in danger" : ""}</a>
+              <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">📞 </span>Veterans Crisis Line<br />Call 988, then press 1</a>
+              <a href="sms:838255" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">💬 </span>Text the Veterans Crisis Line<br />838255</a>
+              <a href="https://www.veteranscrisisline.net/get-help-now/chat/" target="_blank" rel="noreferrer" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">🖥️ </span>Veterans Crisis Line chat<br />Chat online now</a>
+              <a href="tel:988" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">☎️ </span>988 Suicide &amp; Crisis Lifeline<br />Call or text 988</a>
+              <a href="sms:741741?&body=HOME" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">✉️ </span>Crisis Text Line<br />Text HOME to 741741</a>
+              <a href="tel:911" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">🚨 </span>Emergency Services<br />Call 911 or go to the nearest ER{danger === "others" ? " if anyone is in danger" : ""}</a>
             </div>
             <p className="mt-3 text-sm font-semibold">Your closest care matches are listed below too.</p>
           </div>
@@ -380,10 +380,14 @@ function Home() {
                 id="msg"
                 value={input}
                 readOnly
-                onFocus={() => setFocused(true)}
                 onClick={() => setFocused(true)}
+                onKeyDown={(e) => {
+                  // Open on purpose (Enter, Space or typing), never just on focus (WCAG 3.2.1).
+                  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFocused(true); }
+                  else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setInput((v) => v + e.key); setFocused(true); }
+                }}
                 aria-haspopup="dialog"
-                aria-description="Opens the message box"
+                aria-description="Press Enter or start typing to open the message box"
                 placeholder="Type your situation…"
                 className="min-w-0 cursor-text rounded-full border-[3px] border-ink bg-cream px-4 py-2.5 text-sm placeholder:text-ink/45 focus:outline-none focus-visible:ring-4 focus-visible:ring-sky focus-visible:ring-offset-2"
               />
@@ -451,7 +455,7 @@ function Home() {
                   {myFacility.address && <p>📍 {myFacility.address}</p>}
                   {myFacility.phone && <p>📞 <a className="font-semibold underline" href={`tel:${myFacility.phone}`}>{myFacility.phone}</a></p>}
                   {myFacility.hours && <p>🕒 {myFacility.hours} <span className="block text-xs text-ink/65">{HOURS_NOTICE}</span></p>}
-                  {myFacility.url && <p><a className="font-bold underline" href={myFacility.url} target="_blank" rel="noreferrer">Official VA.gov page ↗</a></p>}
+                  {myFacility.url && <p><a className="font-bold underline" href={myFacility.url} target="_blank" rel="noreferrer">Official VA.gov page<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a></p>}
                 </div>
               ) : (
                 <p className="mt-2 text-sm text-ink/75">We couldn't match this name to a VA.gov listing near you, so we can't show its address or phone yet. Try the full name, or tell us the city it's in.</p>
@@ -476,7 +480,7 @@ function Home() {
                       <p className="mt-1 text-sm text-ink/75">{s.detail}</p>
                       <p className="mt-2 rounded-xl border-2 border-ink/20 bg-cream px-3 py-2 text-xs text-ink/70">
                         <span className="font-bold text-ink">Source:</span>{" "}
-                        <a href={s.url} target="_blank" rel="noreferrer" className="break-all font-bold underline">{s.linkLabel}, {s.url.replace("https://www.", "")} ↗</a>
+                        <a href={s.url} target="_blank" rel="noreferrer" className="break-all font-bold underline">{s.linkLabel}, {s.url.replace("https://www.", "")}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
                         <span className="block sm:inline sm:before:content-['_·_']">Last verified {new Date(s.checked + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>
                       </p>
                     </div>
@@ -557,19 +561,19 @@ function Home() {
                       {r.source_url.includes("npiregistry") && (
                         <a className="mt-3 block rounded-full border-[3px] border-ink bg-paper px-4 py-2 text-center text-xs font-bold shadow-hard" target="_blank" rel="noreferrer"
                           href={`https://www.google.com/search?q=${encodeURIComponent(`${r.name} ${r.city ?? ""} ${r.state ?? ""} insurance accepted`)}`}>
-                          🔎 Look up this clinician’s practice ↗
+                          🔎 Look up this clinician’s practice<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span>
                         </a>
                       )}
                     </div>
                   )}
                   <div className="border-t-[3px] border-ink p-5">
                     {r.reopenCheck?.status === "unavailable" ? <p className="text-sm font-bold">This saved option is unavailable. Ask the chat for fresh matches.</p> : <div className="space-y-3">
-                      {!isVaKind(r.kind) && (communityHomepage(r) ? <a href={communityHomepage(r) ?? undefined} target="_blank" rel="noopener noreferrer" className="block rounded-full border-[3px] border-ink bg-paper px-4 py-2.5 text-center text-sm font-bold shadow-hard">Visit provider website ↗</a> : <p className="text-xs text-ink/65">Provider website not listed by the source.{r.phone ? " Call the office for its website." : ""}</p>)}
+                      {!isVaKind(r.kind) && (communityHomepage(r) ? <a href={communityHomepage(r) ?? undefined} target="_blank" rel="noopener noreferrer" className="block rounded-full border-[3px] border-ink bg-paper px-4 py-2.5 text-center text-sm font-bold shadow-hard">Visit provider website<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a> : <p className="text-xs text-ink/65">Provider website not listed by the source.{r.phone ? " Call the office for its website." : ""}</p>)}
                       {!isVaKind(r.kind) && r.homepageCheck && <p className={`rounded-lg border-2 border-ink px-3 py-2 text-xs font-semibold ${r.homepageCheck.status === "working" ? "bg-minttint" : "bg-sun"}`}>
                         {r.homepageCheck.status === "working" ? "✓ Provider website works" : r.homepageCheck.status === "unavailable" ? "⚠ Provider website unavailable. Call the office; this does not mean care is unavailable." : r.homepageCheck.status === "unexpected_redirect" ? `⚠ Unexpected website redirect${r.homepageCheck.redirectedTo ? ` to ${r.homepageCheck.redirectedTo}` : ""}. Confirm the website with the office before using it.` : "Website could not be confirmed (it may block automated checks). Call the office to confirm."}
                         <span className="mt-1 block">Website checked: {new Date(r.homepageCheck.checkedAt).toLocaleString()}</span>
                       </p>}
-                      <a href={r.source_name.toLowerCase().includes("findtreatment") || r.id.startsWith("ft-") ? "https://findtreatment.gov/locator" : r.source_url} target="_blank" rel="noopener noreferrer" className="block rounded-full bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">View original source ↗</a>
+                      <a href={r.source_name.toLowerCase().includes("findtreatment") || r.id.startsWith("ft-") ? "https://findtreatment.gov/locator" : r.source_url} target="_blank" rel="noopener noreferrer" className="block rounded-full bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">View original source<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
                     </div>}
                     <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[11px] font-semibold text-ink/60">
                       <dt>Verified by:</dt><dd className="text-ink">{r.source_name}</dd>
@@ -670,9 +674,9 @@ function VaAvailability({ status, checkedAt, location, vaResults }: { status: Va
       {(status !== "live" || live === 0) && (
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <a href={locator} target="_blank" rel="noreferrer" className="rounded-full border-[3px] border-ink bg-navy px-4 py-2.5 text-center font-bold text-cream shadow-hard">
-            Find VA locations near {location ?? "you"} on VA.gov ↗
+            Find VA locations near {location ?? "you"} on VA.gov<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span>
           </a>
-          <a href="tel:8772228387" className="rounded-full border-[3px] border-ink bg-paper px-4 py-2.5 text-center font-bold shadow-hard">📞 Call VA: 877-222-8387</a>
+          <a href="tel:8772228387" className="rounded-full border-[3px] border-ink bg-paper px-4 py-2.5 text-center font-bold shadow-hard"><span aria-hidden="true">📞 </span>Call VA: 877-222-8387</a>
         </div>
       )}
     </div>

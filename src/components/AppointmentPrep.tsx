@@ -47,14 +47,14 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
                   <p className="text-ink/80">{v.fact.suggests}</p>
                   <p className="rounded-xl border-2 border-ink/20 bg-cream px-3 py-2 text-xs text-ink/70">
                     <span className="font-bold text-ink">Source:</span>{" "}
-                    <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-all font-bold underline">VA.gov – {v.fact.sourceLabel} ↗</a>
+                    <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-all font-bold underline">VA.gov – {v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
                     <span className="block">✓ Confirmed on VA.gov · {fmt(v.checkedAt)}</span>
                   </p>
                 </li>
               ) : (
                 <li key={v.fact.id} className="rounded-xl border-2 border-coral px-3 py-2 text-sm">
                   {PREP_UNCONFIRMED}{" "}
-                  <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-all font-bold underline">{v.fact.sourceLabel} ↗</a>
+                  <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-all font-bold underline">{v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
                 </li>
               ))}
             </ul>
@@ -69,7 +69,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
             {ok.filter((v) => v.fact.askProvider).map((v) => (
               <li key={v.fact.id} className="flex gap-3">
                 <input type="checkbox" aria-label={v.fact.askProvider} className="mt-1 h-4 w-4" />
-                <span>{v.fact.askProvider} <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-bold underline">Source ↗</a></span>
+                <span>{v.fact.askProvider} <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-bold underline">Source<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a></span>
               </li>
             ))}
           </ul>
@@ -83,7 +83,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
             const c = links[l.url];
             return (
               <li key={l.url} className="rounded-xl border-2 border-ink/20 bg-cream px-3 py-2 text-sm">
-                <a href={l.url} target="_blank" rel="noreferrer" className="break-all font-bold underline">{l.title} ↗</a>
+                <a href={l.url} target="_blank" rel="noreferrer" className="break-all font-bold underline">{l.title}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
                 <span className={`block text-xs font-semibold ${c && !c.ok ? "text-coral" : "text-ink/70"}`}>
                   {!c ? "Not checked yet" : c.ok ? `✓ Verified · ${fmt(c.checked_at)}` : `Needs review: couldn't confirm on ${fmt(c.checked_at)}`}
                 </span>

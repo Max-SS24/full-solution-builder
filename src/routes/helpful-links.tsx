@@ -37,7 +37,7 @@ function HelpfulLinksPage() {
         {l.form && <span className="mb-2 w-fit rounded-full bg-sun px-3 py-0.5 text-xs font-bold">{l.form}</span>}
         <p className="font-display text-lg font-bold">{l.title}</p>
         <p className="mt-1 flex-1 text-sm text-ink/75">{l.detail}</p>
-        <a href={l.url} target="_blank" rel="noreferrer" className="mt-3 break-all text-sm font-bold underline">{l.url.replace("https://www.", "")} ↗</a>
+        <a href={l.url} target="_blank" rel="noreferrer" className="mt-3 break-all text-sm font-bold underline">{l.url.replace("https://www.", "")}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
         <p className={`mt-2 text-xs font-semibold ${c && !c.ok ? "text-coral" : "text-ink/60"}`}>
           {c && !c.ok ? `Could not confirm this page on ${when}. Check VA.gov directly.` : `✓ Verified on VA.gov · ${when}`}
         </p>

@@ -30,7 +30,7 @@ export function SafetyBar() {
       <aside aria-label="Veterans Crisis Line" className="sticky top-0 z-40 border-b-[3px] border-ink bg-navy text-cream">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 text-sm sm:px-6">
           <span className="font-bold">In crisis?</span>
-          <a href={CRISIS.call.href} className="inline-flex min-h-11 items-center rounded-full bg-cream px-3 font-bold text-ink underline-offset-2 hover:underline">📞 Dial 988, press 1</a>
+          <a href={CRISIS.call.href} className="inline-flex min-h-11 items-center rounded-full bg-cream px-3 font-bold text-ink underline-offset-2 hover:underline"><span aria-hidden="true">📞 </span>Dial 988, press 1</a>
           <a href={CRISIS.text.href} className="hidden min-h-11 items-center font-semibold underline sm:inline-flex">Text 838255</a>
           <Sheet>
             <SheetTrigger className="inline-flex min-h-11 items-center font-semibold underline">More ways to get help</SheetTrigger>
@@ -44,7 +44,7 @@ export function SafetyBar() {
                   <li key={c.href}>
                     <a href={c.href} {...(c.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                       className="flex min-h-12 items-center rounded-2xl border-[3px] border-ink bg-cream px-4 py-3 font-bold shadow-hard">
-                      {c.label}{c.href.startsWith("http") ? " ↗" : ""}
+                      {c.label}{c.href.startsWith("http") ? <><span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></> : null}
                     </a>
                   </li>
                 ))}
