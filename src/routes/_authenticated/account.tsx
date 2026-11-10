@@ -9,7 +9,7 @@ import { deleteMyAccount } from "@/lib/privacy.functions";
 import { visibleQuestions } from "@/lib/questionnaire";
 import { useEffect, useState } from "react";
 import { EmailCodeStep } from "@/components/EmailCodeStep";
-import { mfaStatus, setEmailMfa } from "@/lib/mfa.functions";
+import { createRecoveryCodes, mfaStatus, recoveryStatus, setEmailMfa } from "@/lib/mfa.functions";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({

@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { checkPassword, emailSchema } from "@/lib/password-rules";
 import { EmailCodeStep } from "@/components/EmailCodeStep";
-import { beginMfa, completeMfa } from "@/lib/mfa.functions";
+import { beginMfa, completeMfa, redeemRecoveryCode } from "@/lib/mfa.functions";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): { step?: "code" } => (s["step"] === "code" ? { step: "code" } : {}),
