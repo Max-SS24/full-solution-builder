@@ -1,0 +1,1 @@
+- Appointment-prep guidance is fixed VA.gov-sourced facts in src/lib/appointment-prep.ts; each is shown only after its allowlisted source page still contains its evidence phrases (prep_fact_checks, 1h cache, Sunday job), so stale or changed VA guidance is never presented as current.
