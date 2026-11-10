@@ -72,7 +72,7 @@ function Home() {
     if (e.key !== "Tab") return;
     const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>("button:not([disabled]), textarea, a[href], input"));
     if (!items.length) return;
-    const first = items[0], last = items[items.length - 1];
+    const first = items[0]!, last = items[items.length - 1]!;
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   };
