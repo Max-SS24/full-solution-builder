@@ -141,7 +141,7 @@ function Admin() {
               ))}
             </div>
             {tab === "analytics" && <Analytics />}
-            {tab === "weekly" && <WeeklyChecks />}
+            {tab === "weekly" && <><WeeklyChecks /><GuidanceSources /></>}
             {tab === "options" && <CareOptions />}
             {tab === "sources" && <>
              <form onSubmit={add} className="mt-8 grid min-w-0 gap-3 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:p-6 md:grid-cols-2 md:rounded-[26px]">

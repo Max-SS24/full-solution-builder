@@ -7,7 +7,7 @@ const STAGES: VaStage[] = ["not_applied", "applied", "registered"];
 
 export const Route = createFileRoute("/appointment-prep")({
   validateSearch: (s: Record<string, unknown>): { stage?: VaStage } =>
-    STAGES.includes(s.stage as VaStage) ? { stage: s.stage as VaStage } : {},
+    STAGES.includes(s["stage"] as VaStage) ? { stage: s["stage"] as VaStage } : {},
   head: () => ({
     meta: [
       { title: "Prepare for your appointment | VA Navigator" },
