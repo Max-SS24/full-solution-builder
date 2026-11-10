@@ -617,6 +617,7 @@ export type Database = {
       }
       log_password_reset: { Args: { _email: string }; Returns: string }
       log_validation_run: { Args: { _details: Json }; Returns: undefined }
+      recovery_activity: { Args: never; Returns: Json }
       revoke_admin: { Args: { _user_id: string }; Returns: undefined }
     }
     Enums: {

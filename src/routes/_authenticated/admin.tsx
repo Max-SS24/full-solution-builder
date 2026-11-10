@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { WeeklyCheckAlert, WeeklyChecks } from "@/components/WeeklyChecks";
 import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { RecoveryTrends } from "@/components/RecoveryActivity";
+import { analyticsCsv, downloadCsv, reportCsv, type AnalyticsStats } from "@/lib/activity-reports";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -219,19 +222,13 @@ function Admin() {
   );
 }
 
-type Stats = {
-  total_users: number; active_users: number; new_7d: number; new_30d: number; searches_total: number; searches_7d: number;
-  users_with_prefs: number; care_options: number; care_options_review: number;
-  top_needs: { label: string; count: number }[]; top_locations: { label: string; count: number }[];
-};
-
 function Analytics() {
   const q = useQuery({
     queryKey: ["admin-analytics"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_analytics");
       if (error) throw error;
-      return data as unknown as Stats;
+      return data as unknown as AnalyticsStats;
     },
   });
   if (q.isLoading) return <p className="mt-8">Loading numbers…</p>;
@@ -259,6 +256,7 @@ function Analytics() {
   );
   return (
     <section className="mt-8">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="font-display text-2xl font-bold">Analytics</h2><Button variant="outline" onClick={() => downloadCsv(analyticsCsv(d), "admin-analytics.csv")}><Download />Export summary & rankings CSV</Button></div>
       <p className="text-sm text-ink/60">"Active" means signed in during the last 30 days. Only totals are shown, no names or emails.</p>
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
         {cards.map(([l, n, bg]) => (
@@ -272,6 +270,7 @@ function Analytics() {
         <List title="Most requested needs" rows={d.top_needs} />
         <List title="Most searched locations" rows={d.top_locations} />
       </div>
+      <RecoveryTrends days={d.recovery_daily} reportedAt={d.reported_at} refresh={() => { void q.refetch(); }} refreshing={q.isFetching} />
     </section>
   );
 }
@@ -294,11 +293,9 @@ function CareOptions() {
     (!type || r.va_vs_community === type) &&
     (!ins || r.insurance.some((i) => i.includes(ins.toLowerCase()))));
   function exportCsv() {
-    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const head = ["State", "City", "VA or community", "Insurance", "Name", "Kind", "Phone", "Website", "Source", "Status", "Last validated"];
-    const body = rows.map((r) => [r.state, r.city, r.va_vs_community, r.insurance.join("; "), r.name, r.kind, r.phone, r.website, (r.data_sources as { name: string } | null)?.name, r.status, r.last_validated].map(esc).join(","));
-    const url = URL.createObjectURL(new Blob([[head.join(","), ...body].join("\n")], { type: "text/csv" }));
-    const a = document.createElement("a"); a.href = url; a.download = "care-options.csv"; a.click(); URL.revokeObjectURL(url);
+    const body = rows.map((r) => [r.state, r.city, r.va_vs_community, r.insurance.join("; "), r.name, r.kind, r.phone, r.website, (r.data_sources as { name: string } | null)?.name, r.status, r.last_validated]);
+    downloadCsv(reportCsv([head, ...body]), "care-options.csv");
   }
   const inputCls = "min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2 text-sm";
   return (
@@ -310,7 +307,7 @@ function CareOptions() {
           <option value="">VA & community</option><option value="va">VA</option><option value="community">Community</option>
         </select>
         <input placeholder="Insurance (e.g. tricare)" value={ins} onChange={(e) => setIns(e.target.value)} className={inputCls} />
-        <button onClick={exportCsv} disabled={!rows.length} className="rounded-full border-[3px] border-ink bg-mint px-4 py-2 text-sm font-bold text-paper shadow-hard disabled:opacity-60">Export CSV</button>
+        <Button onClick={exportCsv} disabled={!rows.length}><Download />Export CSV</Button>
       </div>
       <p className="mt-3 text-xs font-semibold text-ink/60">{rows.length} options</p>
       <div className="mt-2 max-w-full overflow-x-auto rounded-[22px] border-[3px] border-ink bg-paper">
