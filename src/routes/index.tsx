@@ -1,3 +1,4 @@
+import { HOURS_NOTICE } from "@/lib/va-hours";
 import type { TerritoryHelp } from "@/lib/territory-guidance";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -430,6 +431,7 @@ function Home() {
                 <div className="mt-2 space-y-1 text-sm">
                   {myFacility.address && <p>📍 {myFacility.address}</p>}
                   {myFacility.phone && <p>📞 <a className="font-semibold underline" href={`tel:${myFacility.phone}`}>{myFacility.phone}</a></p>}
+                  {myFacility.hours && <p>🕒 {myFacility.hours} <span className="block text-xs text-ink/65">{HOURS_NOTICE}</span></p>}
                   {myFacility.url && <p><a className="font-bold underline" href={myFacility.url} target="_blank" rel="noreferrer">Official VA.gov page ↗</a></p>}
                 </div>
               ) : (
@@ -523,6 +525,7 @@ function Home() {
                     {r.veteran_focus && <p>🎖️ Veteran-experienced (per source)</p>}
                     {r.bio && <p className="text-ink/65">📝 {r.bio}</p>}
                     {r.phone && <p>📞 <a className="underline" href={`tel:${r.phone}`}>{r.phone}</a></p>}
+                    {r.hours && <p>🕒 {r.hours} <span className="block text-xs text-ink/65">{HOURS_NOTICE}</span></p>}
                   </div>
                   {r.payment.length === 0 && (
                     <div className="border-t-[3px] border-ink bg-sun/20 p-5 text-sm">

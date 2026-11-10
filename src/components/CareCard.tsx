@@ -1,7 +1,8 @@
 import type { CareResult } from "@/lib/navigator.functions";
 import { guideFor, type VaStage } from "@/lib/va-guide";
+import { HOURS_NOTICE } from "@/lib/va-hours";
 
-type Facility = { name: string; address: string | null; phone: string | null; url: string | null; found: boolean } | null;
+type Facility = { name: string; address: string | null; phone: string | null; url: string | null; hours?: string | null; found: boolean } | null;
 
 const day = (d: string) => new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 
@@ -28,6 +29,7 @@ export function CareCard({ facility, results, stage, facilityUnknown }: {
             <p className="font-display text-lg font-bold">{facility.name}</p>
             {facility.address && <p>📍 {facility.address}</p>}
             {facility.phone && <p>📞 {facility.phone}</p>}
+            {facility.hours && <p>🕒 {facility.hours}</p>}
             {facility.url && <p className="break-all">🔗 {facility.url}</p>}
           </div>
         )}
@@ -40,6 +42,7 @@ export function CareCard({ facility, results, stage, facilityUnknown }: {
                   <p className="font-bold">{r.name}{r.distance_miles != null ? ` · ${Math.round(r.distance_miles)} mi` : ""}</p>
                   <p className="text-ink/75">{[r.kind, [r.city, r.state].filter(Boolean).join(", ")].filter(Boolean).join(" · ")}</p>
                   {r.phone && <p>📞 {r.phone}</p>}
+                  {r.hours && <p>🕒 {r.hours}</p>}
                   <p className="break-all text-xs text-ink/70">{r.source_url} · verified {day(r.last_checked)}</p>
                 </li>
               ))}
@@ -48,7 +51,8 @@ export function CareCard({ facility, results, stage, facilityUnknown }: {
         )}
         <div className="mt-4">
           <p className="text-xs font-bold uppercase text-ink/60">Clinic hours</p>
-          <p>Hours change often and aren't in our listings. Call the number above or check the facility's VA.gov page before you go.</p>
+          <p>VA hours above come from each facility's official VA.gov page, re-checked every Sunday. Community providers don't publish hours with us.</p>
+          <p className="mt-1 text-xs font-semibold text-ink/75">⚠️ {HOURS_NOTICE}</p>
         </div>
         <div className="mt-4">
           <p className="text-xs font-bold uppercase text-ink/60">Key VA numbers</p>
