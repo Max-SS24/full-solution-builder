@@ -14,7 +14,7 @@ export function PersonalRecoveryActivity() {
   return <div className="mt-5 border-t-2 border-ink/15 pt-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <h3 className="font-bold">Recovery code activity</h3>
-      <Button variant="outline" disabled={!q.data?.events.length || q.isFetching} onClick={() => downloadCsv(recoveryHistoryCsv(q.data?.events ?? []), "recovery-code-activity.csv")}><Download />Export activity CSV</Button>
+      <Button variant="outline" disabled={!q.data || q.isFetching} onClick={() => downloadCsv(recoveryHistoryCsv(q.data?.events ?? []), "recovery-code-activity.csv")}><Download />Export activity CSV</Button>
     </div>
     {q.isPending ? <p role="status" className="mt-2 text-sm">Loading activity…</p> : q.isError ? <div className="mt-2"><p role="alert">Couldn’t load recovery activity.</p><Button variant="outline" onClick={() => q.refetch()}>Try again</Button></div> : !q.data.events.length ? <p className="mt-2 text-sm">No activity yet.</p> : <>
       <p className="mt-2 text-xs text-ink/60">{q.data.events.length} events · newest first</p>

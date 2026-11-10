@@ -8,7 +8,7 @@ import { WeeklyCheckAlert, WeeklyChecks } from "@/components/WeeklyChecks";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { RecoveryTrends } from "@/components/RecoveryActivity";
-import { analyticsCsv, downloadCsv, type AnalyticsStats } from "@/lib/activity-reports";
+import { analyticsCsv, downloadCsv, reportCsv, type AnalyticsStats } from "@/lib/activity-reports";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -293,11 +293,9 @@ function CareOptions() {
     (!type || r.va_vs_community === type) &&
     (!ins || r.insurance.some((i) => i.includes(ins.toLowerCase()))));
   function exportCsv() {
-    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const head = ["State", "City", "VA or community", "Insurance", "Name", "Kind", "Phone", "Website", "Source", "Status", "Last validated"];
-    const body = rows.map((r) => [r.state, r.city, r.va_vs_community, r.insurance.join("; "), r.name, r.kind, r.phone, r.website, (r.data_sources as { name: string } | null)?.name, r.status, r.last_validated].map(esc).join(","));
-    const url = URL.createObjectURL(new Blob([[head.join(","), ...body].join("\n")], { type: "text/csv" }));
-    const a = document.createElement("a"); a.href = url; a.download = "care-options.csv"; a.click(); URL.revokeObjectURL(url);
+    const body = rows.map((r) => [r.state, r.city, r.va_vs_community, r.insurance.join("; "), r.name, r.kind, r.phone, r.website, (r.data_sources as { name: string } | null)?.name, r.status, r.last_validated]);
+    downloadCsv(reportCsv([head, ...body]), "care-options.csv");
   }
   const inputCls = "min-w-0 rounded-full border-[3px] border-ink bg-cream px-4 py-2 text-sm";
   return (
@@ -309,7 +307,7 @@ function CareOptions() {
           <option value="">VA & community</option><option value="va">VA</option><option value="community">Community</option>
         </select>
         <input placeholder="Insurance (e.g. tricare)" value={ins} onChange={(e) => setIns(e.target.value)} className={inputCls} />
-        <button onClick={exportCsv} disabled={!rows.length} className="rounded-full border-[3px] border-ink bg-mint px-4 py-2 text-sm font-bold text-paper shadow-hard disabled:opacity-60">Export CSV</button>
+        <Button onClick={exportCsv} disabled={!rows.length}><Download />Export CSV</Button>
       </div>
       <p className="mt-3 text-xs font-semibold text-ink/60">{rows.length} options</p>
       <div className="mt-2 max-w-full overflow-x-auto rounded-[22px] border-[3px] border-ink bg-paper">
