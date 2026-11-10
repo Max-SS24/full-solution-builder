@@ -13,14 +13,14 @@
 - Analytics use URL-held inclusive UTC dates and admin_analytics aggregates; snapshot totals stay current. Owner/MFA-checked recovery_activity() provides personal exports; CSVs match displayed data.
 - Community homepages use source-supplied provider_website, separate from source_url; checks use public DNS and manual redirects, flag foreign domains without following, and never imply care closure.
 - Sunday community homepage checks run in bounded managed batches, persisting URL-bound outcomes and separate attempt timestamps in care_options; website failures never alter care status or source verification dates.
-- Community Sunday batches also persist authoritative care-source evidence and one admin-only history row per provider/week; active NPI registration or directory absence never proves care availability or closure, and weekly dashboard alerts derive from persisted outcomes.
+- Community Sunday batches persist care-source evidence and one admin-only history row per provider/week; NPI status or directory absence never proves availability or closure; alerts derive from persisted outcomes.
 - Reopened-chat analytics emit directly through the injected Lovable event global with counts and decisions only; replacement views require half the listing to enter the viewport, avoiding sensitive care data and hidden-result counts.
 - AI provider is chosen server-side only via AI_PROVIDER env (grok|openai|gemini|openrouter) in src/lib/ai/providers.server.ts — users never see or pick the model.
 - Care search reads care_resources joined to data_sources; only enabled sources are returned (RLS), so admins control retrieval by toggling sources.
 - First signed-in user to open /admin becomes admin via claim_first_admin(); roles live in user_roles, never on profiles.
 - Registered-user search preferences live in user_preferences (jsonb, one row per user) and are merged server-side only where the chat left a variable empty.
 - Search history is saved client-side to search_history (owner-only RLS) after each answer; reopened via /?h=<id>.
-- Reopened history uses an authenticated owner-scoped server function to reconcile listings with enabled directory sources and live official checks; unconfirmed checks never refresh verification dates and only allowlisted official hosts may be fetched, to avoid trusting stale snapshots or user-supplied URLs.
+- Reopened history is reconciled by an owner-scoped server fn against enabled sources and allowlisted official hosts; unconfirmed checks never refresh verification dates.
 - Replacement offers require consent, exclude existing results, preserve saved care preferences, and return only newly confirmed listings; replacement conversations are saved separately to preserve the original history.
 - Audit log rows are written only by the audit_changes() trigger on data_sources and api_settings; clients can read (admins) but never write.
 - AI provider precedence: api_settings row (admin page) -> AI_PROVIDER secret -> grok; if the chosen provider has no key or fails, the built-in Lovable AI Gateway (src/lib/ai/gateway.server.ts) is used; keys always remain secrets.
