@@ -1,4 +1,6 @@
 # Roadmap
+- [x] Pre-launch data-flow review: erase all security records on account deletion, remove sample listings, lock first-admin claim to signed-in users.
+- [ ] Care Card print + appointment prep review (part 2)
 - [x] Test browser back/forward after link navigation and direct-load refresh for all 10 pages.
 - [x] Add rendered link-navigation journeys across all app pages, including the email-only password-reset entry.
 - [x] Add deterministic rendered-page smoke tests for all 10 content routes and retain the not-found check.
@@ -16,7 +18,7 @@
 - [x] Backend-only swappable AI provider (Grok default)
 - [x] Admin login + manage authorized data sources
 - [x] Responsive layouts for smartphone, tablet, laptop, and desktop
-- [ ] Grok API key (waiting on user)
+- [x] Grok API key — not needed (built-in AI fallback)
 
 - [x] Emotion vocabulary for needs
 - [x] Emergency box (988/838255/911) shown with top matches on danger signs
@@ -31,4 +33,4 @@
 - [x] Data Storage & Security page
 - [x] Fix "What matters most" matcher
 - [x] Helpful links tab (VA locators + forms), verified every Sunday
-- [ ] VHA directory with per-use verification (waiting on VA_API_KEY; public copies are stale)
+- [x] VHA directory — done keylessly from VA.gov pages
