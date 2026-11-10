@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Test browser back/forward after link navigation and direct-load refresh for all 10 pages.
 - [x] Add rendered link-navigation journeys across all app pages, including the email-only password-reset entry.
 - [x] Add deterministic rendered-page smoke tests for all 10 content routes and retain the not-found check.
 - [x] Add shared custom UTC dates to admin trends, recovery charts, rankings, and matching exports; test period boundaries.
