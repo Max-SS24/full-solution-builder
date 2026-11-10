@@ -56,6 +56,13 @@ async function renderAt(path: string) {
 const clients: QueryClient[] = [];
 
 beforeEach(() => {
+  // jsdom has no layout engine; provide the browser observer API used by
+  // real chart components without replacing those components.
+  vi.stubGlobal("ResizeObserver", class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  });
   localStorage.clear();
   sessionStorage.clear();
   fixtures.signedIn = true;
@@ -95,6 +102,7 @@ afterEach(() => {
   cleanup();
   for (const client of clients.splice(0)) client.clear();
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -141,6 +149,8 @@ describe("App routing", () => {
     if (path === "/auth") expect(within(main).getByRole("textbox", { name: "Email" })).toBeVisible();
     if (path === "/questionnaire") expect(within(main).getAllByRole("group").length).toBeGreaterThan(0);
     if (path === "/appointment-prep") expect(await within(main).findAllByRole("note")).not.toHaveLength(0);
+    expect(main).toBeInTheDocument();
+    expect(router.state.matches.every((match) => match.status === "success")).toBe(true);
   });
 
   it("covers every content route in the generated route tree", () => {
