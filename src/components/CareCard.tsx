@@ -75,7 +75,7 @@ export function CareCard({ facility, results, stage }: {
         )}
         <p className="mt-2 text-xs font-semibold">{HOURS_NOTICE}</p>
         <section className="mt-3">
-          <h4 className="font-bold">Appointment preparation · VA.gov findings</h4>
+          <h4 className="font-bold">If you seek VA-authorized community care · VA.gov findings</h4>
           {steps.length ? <ol className="mt-1 list-decimal space-y-2 pl-5">
             {steps.map((v) => <li key={v.fact.id} className="break-inside-avoid">
               <p><strong>Finding:</strong> {v.fact.finding}</p>
