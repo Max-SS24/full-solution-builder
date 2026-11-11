@@ -5,6 +5,7 @@ import { PREP_DISCLAIMER, PREP_TOPICS, PREP_UNCONFIRMED, applyChecks, factsFor, 
 import type { VaStage } from "@/lib/va-guide";
 import { PREP_LINKS } from "@/lib/helpful-links";
 import { supabase } from "@/integrations/supabase/client";
+import { GuidanceReport } from "@/components/GuidanceReport";
 
 const fmt = (d: string) => new Date(d).toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
 
@@ -59,11 +60,13 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
                     <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-all font-bold underline">VA.gov – {v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
                     <span className="block">✓ Guidance last reviewed against VA.gov: <time dateTime={v.checkedAt}>{fmt(v.checkedAt)}</time></span>
                   </p>
+                  <GuidanceReport fact={v.fact} />
                 </li>
               ) : (
                 <li key={v.fact.id} className="rounded-xl border-2 border-coral px-3 py-2 text-sm">
                   {PREP_UNCONFIRMED}{" "}
                   <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-all font-bold underline">{v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
+                  <GuidanceReport fact={v.fact} />
                 </li>
               ))}
             </ul>
