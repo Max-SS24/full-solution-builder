@@ -6,7 +6,7 @@ import type { VaStage } from "@/lib/va-guide";
 import { PREP_LINKS } from "@/lib/helpful-links";
 import { supabase } from "@/integrations/supabase/client";
 
-const fmt = (d: string) => new Date(d).toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const fmt = (d: string) => new Date(d).toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
 
 export function PrepDisclaimer() {
   return <p role="note" className="rounded-2xl border-[3px] border-ink bg-sun/40 px-4 py-3 text-sm font-semibold">{PREP_DISCLAIMER}</p>;
@@ -39,6 +39,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
   return (
     <div className="space-y-8">
       <PrepDisclaimer />
+      <p role="note" className="text-sm text-ink/75">Each confirmed item shows when VA Navigator last reviewed its supporting evidence on VA.gov. These are automated source checks, not a human review or VA’s publication date.</p>
       {failed && <p className="text-sm font-semibold text-coral">We couldn't reach VA.gov to confirm the guidance right now, so none of it is shown as current.</p>}
       {topics.map((t) => {
         const list = views.filter((v) => v.fact.topic === t);
@@ -56,7 +57,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
                   <p className="rounded-xl border-2 border-ink/20 bg-cream px-3 py-2 text-xs text-ink/70">
                     <span className="font-bold text-ink">Source:</span>{" "}
                     <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-all font-bold underline">VA.gov – {v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
-                    <span className="block">✓ Confirmed on VA.gov · {fmt(v.checkedAt)}</span>
+                    <span className="block">✓ Guidance last reviewed against VA.gov: <time dateTime={v.checkedAt}>{fmt(v.checkedAt)}</time></span>
                   </p>
                 </li>
               ) : (
