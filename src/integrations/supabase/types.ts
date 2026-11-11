@@ -35,6 +35,39 @@ export type Database = {
         }
         Relationships: []
       }
+      appointment_guidance_reports: {
+        Row: {
+          created_at: string
+          details: string
+          fact_id: string
+          finding: string
+          id: string
+          reason: string
+          resolved_at: string | null
+          source_url: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string
+          fact_id: string
+          finding: string
+          id?: string
+          reason: string
+          resolved_at?: string | null
+          source_url: string
+        }
+        Update: {
+          created_at?: string
+          details?: string
+          fact_id?: string
+          finding?: string
+          id?: string
+          reason?: string
+          resolved_at?: string | null
+          source_url?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
