@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Add appointment guidance reports with an admin review inbox; verify submission and review end to end.
 - [x] Pre-launch data-flow review: erase all security records on account deletion, remove sample listings, lock first-admin claim to signed-in users.
 - [x] Care Card print + appointment prep review (part 2): preserve source warnings and supplied addresses, gate guidance on fresh checks, recheck before printing; live private search and one-page PDF verified.
 - [x] Test browser back/forward after link navigation and direct-load refresh for all 10 pages.
