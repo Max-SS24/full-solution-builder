@@ -9,7 +9,7 @@ vi.mock("@tanstack/react-start", () => ({ useServerFn: () => submit }));
 vi.mock("@/lib/guidance-reports.functions", () => ({ submitGuidanceReport: vi.fn() }));
 
 describe("guidance report flow", () => {
-  beforeEach(() => submit.mockReset());
+  beforeEach(() => { submit.mockReset(); });
   function mount() {
     const fact = PREP_FACTS[0];
     if (!fact) throw new Error("Missing fixture");

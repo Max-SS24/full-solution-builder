@@ -1,2 +1,3 @@
 - Appointment-prep guidance is fixed VA.gov-sourced facts in src/lib/appointment-prep.ts; each is shown only after its allowlisted source page still contains its evidence phrases (prep_fact_checks, 1h cache, Sunday job), so stale or changed VA guidance is never presented as current.
 - VA facility hours come from VA.gov ld+json openingHoursSpecification (formatHours in src/lib/va-hours.ts), refreshed in the Sunday VA batch and always shown with HOURS_NOTICE; community rows have no hours.
+- Guidance reports are submitted only through a validated public server function using fixed fact IDs; admins review them, and reports never change fact verification.
