@@ -75,8 +75,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
                   <p className="text-xs font-bold uppercase tracking-wide text-ink/55">What it suggests</p>
                   <p className="text-ink/80">{v.fact.suggests}</p>
                   <p className="rounded-xl border-2 border-ink/20 bg-cream px-3 py-2 text-xs text-ink/70">
-                    <span className="font-bold text-ink">Source:</span>{" "}
-                    <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-all font-bold underline">VA.gov – {v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
+                    <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-words font-bold underline">Read original guidance on VA.gov — {v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
                     <span className="block">✓ Guidance last reviewed against VA.gov: <time dateTime={v.checkedAt}>{fmt(v.checkedAt)}</time></span>
                   </p>
                   <GuidanceReport fact={v.fact} />
@@ -84,7 +83,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
               ) : (
                 <li key={v.fact.id} className="rounded-xl border-2 border-coral px-3 py-2 text-sm">
                   {PREP_UNCONFIRMED}{" "}
-                  <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-all font-bold underline">{v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
+                  <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="block break-words font-bold underline">Read original guidance on VA.gov — {v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
                   <span className="block text-xs text-ink/70">{v.lastCheckedAt ? <>Last checked against VA.gov: <time dateTime={v.lastCheckedAt}>{fmt(v.lastCheckedAt)}</time> (not confirmed)</> : "Not checked against VA.gov in the last hour."}</span>
                   <div className="mt-2">
                     <button type="button" onClick={checkNow} disabled={checking} className="rounded-full border-2 border-ink bg-sun px-3 py-1 text-xs font-bold disabled:opacity-60">
@@ -106,7 +105,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
             {ok.filter((v) => v.fact.askProvider).map((v) => (
               <li key={v.fact.id} className="flex gap-3">
                 <input type="checkbox" aria-label={v.fact.askProvider} className="mt-1 h-4 w-4" />
-                <span>{v.fact.askProvider} <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-bold underline">Source<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a></span>
+                <span>{v.fact.askProvider} <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-bold underline">VA.gov source — {v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a></span>
               </li>
             ))}
           </ul>
