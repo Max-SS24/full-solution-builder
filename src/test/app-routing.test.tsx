@@ -148,7 +148,7 @@ async function expectDestination(router: Awaited<ReturnType<typeof renderAt>>, p
   });
   const main = screen.getByRole("main");
   expect(within(main).getByRole("heading", { level: 1 })).toBeVisible();
-  expect(screen.getAllByRole("navigation")[0]).toBeVisible();
+  expect(screen.getAllByRole("navigation")[0]!).toBeVisible();
   expect(screen.getByRole("complementary", { name: "Veterans Crisis Line" })).toBeVisible();
   if (page.path === "/admin") {
     expect(await within(main).findByRole("button", { name: /Export summary/ })).toBeVisible();
@@ -188,7 +188,7 @@ describe("Rendered link navigation", () => {
     const router = await renderAt("/");
     const journey = [pages[0], ...navigationPages.map(({ page }) => page)];
     for (const { page, name } of navigationPages) {
-      await user.click(await within(screen.getAllByRole("navigation")[0]).findByRole("link", { name }));
+      await user.click(await within(screen.getAllByRole("navigation")[0]!).findByRole("link", { name }));
       await expectDestination(router, page);
     }
     for (const page of journey.slice(0, -1).reverse()) {
@@ -218,7 +218,7 @@ describe("Rendered link navigation", () => {
     const router = await renderAt("/");
     await expectDestination(router, pages[0]);
     for (const { page, name } of navigationPages) {
-      const link = await within(screen.getAllByRole("navigation")[0]).findByRole("link", { name });
+      const link = await within(screen.getAllByRole("navigation")[0]!).findByRole("link", { name });
       expect(link).toHaveAttribute("href", page.path);
       await user.click(link);
       await expectDestination(router, page);
@@ -231,7 +231,7 @@ describe("Rendered link navigation", () => {
     fixtures.signedIn = false;
     const user = userEvent.setup();
     const router = await renderAt("/security");
-    const link = await within(screen.getAllByRole("navigation")[0]).findByRole("link", { name: "Sign in" });
+    const link = await within(screen.getAllByRole("navigation")[0]!).findByRole("link", { name: "Sign in" });
     expect(link).toHaveAttribute("href", "/auth");
     await user.click(link);
     await expectDestination(router, pages[1]);
@@ -279,7 +279,7 @@ describe("Rendered link navigation", () => {
     cleanup();
     const router = await renderAt(destination.pathname);
     await expectDestination(router, pages[2]);
-    await user.click(within(screen.getAllByRole("navigation")[0]).getByRole("link", { name: "Sign in" }));
+    await user.click(within(screen.getAllByRole("navigation")[0]!).getByRole("link", { name: "Sign in" }));
     await expectDestination(router, pages[1]);
   });
 });
