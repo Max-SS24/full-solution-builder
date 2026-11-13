@@ -48,7 +48,7 @@ function HelpfulLinksPage() {
   return (
     <div className="min-h-screen bg-cream text-ink">
       <SiteHeader />
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
         <h1 className="font-display text-3xl font-bold sm:text-4xl">Helpful links</h1>
         <p className="mt-2 max-w-2xl text-ink/75">Official VA.gov locators and forms for getting care and benefits.</p>
         <p className="mt-4 rounded-2xl border-[3px] border-ink bg-minttint px-4 py-3 text-sm font-semibold">

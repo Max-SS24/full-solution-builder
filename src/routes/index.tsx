@@ -306,7 +306,7 @@ function Home() {
         </div>
       )}
 
-      <section className="mx-auto max-w-6xl px-4 pt-8 pb-12 sm:px-6 sm:pt-12 sm:pb-16">
+      <section className="mx-auto max-w-7xl px-4 pt-8 pb-12 sm:px-6 lg:px-8 sm:pt-12 sm:pb-16">
         <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
           <div className="min-w-0">
             <span className="inline-block rounded-full border-[3px] border-ink bg-skytint px-4 py-1.5 text-xs font-bold uppercase tracking-[0.12em]">Confidential · 24/7 · Free</span>
@@ -401,7 +401,7 @@ function Home() {
       </section>
 
       <section className="border-t-[3px] border-ink bg-soft">
-        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
           <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
             <h2 className="min-w-0 font-display text-3xl font-bold sm:text-4xl">
               {results === null ? "Your care options will appear here" : results.length ? `${results.length} care options, ranked for you` : "No matches yet"}
@@ -627,7 +627,7 @@ function Home() {
 
       </main>
       <CrisisBar />
-       <footer className="mx-auto max-w-6xl px-4 py-8 text-center text-xs font-semibold text-ink/40 sm:px-6">
+       <footer className="mx-auto max-w-7xl px-4 py-8 text-center text-xs font-semibold text-ink/40 sm:px-6">
         Every option links to its source and verification date. Nothing here is a substitute for emergency care. <Link to="/security" className="underline">How we store and protect your data</Link>
       </footer>
     </div>
