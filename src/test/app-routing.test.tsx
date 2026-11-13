@@ -131,6 +131,9 @@ const pages = [
   { path: "/account", id: "/_authenticated/account", title: "My account | VA Navigator" },
   { path: "/history", id: "/_authenticated/history", title: "My search history | VA Navigator" },
   { path: "/admin", id: "/_authenticated/admin", title: "Admin | VA Navigator" },
+  { path: "/accessibility", id: "/accessibility", title: "Accessibility statement | VA Navigator" },
+  { path: "/privacy", id: "/privacy", title: "Privacy policy | VA Navigator" },
+  { path: "/terms", id: "/terms", title: "Terms of use & disclaimers | VA Navigator" },
 ] as const;
 
 type Page = (typeof pages)[number];
@@ -145,7 +148,7 @@ async function expectDestination(router: Awaited<ReturnType<typeof renderAt>>, p
   });
   const main = screen.getByRole("main");
   expect(within(main).getByRole("heading", { level: 1 })).toBeVisible();
-  expect(screen.getByRole("navigation")).toBeVisible();
+  expect(screen.getAllByRole("navigation")[0]).toBeVisible();
   expect(screen.getByRole("complementary", { name: "Veterans Crisis Line" })).toBeVisible();
   if (page.path === "/admin") {
     expect(await within(main).findByRole("button", { name: /Export summary/ })).toBeVisible();
@@ -173,12 +176,19 @@ const navigationPages = [
 ] as const;
 
 describe("Rendered link navigation", () => {
+  it.each([["Accessibility", "/accessibility"], ["Privacy", "/privacy"], ["Terms & disclaimers", "/terms"]])("opens %s from the footer", async (name, path) => {
+    const user = userEvent.setup();
+    const router = await renderAt("/");
+    await user.click(within(screen.getByRole("navigation", { name: "Legal" })).getByRole("link", { name }));
+    await expectDestination(router, pages.find((p) => p.path === path)!);
+  });
+
   it("restores every signed-in destination when moving back and forward through link history", async () => {
     const user = userEvent.setup();
     const router = await renderAt("/");
     const journey = [pages[0], ...navigationPages.map(({ page }) => page)];
     for (const { page, name } of navigationPages) {
-      await user.click(await within(screen.getByRole("navigation")).findByRole("link", { name }));
+      await user.click(await within(screen.getAllByRole("navigation")[0]).findByRole("link", { name }));
       await expectDestination(router, page);
     }
     for (const page of journey.slice(0, -1).reverse()) {
@@ -208,7 +218,7 @@ describe("Rendered link navigation", () => {
     const router = await renderAt("/");
     await expectDestination(router, pages[0]);
     for (const { page, name } of navigationPages) {
-      const link = await within(screen.getByRole("navigation")).findByRole("link", { name });
+      const link = await within(screen.getAllByRole("navigation")[0]).findByRole("link", { name });
       expect(link).toHaveAttribute("href", page.path);
       await user.click(link);
       await expectDestination(router, page);
@@ -221,7 +231,7 @@ describe("Rendered link navigation", () => {
     fixtures.signedIn = false;
     const user = userEvent.setup();
     const router = await renderAt("/security");
-    const link = await within(screen.getByRole("navigation")).findByRole("link", { name: "Sign in" });
+    const link = await within(screen.getAllByRole("navigation")[0]).findByRole("link", { name: "Sign in" });
     expect(link).toHaveAttribute("href", "/auth");
     await user.click(link);
     await expectDestination(router, pages[1]);
@@ -269,7 +279,7 @@ describe("Rendered link navigation", () => {
     cleanup();
     const router = await renderAt(destination.pathname);
     await expectDestination(router, pages[2]);
-    await user.click(within(screen.getByRole("navigation")).getByRole("link", { name: "Sign in" }));
+    await user.click(within(screen.getAllByRole("navigation")[0]).getByRole("link", { name: "Sign in" }));
     await expectDestination(router, pages[1]);
   });
 });
@@ -282,7 +292,7 @@ describe("App routing", () => {
     const main = await screen.findByRole("main", {}, { timeout: 5000 });
     expect(within(main).getByRole("heading", { level: 1 })).toBeVisible();
     expect(screen.getByRole("complementary", { name: "Veterans Crisis Line" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Legal" })).toBeInTheDocument();
     await waitFor(() => expect(document.title).toBe(title));
     expect(router.state.location.pathname).toBe(path);
     expect(router.state.matches.at(-1)?.routeId).toBe(id);

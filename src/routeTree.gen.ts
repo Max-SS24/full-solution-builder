@@ -11,12 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AccessibilityRouteImport } from './routes/accessibility'
 import { Route as AppointmentPrepRouteImport } from './routes/appointment-prep'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as HelpfulLinksRouteImport } from './routes/helpful-links'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as QuestionnaireRouteImport } from './routes/questionnaire'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SecurityRouteImport } from './routes/security'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
@@ -29,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccessibilityRoute = AccessibilityRouteImport.update({
+  id: '/accessibility',
+  path: '/accessibility',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppointmentPrepRoute = AppointmentPrepRouteImport.update({
@@ -46,6 +54,11 @@ const HelpfulLinksRoute = HelpfulLinksRouteImport.update({
   path: '/helpful-links',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuestionnaireRoute = QuestionnaireRouteImport.update({
   id: '/questionnaire',
   path: '/questionnaire',
@@ -59,6 +72,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const SecurityRoute = SecurityRouteImport.update({
   id: '/security',
   path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
@@ -85,12 +103,15 @@ const ApiPublicJobsValidateCareOptionsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/accessibility': typeof AccessibilityRoute
   '/appointment-prep': typeof AppointmentPrepRoute
   '/auth': typeof AuthRoute
   '/helpful-links': typeof HelpfulLinksRoute
+  '/privacy': typeof PrivacyRoute
   '/questionnaire': typeof QuestionnaireRoute
   '/reset-password': typeof ResetPasswordRoute
   '/security': typeof SecurityRoute
+  '/terms': typeof TermsRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/history': typeof AuthenticatedHistoryRoute
@@ -98,12 +119,15 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/accessibility': typeof AccessibilityRoute
   '/appointment-prep': typeof AppointmentPrepRoute
   '/auth': typeof AuthRoute
   '/helpful-links': typeof HelpfulLinksRoute
+  '/privacy': typeof PrivacyRoute
   '/questionnaire': typeof QuestionnaireRoute
   '/reset-password': typeof ResetPasswordRoute
   '/security': typeof SecurityRoute
+  '/terms': typeof TermsRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/history': typeof AuthenticatedHistoryRoute
@@ -113,12 +137,15 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/accessibility': typeof AccessibilityRoute
   '/appointment-prep': typeof AppointmentPrepRoute
   '/auth': typeof AuthRoute
   '/helpful-links': typeof HelpfulLinksRoute
+  '/privacy': typeof PrivacyRoute
   '/questionnaire': typeof QuestionnaireRoute
   '/reset-password': typeof ResetPasswordRoute
   '/security': typeof SecurityRoute
+  '/terms': typeof TermsRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
@@ -128,12 +155,15 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accessibility'
     | '/appointment-prep'
     | '/auth'
     | '/helpful-links'
+    | '/privacy'
     | '/questionnaire'
     | '/reset-password'
     | '/security'
+    | '/terms'
     | '/account'
     | '/admin'
     | '/history'
@@ -141,12 +171,15 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/accessibility'
     | '/appointment-prep'
     | '/auth'
     | '/helpful-links'
+    | '/privacy'
     | '/questionnaire'
     | '/reset-password'
     | '/security'
+    | '/terms'
     | '/account'
     | '/admin'
     | '/history'
@@ -155,12 +188,15 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/accessibility'
     | '/appointment-prep'
     | '/auth'
     | '/helpful-links'
+    | '/privacy'
     | '/questionnaire'
     | '/reset-password'
     | '/security'
+    | '/terms'
     | '/_authenticated/account'
     | '/_authenticated/admin'
     | '/_authenticated/history'
@@ -170,12 +206,15 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AccessibilityRoute: typeof AccessibilityRoute
   AppointmentPrepRoute: typeof AppointmentPrepRoute
   AuthRoute: typeof AuthRoute
   HelpfulLinksRoute: typeof HelpfulLinksRoute
+  PrivacyRoute: typeof PrivacyRoute
   QuestionnaireRoute: typeof QuestionnaireRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SecurityRoute: typeof SecurityRoute
+  TermsRoute: typeof TermsRoute
   ApiPublicJobsValidateCareOptionsRoute: typeof ApiPublicJobsValidateCareOptionsRoute
 }
 
@@ -193,6 +232,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accessibility': {
+      id: '/accessibility'
+      path: '/accessibility'
+      fullPath: '/accessibility'
+      preLoaderRoute: typeof AccessibilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/appointment-prep': {
@@ -216,6 +262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HelpfulLinksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/questionnaire': {
       id: '/questionnaire'
       path: '/questionnaire'
@@ -235,6 +288,13 @@ declare module '@tanstack/react-router' {
       path: '/security'
       fullPath: '/security'
       preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/account': {
@@ -286,12 +346,15 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AccessibilityRoute: AccessibilityRoute,
   AppointmentPrepRoute: AppointmentPrepRoute,
   AuthRoute: AuthRoute,
   HelpfulLinksRoute: HelpfulLinksRoute,
+  PrivacyRoute: PrivacyRoute,
   QuestionnaireRoute: QuestionnaireRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SecurityRoute: SecurityRoute,
+  TermsRoute: TermsRoute,
   ApiPublicJobsValidateCareOptionsRoute: ApiPublicJobsValidateCareOptionsRoute,
 }
 export const routeTree = rootRouteImport
