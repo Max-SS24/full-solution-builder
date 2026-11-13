@@ -28,8 +28,10 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
       setFailed(false);
       setViews(next);
       const bad = next.filter((v) => !v.verified).length;
+      window.__lovableEvents?.track?.("project.prep_guidance_checked", { outcome: bad === 0 ? "confirmed" : bad === next.length ? "not_confirmed" : "partly_confirmed", confirmed_count: next.length - bad, unconfirmed_count: bad });
       setCheckMsg(bad ? `Checked just now. ${bad} item${bad === 1 ? "" : "s"} still couldn't be confirmed — please use the VA.gov link.` : "Checked just now. All guidance matches VA.gov.");
     } catch {
+      window.__lovableEvents?.track?.("project.prep_guidance_checked", { outcome: "check_failed", confirmed_count: 0, unconfirmed_count: 0 });
       setCheckMsg("We couldn't reach VA.gov. Please try again in a minute or use the VA.gov link.");
     } finally { setChecking(false); }
   };
@@ -83,6 +85,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
                 <li key={v.fact.id} className="rounded-xl border-2 border-coral px-3 py-2 text-sm">
                   {PREP_UNCONFIRMED}{" "}
                   <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-all font-bold underline">{v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
+                  <span className="block text-xs text-ink/70">{v.lastCheckedAt ? <>Last checked against VA.gov: <time dateTime={v.lastCheckedAt}>{fmt(v.lastCheckedAt)}</time> (not confirmed)</> : "Not checked against VA.gov in the last hour."}</span>
                   <div className="mt-2">
                     <button type="button" onClick={checkNow} disabled={checking} className="rounded-full border-2 border-ink bg-sun px-3 py-1 text-xs font-bold disabled:opacity-60">
                       {checking ? "Checking VA.gov…" : "Check if this is current"}

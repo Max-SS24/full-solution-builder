@@ -55,6 +55,42 @@
         }
       }
     },
+    "project.prep_guidance_checked": {
+      "event_schema_version": 1,
+      "description": "A visitor pressed \"Check if this is current\" on appointment guidance; records whether VA.gov confirmed the items or the check failed.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "outcome",
+          "confirmed_count",
+          "unconfirmed_count"
+        ],
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "partly_confirmed",
+              "not_confirmed",
+              "check_failed"
+            ]
+          },
+          "confirmed_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unconfirmed_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
     "project.recovery_code_sign_in": {
       "event_schema_version": 1,
       "description": "A person finished signing in using a recovery code.",

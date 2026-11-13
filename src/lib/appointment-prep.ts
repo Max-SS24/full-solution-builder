@@ -166,7 +166,7 @@ export function factsFor(stage: VaStage | null): PrepFact[] {
 }
 
 export type PrepCheck = { id: string; ok: boolean; checkedAt: string };
-export type PrepView = { fact: PrepFact; verified: true; checkedAt: string } | { fact: PrepFact; verified: false };
+export type PrepView = { fact: PrepFact; verified: true; checkedAt: string } | { fact: PrepFact; verified: false; lastCheckedAt?: string };
 
 /** Only facts with a passing check are marked verified; anything else is withheld. */
 export function applyChecks(facts: PrepFact[], checks: PrepCheck[], now = Date.now()): PrepView[] {
@@ -174,6 +174,6 @@ export function applyChecks(facts: PrepFact[], checks: PrepCheck[], now = Date.n
   return facts.map((fact) => {
     const c = byId.get(fact.id);
     const age = c ? now - Date.parse(c.checkedAt) : NaN;
-    return c?.ok && age >= 0 && age < PREP_CACHE_MS ? { fact, verified: true, checkedAt: c.checkedAt } : { fact, verified: false };
+    return c?.ok && age >= 0 && age < PREP_CACHE_MS ? { fact, verified: true, checkedAt: c.checkedAt } : { fact, verified: false, ...(c && !Number.isNaN(age) ? { lastCheckedAt: c.checkedAt } : {}) };
   });
 }
