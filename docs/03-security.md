@@ -26,3 +26,12 @@ Last updated: 2026-11-12
 - All database access uses parameterized client/RPC calls — no raw SQL from user input.
 - Public scheduled-job endpoints are protected by a cron secret.
 - Listings are never copied from sites that forbid it.
+
+## Access regression checks
+
+Run these on their own (they use real sign-ins against the live database; a throwaway test account is created and deleted):
+
+- `python3 tests/admin_role_access.py` — people can only check their own admin status; admins and the backend keep access.
+- `python3 tests/public_read_access.py` — signed-out visitors can still read listings, enabled sources, and official link checks.
+- `python3 tests/admin_grant_check.py` — the admin page still reports "already an admin"; non-admins are refused.
+- `python3 tests/prep_checks_access.py` — appointment prep check visibility.
