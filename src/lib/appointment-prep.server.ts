@@ -24,12 +24,17 @@ export async function checkPrepFacts() {
 }
 
 /** Returns recent checks, re-checking live when any is missing or older than the cache window. */
-export async function currentPrepChecks(): Promise<PrepCheck[]> {
+/** Minimum gap between visitor-requested live re-checks. */
+export const FORCE_MIN_GAP_MS = 30 * 1000;
+
+export async function currentPrepChecks(force = false): Promise<PrepCheck[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const read = async () => (await supabaseAdmin.from("prep_fact_checks").select("fact_id, ok, checked_at")).data ?? [];
   let rows = await read();
   const fresh = rows.length >= PREP_FACTS.length && rows.every((r) => Date.now() - new Date(r.checked_at).getTime() < PREP_CACHE_MS);
-  if (!fresh) { await checkPrepFacts(); rows = await read(); }
+  const newest = Math.max(0, ...rows.map((r) => new Date(r.checked_at).getTime()));
+  const forceNow = force && (rows.some((r) => !r.ok) || !fresh) && Date.now() - newest >= FORCE_MIN_GAP_MS;
+  if (!fresh || forceNow) { await checkPrepFacts(); rows = await read(); }
   return rows
     .filter((r) => Date.now() - new Date(r.checked_at).getTime() < PREP_CACHE_MS)
     .map((r) => ({ id: r.fact_id, ok: r.ok, checkedAt: r.checked_at }));

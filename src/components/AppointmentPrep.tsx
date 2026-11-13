@@ -17,6 +17,22 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
   const verify = useServerFn(verifyPrepFacts);
   const [views, setViews] = useState<PrepView[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [checkMsg, setCheckMsg] = useState("");
+  const checkNow = async () => {
+    setChecking(true);
+    setCheckMsg("Checking VA.gov now…");
+    try {
+      const r = await verify({ data: { force: true } });
+      const next = applyChecks(factsFor(stage), r.checks);
+      setFailed(false);
+      setViews(next);
+      const bad = next.filter((v) => !v.verified).length;
+      setCheckMsg(bad ? `Checked just now. ${bad} item${bad === 1 ? "" : "s"} still couldn't be confirmed — please use the VA.gov link.` : "Checked just now. All guidance matches VA.gov.");
+    } catch {
+      setCheckMsg("We couldn't reach VA.gov. Please try again in a minute or use the VA.gov link.");
+    } finally { setChecking(false); }
+  };
   useEffect(() => {
     let active = true;
     const refresh = () => {
@@ -41,6 +57,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
     <div className="space-y-8">
       <PrepDisclaimer />
       <p role="note" className="text-sm text-ink/75">Each confirmed item shows when VA Navigator last reviewed its supporting evidence on VA.gov. These are automated source checks, not a human review or VA’s publication date.</p>
+      <p aria-live="polite" className="text-sm font-semibold">{checkMsg}</p>
       {failed && <p className="text-sm font-semibold text-coral">We couldn't reach VA.gov to confirm the guidance right now, so none of it is shown as current.</p>}
       {topics.map((t) => {
         const list = views.filter((v) => v.fact.topic === t);
@@ -66,6 +83,11 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
                 <li key={v.fact.id} className="rounded-xl border-2 border-coral px-3 py-2 text-sm">
                   {PREP_UNCONFIRMED}{" "}
                   <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="break-all font-bold underline">{v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>
+                  <div className="mt-2">
+                    <button type="button" onClick={checkNow} disabled={checking} className="rounded-full border-2 border-ink bg-sun px-3 py-1 text-xs font-bold disabled:opacity-60">
+                      {checking ? "Checking VA.gov…" : "Check if this is current"}
+                    </button>
+                  </div>
                   <GuidanceReport fact={v.fact} />
                 </li>
               ))}
