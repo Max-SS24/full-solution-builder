@@ -483,8 +483,10 @@ export const navigate = createServerFn({ method: "POST" })
     const lastBot = [...data.messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
     let guestRemaining: number | null = null;
     let guestLimitReached = false;
+    let guestResetAt: string | null = null;
     if (!(await viewerId()) && countsAsGuestResult(readyToShow, crisis, /see your results/i.test(lastBot))) {
-      guestRemaining = await useGuestResult(data.guestId);
+      const g = await useGuestResult(data.guestId);
+      guestRemaining = g.remaining; guestResetAt = g.resetAt;
       if (guestRemaining < 0) { guestLimitReached = true; guestRemaining = 0; }
     }
     if (guestLimitReached) {
@@ -492,7 +494,7 @@ export const navigate = createServerFn({ method: "POST" })
         reply: GUEST_LIMIT_REPLY, territoryHelp: null, vaStage, facilityUnknown: false, myFacility: null,
         readyToShow: false, crisis, danger, vaGuide: false, vaStatus: null as VaStatus, vaCheckedAt: new Date().toISOString(),
         variables, results: [] as CareResult[], needsMore, connectorError: null, aiNote: null,
-        guestRemaining, guestLimitReached,
+        guestRemaining, guestLimitReached, guestResetAt,
       };
     }
     const { checkCommunityHomepages } = await import("./homepage-check.server");
@@ -500,6 +502,7 @@ export const navigate = createServerFn({ method: "POST" })
     return {
       guestRemaining,
       guestLimitReached,
+      guestResetAt,
       reply,
       territoryHelp: tHelp,
       vaStage,

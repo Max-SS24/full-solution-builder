@@ -13,3 +13,17 @@ describe("guest search limit", () => {
     expect(countsAsGuestResult(false, false, false)).toBe(false);
   });
 });
+
+import { resetText, guestLimitReply } from "@/lib/guest-limit";
+describe("guest reset time", () => {
+  const at = "2026-11-15T02:30:00Z";
+  it("shows when searches come back, in the visitor's time zone", () => {
+    expect(resetText(at, "America/New_York")).toBe("on Sat, Nov 14 at 9:30 PM EST");
+  });
+  it("includes the reset time in the warning and limit notices", () => {
+    expect(guestNotice(1, at)).toMatch(/come back on /);
+    expect(guestNotice(0, at)).toMatch(/come back on /);
+    expect(guestLimitReply(at)).toMatch(/They come back on /);
+  });
+  it("leaves the time out when unknown", () => { expect(resetText(null)).toBeNull(); expect(guestLimitReply(null)).not.toMatch(/come back/); });
+});

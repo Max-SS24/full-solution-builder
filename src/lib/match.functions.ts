@@ -27,9 +27,11 @@ export const matchProviders = createServerFn({ method: "POST" })
     const { gatewayText, parseJson } = await import("./ai/gateway.server");
     const { viewerId, useGuestResult } = await import("./guest-limit.server");
     let guestRemaining: number | null = null;
+    let guestResetAt: string | null = null;
     if (!(await viewerId())) {
-      guestRemaining = await useGuestResult(data.guestId);
-      if (guestRemaining < 0) return { summary: "", matches: [] as ProviderMatch[], error: "You've used your 5 free searches for today. Sign in or create a free account to compare providers without limits.", guestRemaining: 0 };
+      const g = await useGuestResult(data.guestId);
+      guestRemaining = g.remaining; guestResetAt = g.resetAt;
+      if (guestRemaining < 0) return { summary: "", matches: [] as ProviderMatch[], error: "You've used your 5 free searches for today. Sign in or create a free account to compare providers without limits.", guestRemaining: 0, guestResetAt, limitReached: true };
     }
     try {
       const text = await gatewayText(SYSTEM, [{ role: "user", content:
@@ -42,7 +44,7 @@ export const matchProviders = createServerFn({ method: "POST" })
         const fit = m.fit === "strong" || m.fit === "good" ? m.fit : "partial";
         return [{ name: p.name, credentials: null, facility: p.kind, insurance: p.payment, why: String(m.why ?? "").slice(0, 400), fit }];
       });
-      return { summary: String(out.summary ?? "").slice(0, 500), matches, error: null, guestRemaining };
+      return { summary: String(out.summary ?? "").slice(0, 500), matches, error: null, guestRemaining, guestResetAt };
     } catch (e) {
       return { summary: "", matches: [] as ProviderMatch[], error: e instanceof Error ? e.message : "AI unavailable" };
     }

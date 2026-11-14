@@ -22,7 +22,7 @@ async function sha(s: string) {
 }
 
 /** Uses one guest result. Returns results left today, or -1 when the limit is reached. */
-export async function useGuestResult(guestId: string | null | undefined): Promise<number> {
+export async function useGuestResult(guestId: string | null | undefined): Promise<{ remaining: number; resetAt: string | null }> {
   const h = getRequest()?.headers;
   const ip = h?.get("cf-connecting-ip") ?? h?.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
   const keys: string[] = [], limits: number[] = [];
@@ -30,6 +30,7 @@ export async function useGuestResult(guestId: string | null | undefined): Promis
   if (ip) { keys.push("n:" + (await sha("net|" + ip))); limits.push(GUEST_NETWORK_RESULTS); }
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.rpc("use_guest_result", { _keys: keys, _limits: limits });
-  if (error) { console.error("[guest-limit]", error.message); return -1; }
-  return Math.min(Number(data), GUEST_DAILY_RESULTS);
+  if (error) { console.error("[guest-limit]", error.message); return { remaining: -1, resetAt: null }; }
+  const { data: reset } = await supabaseAdmin.rpc("guest_reset_at", { _key: keys[0]! });
+  return { remaining: Math.min(Number(data), GUEST_DAILY_RESULTS), resetAt: (reset as string | null) ?? null };
 }

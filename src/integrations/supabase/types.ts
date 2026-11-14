@@ -681,6 +681,7 @@ export type Database = {
         }[]
       }
       grant_admin: { Args: { _email: string }; Returns: string }
+      guest_reset_at: { Args: { _key: string }; Returns: string }
       has_mfa_cleared: { Args: never; Returns: boolean }
       has_role: {
         Args: {

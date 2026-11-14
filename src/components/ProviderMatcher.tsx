@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { matchProviders, type ProviderMatch } from "@/lib/match.functions";
 import type { CareResult } from "@/lib/navigator.functions";
-import { guestId, guestNotice } from "@/lib/guest-limit";
+import { guestId, guestNotice, resetText } from "@/lib/guest-limit";
 import { useAccount } from "@/hooks/useAccount";
 
 const FIT: Record<string, string> = { strong: "bg-minttint", good: "bg-skytint", partial: "bg-soft" };
@@ -23,7 +23,7 @@ export function ProviderMatcher({ candidates, payment }: { candidates: CareResul
     e.preventDefault();
     if (text.trim().length < 3 || busy) return;
     setBusy(true);
-    try { const r = await run({ data: { guestId: user ? undefined : guestId(), priorities: text, payment, candidates: candidates.slice(0, 12).map((c) => ({ id: c.id, name: c.name, kind: c.kind, payment: c.payment ?? [], bio: c.bio ?? null, needs: c.needs ?? [], care_types: c.care_types ?? [], veteran_focus: !!c.veteran_focus })) } }); setOut(r); setNotice(r.error ? null : guestNotice(r.guestRemaining)); }
+    try { const r = await run({ data: { guestId: user ? undefined : guestId(), priorities: text, payment, candidates: candidates.slice(0, 12).map((c) => ({ id: c.id, name: c.name, kind: c.kind, payment: c.payment ?? [], bio: c.bio ?? null, needs: c.needs ?? [], care_types: c.care_types ?? [], veteran_focus: !!c.veteran_focus })) } }); const when = "limitReached" in r && r.limitReached ? resetText(r.guestResetAt) : null; setOut(when ? { ...r, error: `${r.error} Your free searches come back ${when}.` } : r); setNotice(r.error ? null : guestNotice(r.guestRemaining, r.guestResetAt)); }
     catch (err) { console.error("[matcher]", err); setOut({ summary: "", matches: [], error: err instanceof Response && err.status === 401 ? "Please sign in to compare providers." : "We couldn't compare providers just now. Please try again in a moment." }); }
     finally { setBusy(false); }
   }

@@ -1,7 +1,7 @@
 import { HOURS_NOTICE } from "@/lib/va-hours";
 import type { TerritoryHelp } from "@/lib/territory-guidance";
 import { createFileRoute } from "@tanstack/react-router";
-import { guestId, guestNotice } from "@/lib/guest-limit";
+import { guestId, guestNotice, guestLimitReply } from "@/lib/guest-limit";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState, useEffect } from "react";
 import { chatTriggerKey, handleDialogKeys } from "@/lib/dialog-keys";
@@ -235,7 +235,7 @@ function Home() {
     setReplacementOffer([]);
     // Answering "Would you like to see your results now?"
     if (pending && YES_RE.test(text)) {
-      const heads = guestNotice(pending.guestRemaining);
+      const heads = guestNotice(pending.guestRemaining, pending.guestResetAt);
       setMessages([...next, { role: "assistant", content: "Here are your results. You can keep chatting anytime to change your search." + (heads ? "\n\n" + heads : "") }]);
       showResults(pending);
       return;
@@ -254,6 +254,7 @@ function Home() {
         out.reply = out.reply.replace(/\s*I have some options ready\. Would you like to see your results now\?\s*$/, "").trim()
           + `\n\nI've updated your results with ${out.myFacility?.found ? out.myFacility.name : newFac} as your VA facility.`;
       }
+      if (out.guestLimitReached) out.reply = guestLimitReply(out.guestResetAt);
       setMessages([...next, { role: "assistant", content: out.reply }]);
       // Switched between VA and community: drop results of the other kind right away.
       if (vars?.va_vs_community && out.variables.va_vs_community && vars.va_vs_community !== out.variables.va_vs_community) {
