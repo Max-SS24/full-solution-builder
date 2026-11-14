@@ -20,7 +20,7 @@ export function ProviderMatcher({ candidates, payment }: { candidates: CareResul
     if (text.trim().length < 3 || busy) return;
     setBusy(true);
     try { setOut(await run({ data: { priorities: text, payment, candidates: candidates.slice(0, 12).map((c) => ({ id: c.id, name: c.name, kind: c.kind, payment: c.payment ?? [], bio: c.bio ?? null, needs: c.needs ?? [], care_types: c.care_types ?? [], veteran_focus: !!c.veteran_focus })) } })); }
-    catch (err) { console.error("[matcher]", err); setOut({ summary: "", matches: [], error: "We couldn't compare providers just now. Please try again in a moment." }); }
+    catch (err) { console.error("[matcher]", err); setOut({ summary: "", matches: [], error: err instanceof Response && err.status === 401 ? "Please sign in to compare providers." : "We couldn't compare providers just now. Please try again in a moment." }); }
     finally { setBusy(false); }
   }
 

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type ProviderMatch = { name: string; credentials: string | null; facility: string; insurance: string[]; why: string; fit: "strong" | "good" | "partial" };
 
@@ -17,6 +18,7 @@ const Candidate = z.object({
 });
 
 export const matchProviders = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
     priorities: z.string().trim().min(3).max(1500),
     candidates: z.array(Candidate).min(1).transform((v) => v.slice(0, 12)),

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AREA_CODES, US_AREAS, findNamedArea } from "./us-areas";
 
 export type Variables = {
@@ -184,6 +185,7 @@ export const navigateInput = z.object({
 });
 
 export const navigate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => navigateInput.parse(d))
   .handler(async ({ data }) => {
     const { completeJson, activeProvider } = await import("./ai/providers.server");

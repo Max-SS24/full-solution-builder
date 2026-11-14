@@ -242,6 +242,10 @@ function Home() {
       setMessages([...next, { role: "assistant", content: "Okay, is there anything else I can help with? Just say \"show results\" whenever you're ready." }]);
       return;
     }
+    if (!user) {
+      setMessages([...next, { role: "assistant", content: "Please sign in or create a free account to chat with the Navigator. If you're in crisis, call 988 and press 1, or text 838255, right now." }]);
+      return;
+    }
     setBusy(true);
     try {
       const out = await run({ data: { messages: next.slice(1), prefs: { ...(prefs ?? {}), ...quiz } } });
