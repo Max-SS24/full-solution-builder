@@ -29,6 +29,6 @@ Last updated: 2026-11-12
 | Automated keyboard/dialog/crisis tests | Passed |
 | Live browser navigation, back/forward, reload | Passed |
 | VoiceOver (macOS/iOS), NVDA/JAWS (Windows) | **Not yet verified** |
-| Formal VPAT / Accessibility Conformance Report | **Not yet prepared** |
+| Formal VPAT / Accessibility Conformance Report | Draft — see 05-vpat.md |
 
 Designed to WCAG 2.1 AA; formal Section 508 / ADA conformance requires the manual checks above.
