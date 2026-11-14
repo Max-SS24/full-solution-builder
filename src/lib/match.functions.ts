@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type ProviderMatch = { name: string; credentials: string | null; facility: string; insurance: string[]; why: string; fit: "strong" | "good" | "partial" };
 
@@ -18,14 +17,20 @@ const Candidate = z.object({
 });
 
 export const matchProviders = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
+    guestId: z.string().regex(/^[a-zA-Z0-9-]{8,64}$/).optional(),
     priorities: z.string().trim().min(3).max(1500),
     candidates: z.array(Candidate).min(1).transform((v) => v.slice(0, 12)),
     payment: z.string().nullish().transform((v) => (v ? v.slice(0, 60) : null)),
   }).parse(d))
   .handler(async ({ data }) => {
     const { gatewayText, parseJson } = await import("./ai/gateway.server");
+    const { viewerId, useGuestResult } = await import("./guest-limit.server");
+    let guestRemaining: number | null = null;
+    if (!(await viewerId())) {
+      guestRemaining = await useGuestResult(data.guestId);
+      if (guestRemaining < 0) return { summary: "", matches: [] as ProviderMatch[], error: "You've used your 5 free searches for today. Sign in or create a free account to compare providers without limits.", guestRemaining: 0 };
+    }
     try {
       const text = await gatewayText(SYSTEM, [{ role: "user", content:
         `What matters most to me: ${data.priorities}\nMy insurance: ${data.payment ?? "not given"}\nListings:\n${JSON.stringify(data.candidates)}` }]);
@@ -37,7 +42,7 @@ export const matchProviders = createServerFn({ method: "POST" })
         const fit = m.fit === "strong" || m.fit === "good" ? m.fit : "partial";
         return [{ name: p.name, credentials: null, facility: p.kind, insurance: p.payment, why: String(m.why ?? "").slice(0, 400), fit }];
       });
-      return { summary: String(out.summary ?? "").slice(0, 500), matches, error: null };
+      return { summary: String(out.summary ?? "").slice(0, 500), matches, error: null, guestRemaining };
     } catch (e) {
       return { summary: "", matches: [] as ProviderMatch[], error: e instanceof Error ? e.message : "AI unavailable" };
     }

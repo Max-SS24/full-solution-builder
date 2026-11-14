@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { GUEST_LIMIT_REPLY, countsAsGuestResult } from "./guest-limit";
 import { AREA_CODES, US_AREAS, findNamedArea } from "./us-areas";
 
 export type Variables = {
@@ -182,10 +182,10 @@ export const navigateInput = z.object({
     )
     .refine((p) => Object.keys(p).length <= 20, "Too many preferences")
     .optional(),
+  guestId: z.string().regex(/^[a-zA-Z0-9-]{8,64}$/).optional(),
 });
 
 export const navigate = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d) => navigateInput.parse(d))
   .handler(async ({ data }) => {
     const { completeJson, activeProvider } = await import("./ai/providers.server");
@@ -478,9 +478,28 @@ export const navigate = createServerFn({ method: "POST" })
       reply = onlyStatements(reply);
       reply += "\n\nI have some options ready. Would you like to see your results now?";
     }
+    // Guests get a limited number of result sets per day; signed-in people are unlimited.
+    const { viewerId, useGuestResult } = await import("./guest-limit.server");
+    const lastBot = [...data.messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
+    let guestRemaining: number | null = null;
+    let guestLimitReached = false;
+    if (!(await viewerId()) && countsAsGuestResult(readyToShow, crisis, /see your results/i.test(lastBot))) {
+      guestRemaining = await useGuestResult(data.guestId);
+      if (guestRemaining < 0) { guestLimitReached = true; guestRemaining = 0; }
+    }
+    if (guestLimitReached) {
+      return {
+        reply: GUEST_LIMIT_REPLY, territoryHelp: null, vaStage, facilityUnknown: false, myFacility: null,
+        readyToShow: false, crisis, danger, vaGuide: false, vaStatus: null as VaStatus, vaCheckedAt: new Date().toISOString(),
+        variables, results: [] as CareResult[], needsMore, connectorError: null, aiNote: null,
+        guestRemaining, guestLimitReached,
+      };
+    }
     const { checkCommunityHomepages } = await import("./homepage-check.server");
     const checkedResults = needsMore ? [] : await checkCommunityHomepages(results);
     return {
+      guestRemaining,
+      guestLimitReached,
       reply,
       territoryHelp: tHelp,
       vaStage,

@@ -409,6 +409,27 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_usage: {
+        Row: {
+          count: number
+          key: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       link_checks: {
         Row: {
           checked_at: string
@@ -681,6 +702,10 @@ export type Database = {
       log_validation_run: { Args: { _details: Json }; Returns: undefined }
       recovery_activity: { Args: never; Returns: Json }
       revoke_admin: { Args: { _user_id: string }; Returns: undefined }
+      use_guest_result: {
+        Args: { _keys: string[]; _limits: number[] }
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "user"

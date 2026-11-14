@@ -1,6 +1,7 @@
 import { HOURS_NOTICE } from "@/lib/va-hours";
 import type { TerritoryHelp } from "@/lib/territory-guidance";
 import { createFileRoute } from "@tanstack/react-router";
+import { guestId, guestNotice } from "@/lib/guest-limit";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState, useEffect } from "react";
 import { chatTriggerKey, handleDialogKeys } from "@/lib/dialog-keys";
@@ -234,7 +235,8 @@ function Home() {
     setReplacementOffer([]);
     // Answering "Would you like to see your results now?"
     if (pending && YES_RE.test(text)) {
-      setMessages([...next, { role: "assistant", content: "Here are your results. You can keep chatting anytime to change your search." }]);
+      const heads = guestNotice(pending.guestRemaining);
+      setMessages([...next, { role: "assistant", content: "Here are your results. You can keep chatting anytime to change your search." + (heads ? "\n\n" + heads : "") }]);
       showResults(pending);
       return;
     }
@@ -242,13 +244,9 @@ function Home() {
       setMessages([...next, { role: "assistant", content: "Okay, is there anything else I can help with? Just say \"show results\" whenever you're ready." }]);
       return;
     }
-    if (!user) {
-      setMessages([...next, { role: "assistant", content: "Please sign in or create a free account to chat with the Navigator. If you're in crisis, call 988 and press 1, or text 838255, right now." }]);
-      return;
-    }
     setBusy(true);
     try {
-      const out = await run({ data: { messages: next.slice(1), prefs: { ...(prefs ?? {}), ...quiz } } });
+      const out = await run({ data: { guestId: user ? undefined : guestId(), messages: next.slice(1), prefs: { ...(prefs ?? {}), ...quiz } } });
       // Corrected their VA facility after seeing results: refresh the results right away, no extra question.
       const newFac = out.variables.va_facility;
       const facilityFixed = results !== null && !out.needsMore && !out.crisis && !!newFac && newFac !== "unknown" && newFac !== vars?.va_facility;

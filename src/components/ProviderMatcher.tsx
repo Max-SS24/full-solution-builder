@@ -2,11 +2,15 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { matchProviders, type ProviderMatch } from "@/lib/match.functions";
 import type { CareResult } from "@/lib/navigator.functions";
+import { guestId, guestNotice } from "@/lib/guest-limit";
+import { useAccount } from "@/hooks/useAccount";
 
 const FIT: Record<string, string> = { strong: "bg-minttint", good: "bg-skytint", partial: "bg-soft" };
 
 export function ProviderMatcher({ candidates, payment }: { candidates: CareResult[]; payment: string | null }) {
   const run = useServerFn(matchProviders);
+  const { user } = useAccount();
+  const [notice, setNotice] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState<{ summary: string; matches: ProviderMatch[]; error: string | null } | null>(null);
@@ -19,7 +23,7 @@ export function ProviderMatcher({ candidates, payment }: { candidates: CareResul
     e.preventDefault();
     if (text.trim().length < 3 || busy) return;
     setBusy(true);
-    try { setOut(await run({ data: { priorities: text, payment, candidates: candidates.slice(0, 12).map((c) => ({ id: c.id, name: c.name, kind: c.kind, payment: c.payment ?? [], bio: c.bio ?? null, needs: c.needs ?? [], care_types: c.care_types ?? [], veteran_focus: !!c.veteran_focus })) } })); }
+    try { const r = await run({ data: { guestId: user ? undefined : guestId(), priorities: text, payment, candidates: candidates.slice(0, 12).map((c) => ({ id: c.id, name: c.name, kind: c.kind, payment: c.payment ?? [], bio: c.bio ?? null, needs: c.needs ?? [], care_types: c.care_types ?? [], veteran_focus: !!c.veteran_focus })) } }); setOut(r); setNotice(r.error ? null : guestNotice(r.guestRemaining)); }
     catch (err) { console.error("[matcher]", err); setOut({ summary: "", matches: [], error: err instanceof Response && err.status === 401 ? "Please sign in to compare providers." : "We couldn't compare providers just now. Please try again in a moment." }); }
     finally { setBusy(false); }
   }
@@ -36,6 +40,7 @@ export function ProviderMatcher({ candidates, payment }: { candidates: CareResul
           {busy ? "Comparing listings… (up to 30 seconds)" : "Find my best matches →"}
         </button>
       </form>
+      {notice && <p role="status" className="mt-4 rounded-[14px] border-[3px] border-ink bg-skytint p-3 text-sm font-semibold">{notice} <a href="/auth" className="underline">Sign in or create an account</a></p>}
       {out?.error && <p className="mt-4 text-sm font-semibold text-coral">{out.error}</p>}
       {out && !out.error && (
         <div className="mt-5 space-y-3">
