@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Show a shared guest search counter in chat and provider matching, preserving remaining counts and reset times across reloads.
 - [x] Add appointment guidance reports with an admin review inbox; submission, review, and phone layout verified.
 - [x] Pre-launch data-flow review: erase all security records on account deletion, remove sample listings, lock first-admin claim to signed-in users.
 - [x] Care Card print + appointment prep review (part 2): preserve source warnings and supplied addresses, gate guidance on fresh checks, recheck before printing; live private search and one-page PDF verified.

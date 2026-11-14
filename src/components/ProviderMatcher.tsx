@@ -4,6 +4,8 @@ import { matchProviders, type ProviderMatch } from "@/lib/match.functions";
 import type { CareResult } from "@/lib/navigator.functions";
 import { guestId, guestNotice, resetText } from "@/lib/guest-limit";
 import { useAccount } from "@/hooks/useAccount";
+import { GuestSearchCounter } from "@/components/GuestSearchCounter";
+import { updateGuestCounter } from "@/lib/guest-counter";
 
 const FIT: Record<string, string> = { strong: "bg-minttint", good: "bg-skytint", partial: "bg-soft" };
 
@@ -23,7 +25,7 @@ export function ProviderMatcher({ candidates, payment }: { candidates: CareResul
     e.preventDefault();
     if (text.trim().length < 3 || busy) return;
     setBusy(true);
-    try { const r = await run({ data: { guestId: user ? undefined : guestId(), priorities: text, payment, candidates: candidates.slice(0, 12).map((c) => ({ id: c.id, name: c.name, kind: c.kind, payment: c.payment ?? [], bio: c.bio ?? null, needs: c.needs ?? [], care_types: c.care_types ?? [], veteran_focus: !!c.veteran_focus })) } }); const when = "limitReached" in r && r.limitReached ? resetText(r.guestResetAt) : null; setOut(when ? { ...r, error: `${r.error} Your free searches come back ${when}.` } : r); setNotice(r.error ? null : guestNotice(r.guestRemaining, r.guestResetAt)); }
+    try { const r = await run({ data: { guestId: user ? undefined : guestId(), priorities: text, payment, candidates: candidates.slice(0, 12).map((c) => ({ id: c.id, name: c.name, kind: c.kind, payment: c.payment ?? [], bio: c.bio ?? null, needs: c.needs ?? [], care_types: c.care_types ?? [], veteran_focus: !!c.veteran_focus })) } }); if (!user) updateGuestCounter(r.guestRemaining, r.guestResetAt); const when = "limitReached" in r && r.limitReached ? resetText(r.guestResetAt) : null; setOut(when ? { ...r, error: `${r.error} Your free searches come back ${when}.` } : r); setNotice(r.error ? null : guestNotice(r.guestRemaining, r.guestResetAt)); }
     catch (err) { console.error("[matcher]", err); setOut({ summary: "", matches: [], error: err instanceof Response && err.status === 401 ? "Please sign in to compare providers." : "We couldn't compare providers just now. Please try again in a moment." }); }
     finally { setBusy(false); }
   }
@@ -31,6 +33,7 @@ export function ProviderMatcher({ candidates, payment }: { candidates: CareResul
   return (
     <div className="mt-10 rounded-[26px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:p-6">
       <h3 className="font-display text-2xl font-bold">What matters most in a provider?</h3>
+      {!user && <GuestSearchCounter />}
       <p className="mt-1 text-sm text-ink/60">For example: "a veteran who gets it, evenings, takes TRICARE, not too pushy." We'll compare your words to each provider's bio and insurance.</p>
       <form onSubmit={go} className="mt-4 grid gap-3">
         <label htmlFor="prio" className="sr-only">What matters most to you</label>

@@ -20,6 +20,8 @@ import type { RecheckedCareResult } from "@/lib/reopened-care";
 import { communityHomepage } from "@/lib/care-links";
 import { isVaKind } from "@/lib/care-rules";
 import { CareCard } from "@/components/CareCard";
+import { GuestSearchCounter } from "@/components/GuestSearchCounter";
+import { updateGuestCounter } from "@/lib/guest-counter";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -247,6 +249,7 @@ function Home() {
     setBusy(true);
     try {
       const out = await run({ data: { guestId: user ? undefined : guestId(), messages: next.slice(1), prefs: { ...(prefs ?? {}), ...quiz } } });
+      if (!user) updateGuestCounter(out.guestRemaining, out.guestResetAt);
       // Corrected their VA facility after seeing results: refresh the results right away, no extra question.
       const newFac = out.variables.va_facility;
       const facilityFixed = results !== null && !out.needsMore && !out.crisis && !!newFac && newFac !== "unknown" && newFac !== vars?.va_facility;
@@ -338,6 +341,7 @@ function Home() {
                 <div className="text-xs font-semibold text-mint">● online</div>
               </div>
             </div>
+            {!user && <GuestSearchCounter />}
             <div className="max-h-[min(420px,55dvh)] space-y-4 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6" aria-live="polite">
               {messages.map((m, i) =>
                 m.role === "user" ? (
@@ -597,6 +601,7 @@ function Home() {
             className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-y-auto rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg animate-in zoom-in-95 fade-in duration-200 sm:max-h-[calc(100dvh-3rem)] sm:rounded-[30px] sm:p-6 sm:shadow-[10px_10px_0_var(--ink)]"
           >
             <label id="msg-big-title" htmlFor="msg-big" className="font-display text-xl font-bold sm:text-2xl">Tell us what's going on</label>
+            {!user && <GuestSearchCounter />}
             <p className="mt-1 text-sm text-ink/60">Where you are, what you need, how you'd like to be seen. Press Enter to send, Shift+Enter for a new line, Esc to close.</p>
             <div className="mt-4 max-h-64 space-y-2 overflow-y-auto">
               {messages.slice(-6).map((m, i) => (
