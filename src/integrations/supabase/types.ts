@@ -466,6 +466,44 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_validation_history: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string
+          check_id: string
+          created_at: string
+          id: string
+          note: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id: string
+          check_id: string
+          created_at?: string
+          id?: string
+          note?: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string
+          check_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_validation_history_check_id_fkey"
+            columns: ["check_id"]
+            isOneToOne: false
+            referencedRelation: "community_check_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mfa_proofs: {
         Row: {
           created_at: string
@@ -718,6 +756,10 @@ export type Database = {
       log_validation_run: { Args: { _details: Json }; Returns: undefined }
       recovery_activity: { Args: never; Returns: Json }
       revoke_admin: { Args: { _user_id: string }; Returns: undefined }
+      set_manual_validation: {
+        Args: { _check_id: string; _note?: string; _validated: boolean }
+        Returns: undefined
+      }
       use_guest_result: {
         Args: { _keys: string[]; _limits: number[] }
         Returns: number

@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Add admin-only, permanent manual validation/reversal history with notes and timestamps; signed-in validation/reversal/reload and live access regression checks passed.
 - [x] Keep appointment prep mounted during minute refreshes, preserve checked questions and report drafts, and retain evidence freshness checks.
 - [x] Show a shared guest search counter in chat and provider matching, preserving remaining counts and reset times across reloads.
 - [x] Add appointment guidance reports with an admin review inbox; submission, review, and phone layout verified.

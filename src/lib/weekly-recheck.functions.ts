@@ -55,11 +55,7 @@ export const markManuallyValidated = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
     if (!isAdmin) throw new Error("Forbidden");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch = data.validated
-      ? { manual_validated_at: new Date().toISOString(), manual_validated_by: context.userId, manual_note: data.note || null }
-      : { manual_validated_at: null, manual_validated_by: null, manual_note: null };
-    const { error } = await supabaseAdmin.from("community_check_history").update(patch).eq("id", data.id);
+    const { error } = await context.supabase.rpc("set_manual_validation", { _check_id: data.id, _validated: data.validated, _note: data.note ?? "" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });

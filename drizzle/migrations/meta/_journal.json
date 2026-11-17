@@ -246,6 +246,13 @@
       "when": 1794956189126,
       "tag": "0034_manual_validation_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1794957562268,
+      "tag": "0035_manual_validation_audit_history",
+      "breakpoints": true
     }
   ]
 }
