@@ -3,3 +3,4 @@
 - Guidance reports are submitted only through a validated public server function using fixed fact IDs; admins review them, and reports never change fact verification.
 - Signed-out guests get GUEST_DAILY_RESULTS result sets per rolling 24h (src/lib/guest-limit.ts), counted server-side via use_guest_result() on a hashed guest token plus a looser per-network cap; signed-in users are unlimited and crisis help is never counted.
 - Admins can deep-recheck failed weekly checks (src/lib/deep-check.server.ts: retries, HEAD→GET, content check); website results never change care status.
+- Website checks (weekly + deep) share homepage-check.ts rules: exact private-range IP blocking, same-site protocol hops allowed if the final page stays HTTPS, and 401/403/429-style firewall blocks reported as "blocked" (unconfirmed), never as down.

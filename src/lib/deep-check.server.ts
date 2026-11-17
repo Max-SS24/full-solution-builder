@@ -1,8 +1,9 @@
-import { expectedHomepageRedirect, publicIpv4, type HomepageCheck } from "./homepage-check";
+import { BLOCKED_REASON, blockedStatus, expectedHomepageRedirect, finalHomepageSafe, publicIpv4, type HomepageCheck } from "./homepage-check";
+import { BROWSER_HEADERS } from "./homepage-check.server";
 
 type Fetcher = typeof fetch;
 export type DeepCheck = HomepageCheck & { reason: string; attempts: number };
-type Attempt = { status: HomepageCheck["status"]; redirectedTo?: string; reason: string };
+type Attempt = { status: HomepageCheck["status"]; redirectedTo?: string; reason: string; blocked?: boolean };
 
 async function publicHost(host: string, request: Fetcher, signal: AbortSignal) {
   const r = await request(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=A`, { signal });
@@ -16,7 +17,7 @@ const SOFT_404 = /<title>[^<]*(404|not found|page unavailable|error)[^<]*<\/titl
 
 async function attemptOnce(raw: string, request: Fetcher, timeoutMs: number): Promise<Attempt> {
   const signal = AbortSignal.timeout(timeoutMs);
-  const headers = { "User-Agent": "Mozilla/5.0 (compatible; VA-Navigator/1.0 deep homepage check)", Accept: "text/html,*/*" };
+  const headers = BROWSER_HEADERS;
   const original = new URL(raw);
   let url = original;
   const visited = new Set<string>();
@@ -36,6 +37,7 @@ async function attemptOnce(raw: string, request: Fetcher, timeoutMs: number): Pr
       url = new URL(loc, url);
       continue;
     }
+    if (!finalHomepageSafe(original, url)) return { status: "unexpected_redirect", redirectedTo: url.hostname, reason: "Secure link ends on an insecure page" };
     if (res.ok) {
       const type = res.headers.get("content-type") ?? "";
       const body = (await res.text()).slice(0, 200000);
@@ -46,6 +48,7 @@ async function attemptOnce(raw: string, request: Fetcher, timeoutMs: number): Pr
     }
     await res.body?.cancel();
     if ([404, 410].includes(res.status) || res.status >= 500) return { status: "unavailable", reason: `Site responded with error ${res.status}` };
+    if (blockedStatus(res.status, res.headers)) return { status: "unconfirmed", reason: BLOCKED_REASON, blocked: true };
     return { status: "unconfirmed", reason: `Site refused the check (${res.status})` };
   }
   return { status: "unexpected_redirect", reason: "Too many redirects" };
@@ -58,9 +61,9 @@ export async function deepCheckHomepage(raw: string, request: Fetcher = fetch, w
     try { last = await attemptOnce(raw, request, 8000 + n * 4000); }
     catch { last = { status: "unconfirmed", reason: "Site did not respond in time" }; }
     if (last.status === "working") return { ...last, checkedAt: new Date().toISOString(), attempts: n, reason: n > 1 ? `Recovered on attempt ${n}` : last.reason };
-    if (last.status === "unexpected_redirect") break; // A foreign redirect won't change with retries.
+    if (last.status === "unexpected_redirect" || last.blocked) break; // Retrying won't get past a foreign redirect or a firewall. // A foreign redirect won't change with retries.
     if (n < 3) await wait(n * 1500);
   }
-  const attempts = last.status === "unexpected_redirect" ? 1 : 3;
+  const attempts = last.status === "unexpected_redirect" || last.blocked ? 1 : 3;
   return { ...last, checkedAt: new Date().toISOString(), attempts, reason: attempts > 1 ? `Still failing after 3 tries: ${last.reason}` : last.reason };
 }

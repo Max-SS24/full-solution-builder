@@ -30,7 +30,7 @@ export const recheckFailed = createServerFn({ method: "POST" })
         const c = await deepCheckHomepage(row.homepage_url);
         homepage = c.status; redirected = c.redirectedTo ?? null; reasons.push(`Website: ${c.reason}`);
         // Website outcomes only; care status and verification dates are untouched.
-        await supabaseAdmin.from("care_options").update({ homepage_check: { url: row.homepage_url, status: c.status, checkedAt: c.checkedAt, ...(c.redirectedTo ? { redirectedTo: c.redirectedTo } : {}) }, homepage_checked_at: c.checkedAt }).eq("id", row.care_option_id);
+        await supabaseAdmin.from("care_options").update({ homepage_check: { url: row.homepage_url, status: c.status, checkedAt: c.checkedAt, ...(c.redirectedTo ? { redirectedTo: c.redirectedTo } : {}), reason: c.reason, ...(c.blocked ? { blocked: true } : {}) }, homepage_checked_at: c.checkedAt }).eq("id", row.care_option_id);
       }
       let care = { status: row.care_status, reason: row.care_reason };
       if (opt && row.care_status !== "listed") {

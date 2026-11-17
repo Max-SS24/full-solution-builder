@@ -38,3 +38,4 @@
 - [x] Helpful links tab (VA locators + forms), verified every Sunday
 - [x] VHA directory — done keylessly from VA.gov pages
 - [x] Guest access: 5 free result sets per 24h, heads-up after the 4th
+- [x] Website checks: fix false 'can't be reached' (IP filter, redirect hops, firewall blocks)

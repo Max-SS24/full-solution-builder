@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { checkHomepage } from "./homepage-check.server";
-import { expectedHomepageRedirect, publicIpv4 } from "./homepage-check";
+import { expectedHomepageRedirect, finalHomepageSafe, publicIpv4 } from "./homepage-check";
 
 function requester(responses: Response[]) {
   return vi.fn<typeof fetch>(async (input) => String(input).startsWith("https://dns.google/")
@@ -35,7 +35,33 @@ describe("community homepage checks", () => {
     for (const ip of ["10.0.0.1", "172.16.0.1", "169.254.169.254", "192.168.1.1", "100.64.0.1"]) expect(publicIpv4(ip)).toBe(false);
   });
   it("rejects HTTPS downgrades and similar-looking hosts", () => {
-    expect(expectedHomepageRedirect(new URL("https://provider.example"), new URL("http://provider.example"))).toBe(false);
+    expect(finalHomepageSafe(new URL("https://provider.example"), new URL("http://provider.example"))).toBe(false);
     expect(expectedHomepageRedirect(new URL("https://provider.example"), new URL("https://provider.example.attacker.example"))).toBe(false);
+  });
+});
+describe("website check false alarms", () => {
+  it("treats ordinary hosting addresses (e.g. 198.71.x) as public but still blocks private ones", () => {
+    expect(publicIpv4("198.71.233.33")).toBe(true);
+    expect(publicIpv4("192.124.249.10")).toBe(true);
+    expect(publicIpv4("203.17.1.1")).toBe(true);
+    for (const ip of ["10.0.0.1", "192.168.1.1", "172.16.0.1", "127.0.0.1", "169.254.1.1", "198.18.0.1", "203.0.113.5", "192.0.2.1"]) expect(publicIpv4(ip)).toBe(false);
+  });
+  it("accepts a same-site http hop that ends back on https", async () => {
+    const request = requester([
+      new Response(null, { status: 301, headers: { location: "http://provider.example/" } }),
+      new Response(null, { status: 301, headers: { location: "https://provider.example/" } }),
+      new Response("OK"),
+    ]);
+    expect((await checkHomepage("https://www.provider.example/", request)).status).toBe("working");
+  });
+  it("labels firewall blocks clearly instead of calling the site down", async () => {
+    const r = await checkHomepage("https://provider.example/", requester([new Response("", { status: 403 })]));
+    expect(r).toMatchObject({ status: "unconfirmed", blocked: true });
+  });
+});
+describe("insecure endings", () => {
+  it("flags a secure link that ends on a plain http page", async () => {
+    const request = requester([new Response(null, { status: 301, headers: { location: "http://provider.example/" } }), new Response("OK")]);
+    expect((await checkHomepage("https://provider.example/", request)).status).toBe("unexpected_redirect");
   });
 });
