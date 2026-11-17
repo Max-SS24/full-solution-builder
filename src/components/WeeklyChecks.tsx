@@ -9,14 +9,15 @@ import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import { buildCsv, rangeData } from "@/lib/weekly-export";
 
-type Check = Tables<"community_check_history">;
+type Check = Tables<"community_check_history"> & { care_options?: { last_validated: string } | null };
+const reasonOf = (r: Check) => r.care_status !== "listed" && !FAILED_HOMEPAGE.includes(r.homepage_status) ? "care" : r.homepage_status;
 const labels: Record<string, string> = { working: "Website works", unavailable: "Page unavailable", unexpected_redirect: "Unexpected redirect", unconfirmed: "Could not check", no_homepage: "No website supplied" };
 function useWeeklyChecks() {
   return useQuery({ queryKey: ["weekly-community-checks"], queryFn: async () => {
     const since = new Date(Date.now() - 12 * 7 * 86400000).toISOString().slice(0, 10);
     const rows: Check[] = [];
     for (let offset = 0; ; offset += 1000) {
-      const { data, error } = await supabase.from("community_check_history").select("*").gte("week_start", since).order("week_start", { ascending: false }).order("id").range(offset, offset + 999);
+      const { data, error } = await supabase.from("community_check_history").select("*, care_options(last_validated)").gte("week_start", since).order("week_start", { ascending: false }).order("id").range(offset, offset + 999);
       if (error) throw error;
       rows.push(...data);
       if (data.length < 1000) break;
@@ -55,6 +56,9 @@ export function WeeklyChecks({ focusSignal = 0 }: { focusSignal?: number }) {
   const [filter, setFilter] = useState("issues");
   const [fromWeek, setFromWeek] = useState("");
   const [toWeek, setToWeek] = useState("");
+  const [reason, setReason] = useState("any");
+  const [recheckState, setRecheckState] = useState("any");
+  const [sortBy, setSortBy] = useState("reason");
   if (q.isPending) return <p className="mt-8" role="status">Loading weekly checks…</p>;
   if (q.isError) return <div className="mt-8"><p role="alert">Weekly checks could not be loaded.</p><Button variant="outline" onClick={() => q.refetch()}>Try again</Button></div>;
   const all = q.data;
@@ -62,7 +66,17 @@ export function WeeklyChecks({ focusSignal = 0 }: { focusSignal?: number }) {
   const week = selectedWeek || weeks[0];
   const rows = all.filter((r) => r.week_start === week);
   const count = (status: string) => rows.filter((r) => r.homepage_status === status).length;
-  const shown = rows.filter((r) => filter === "all" || (filter === "care" ? r.care_status !== "listed" : filter === "issues" ? ["unavailable", "unexpected_redirect", "unconfirmed"].includes(r.homepage_status) : r.homepage_status === filter));
+  const shown = rows.filter((r) => filter === "all" || (filter === "care" ? r.care_status !== "listed" : filter === "issues" ? ["unavailable", "unexpected_redirect", "unconfirmed"].includes(r.homepage_status) : r.homepage_status === filter))
+    .filter((r) => reason === "any" || reasonOf(r) === reason)
+    .filter((r) => recheckState === "any" || (recheckState === "rechecked" ? !!r.deep_checked_at : recheckState === "recovered" ? !!r.deep_checked_at && !FAILED_HOMEPAGE.includes(r.homepage_status) : !r.deep_checked_at))
+    .sort((a, b) => {
+      const lv = (r: Check) => r.care_options?.last_validated ? Date.parse(r.care_options.last_validated) : 0;
+      const dc = (r: Check) => r.deep_checked_at ? Date.parse(r.deep_checked_at) : 0;
+      if (sortBy === "verified_old") return lv(a) - lv(b);
+      if (sortBy === "verified_new") return lv(b) - lv(a);
+      if (sortBy === "recheck") return dc(b) - dc(a);
+      return reasonOf(a).localeCompare(reasonOf(b)) || a.provider_name.localeCompare(b.provider_name);
+    });
   const trends = weeks.slice().reverse().map((w) => {
     const checks = all.filter((r) => r.week_start === w);
     return { week: w, checked: checks.length, unavailable: checks.filter((r) => r.homepage_status === "unavailable").length, redirects: checks.filter((r) => r.homepage_status === "unexpected_redirect").length, unconfirmed: checks.filter((r) => r.homepage_status === "unconfirmed").length };
@@ -110,7 +124,12 @@ export function WeeklyChecks({ focusSignal = 0 }: { focusSignal?: number }) {
       <div className="mt-6 flex flex-wrap items-center gap-3"><h3 ref={listRef} tabIndex={-1} className="font-display text-xl font-bold outline-none focus-visible:ring-2">Check results · {shown.length} shown</h3><Button onClick={() => runRecheck()} disabled={!!busy || !pendingFailed}>{busy === "all" ? "Rechecking…" : `Recheck failed (${pendingFailed})`}</Button></div>
       <p role="status" aria-live="polite" className="mt-2 text-sm">{note}</p>
       <label className="mt-4 block text-sm font-bold">Show<select aria-label="Show weekly check results" className="ml-3 rounded-md border-2 border-ink bg-paper p-2" value={filter} onChange={(e) => setFilter(e.target.value)}><option value="issues">Website alerts</option><option value="unavailable">Unavailable pages</option><option value="unexpected_redirect">Unexpected redirects</option><option value="unconfirmed">Could not check</option><option value="care">Care needs confirmation</option><option value="all">All checked providers</option></select></label>
-      <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="border-b-2 border-ink"><tr><th className="p-3">Provider</th><th className="p-3">Website result</th><th className="p-3">Care services</th><th className="p-3">Checked</th></tr></thead><tbody>{shown.map((r) => <tr key={r.id} className="border-b border-ink/20 align-top"><td className="max-w-64 p-3"><p className="font-bold">{r.provider_name}</p><p>{r.city}, {r.state}</p>{r.homepage_url && <a className="underline" href={r.homepage_url} target="_blank" rel="noreferrer">Provider website<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>}<a className="mt-1 block underline" href={r.source_url} target="_blank" rel="noreferrer">Official source<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a></td><td className="p-3"><p className="font-semibold">{labels[r.homepage_status]}</p>{r.redirected_to && <p className="max-w-48 break-words">Redirects to {r.redirected_to}</p>}</td><td className="max-w-80 p-3"><p className="font-semibold">{r.care_status === "listed" ? "Services listed" : r.care_status === "inactive_registration" ? "Registration deactivated — review" : "Needs confirmation"}</p><p className="mt-1 text-ink/70">{r.care_reason}</p></td><td className="p-3"><p>{new Date(r.checked_at).toLocaleString()}</p>{r.deep_checked_at && <p className="mt-1 text-xs"><span className="font-bold">Rechecked (deep)</span> {new Date(r.deep_checked_at).toLocaleString()}<br />{r.deep_reason}</p>}{failed(r) && <Button size="sm" variant="outline" className="mt-2" disabled={!!busy} onClick={() => runRecheck([r.id])} aria-label={`Deep recheck ${r.provider_name}`}>{busy === r.id ? "Rechecking…" : "Recheck"}</Button>}</td></tr>)}{!shown.length && <tr><td colSpan={4} className="p-4">No checks match this filter.</td></tr>}</tbody></table></div>
+      <div className="mt-3 flex flex-wrap gap-4">
+        <label className="text-sm font-bold">Failure reason<select aria-label="Filter by failure reason" className="ml-2 rounded-md border-2 border-ink bg-paper p-2" value={reason} onChange={(e) => setReason(e.target.value)}><option value="any">Any reason</option><option value="unavailable">Page unavailable</option><option value="unexpected_redirect">Unexpected redirect</option><option value="unconfirmed">Could not check</option><option value="care">Care needs confirmation only</option><option value="working">Website works</option><option value="no_homepage">No website supplied</option></select></label>
+        <label className="text-sm font-bold">Recheck status<select aria-label="Filter by recheck status" className="ml-2 rounded-md border-2 border-ink bg-paper p-2" value={recheckState} onChange={(e) => setRecheckState(e.target.value)}><option value="any">Any</option><option value="not_rechecked">Not rechecked yet</option><option value="rechecked">Rechecked (deep)</option><option value="recovered">Recovered after recheck</option></select></label>
+        <label className="text-sm font-bold">Sort by<select aria-label="Sort weekly check results" className="ml-2 rounded-md border-2 border-ink bg-paper p-2" value={sortBy} onChange={(e) => setSortBy(e.target.value)}><option value="reason">Failure reason</option><option value="verified_old">Last verified (oldest first)</option><option value="verified_new">Last verified (newest first)</option><option value="recheck">Most recently rechecked</option></select></label>
+      </div>
+      <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="border-b-2 border-ink"><tr><th className="p-3">Provider</th><th className="p-3">Website result</th><th className="p-3">Care services</th><th className="p-3">Last verified</th><th className="p-3">Checked</th></tr></thead><tbody>{shown.map((r) => <tr key={r.id} className="border-b border-ink/20 align-top"><td className="max-w-64 p-3"><p className="font-bold">{r.provider_name}</p><p>{r.city}, {r.state}</p>{r.homepage_url && <a className="underline" href={r.homepage_url} target="_blank" rel="noreferrer">Provider website<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a>}<a className="mt-1 block underline" href={r.source_url} target="_blank" rel="noreferrer">Official source<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a></td><td className="p-3"><p className="font-semibold">{labels[r.homepage_status]}</p>{r.redirected_to && <p className="max-w-48 break-words">Redirects to {r.redirected_to}</p>}</td><td className="max-w-80 p-3"><p className="font-semibold">{r.care_status === "listed" ? "Services listed" : r.care_status === "inactive_registration" ? "Registration deactivated — review" : "Needs confirmation"}</p><p className="mt-1 text-ink/70">{r.care_reason}</p></td><td className="p-3">{r.care_options?.last_validated ? new Date(r.care_options.last_validated).toLocaleDateString() : "Not recorded"}</td><td className="p-3"><p>{new Date(r.checked_at).toLocaleString()}</p>{r.deep_checked_at && <p className="mt-1 text-xs"><span className="font-bold">Rechecked (deep)</span> {new Date(r.deep_checked_at).toLocaleString()}<br />{r.deep_reason}</p>}{failed(r) && <Button size="sm" variant="outline" className="mt-2" disabled={!!busy} onClick={() => runRecheck([r.id])} aria-label={`Deep recheck ${r.provider_name}`}>{busy === r.id ? "Rechecking…" : "Recheck"}</Button>}</td></tr>)}{!shown.length && <tr><td colSpan={5} className="p-4">No checks match this filter.</td></tr>}</tbody></table></div>
     </>}
   </section>;
 }
