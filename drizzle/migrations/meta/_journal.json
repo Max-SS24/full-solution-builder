@@ -232,6 +232,13 @@
       "when": 1794624776835,
       "tag": "0032_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794954592767,
+      "tag": "0033_deep_recheck_columns",
+      "breakpoints": true
     }
   ]
 }

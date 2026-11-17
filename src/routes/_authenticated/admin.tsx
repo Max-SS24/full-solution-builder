@@ -52,6 +52,7 @@ function Admin() {
       return data;
     },
   });
+  const [weeklyFocus, setWeeklyFocus] = useState(0);
   const [tab, setTab] = useState<"analytics" | "weekly" | "options" | "sources" | "admins" | "ai" | "audit">("analytics");
   const [form, setForm] = useState({ name: "", url: "", category: "community", description: "" });
   const refresh = () => {
@@ -135,7 +136,7 @@ function Admin() {
 
         {isAdmin.data && (
           <>
-            <WeeklyCheckAlert onOpen={() => setTab("weekly")} />
+            <WeeklyCheckAlert onOpen={() => { setTab("weekly"); setWeeklyFocus((n) => n + 1); }} />
             <div role="tablist" className="mt-6 flex gap-2 overflow-x-auto pb-1">
               {([["analytics", "Analytics"], ["weekly", "Weekly checks"], ["options", "Care options"], ["sources", "Sources"], ["admins", "Admins"], ["ai", "AI service"], ["audit", "Audit log"]] as const).map(([k, l]) => (
                 <Button variant="outline" key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
@@ -143,7 +144,7 @@ function Admin() {
               ))}
             </div>
             {tab === "analytics" && <Analytics />}
-            {tab === "weekly" && <><WeeklyChecks /><GuidanceSources /><GuidanceReports /></>}
+            {tab === "weekly" && <><WeeklyChecks focusSignal={weeklyFocus} /><GuidanceSources /><GuidanceReports /></>}
             {tab === "options" && <CareOptions />}
             {tab === "sources" && <>
              <form onSubmit={add} className="mt-8 grid min-w-0 gap-3 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:p-6 md:grid-cols-2 md:rounded-[26px]">

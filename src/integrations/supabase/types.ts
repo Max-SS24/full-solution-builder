@@ -324,6 +324,8 @@ export type Database = {
           care_status: string
           checked_at: string
           city: string | null
+          deep_checked_at: string | null
+          deep_reason: string | null
           homepage_status: string
           homepage_url: string | null
           id: string
@@ -339,6 +341,8 @@ export type Database = {
           care_status: string
           checked_at: string
           city?: string | null
+          deep_checked_at?: string | null
+          deep_reason?: string | null
           homepage_status: string
           homepage_url?: string | null
           id?: string
@@ -354,6 +358,8 @@ export type Database = {
           care_status?: string
           checked_at?: string
           city?: string | null
+          deep_checked_at?: string | null
+          deep_reason?: string | null
           homepage_status?: string
           homepage_url?: string | null
           id?: string

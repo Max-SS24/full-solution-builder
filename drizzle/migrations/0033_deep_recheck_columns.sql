@@ -1,0 +1,1 @@
+ALTER TABLE public.community_check_history ADD COLUMN IF NOT EXISTS deep_checked_at timestamptz, ADD COLUMN IF NOT EXISTS deep_reason text;
