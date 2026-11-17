@@ -1,0 +1,1 @@
+ALTER TABLE public.community_check_history ADD COLUMN IF NOT EXISTS manual_validated_at timestamptz, ADD COLUMN IF NOT EXISTS manual_validated_by uuid, ADD COLUMN IF NOT EXISTS manual_note text;

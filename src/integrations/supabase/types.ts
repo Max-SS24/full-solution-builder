@@ -329,6 +329,9 @@ export type Database = {
           homepage_status: string
           homepage_url: string | null
           id: string
+          manual_note: string | null
+          manual_validated_at: string | null
+          manual_validated_by: string | null
           provider_name: string
           redirected_to: string | null
           source_url: string
@@ -346,6 +349,9 @@ export type Database = {
           homepage_status: string
           homepage_url?: string | null
           id?: string
+          manual_note?: string | null
+          manual_validated_at?: string | null
+          manual_validated_by?: string | null
           provider_name: string
           redirected_to?: string | null
           source_url: string
@@ -363,6 +369,9 @@ export type Database = {
           homepage_status?: string
           homepage_url?: string | null
           id?: string
+          manual_note?: string | null
+          manual_validated_at?: string | null
+          manual_validated_by?: string | null
           provider_name?: string
           redirected_to?: string | null
           source_url?: string

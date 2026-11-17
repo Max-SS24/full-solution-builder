@@ -239,6 +239,13 @@
       "when": 1794954592767,
       "tag": "0033_deep_recheck_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1794956189126,
+      "tag": "0034_manual_validation_columns",
+      "breakpoints": true
     }
   ]
 }

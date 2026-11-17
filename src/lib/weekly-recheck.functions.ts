@@ -7,7 +7,7 @@ export const RECHECK_LIMIT = 25;
 
 export const recheckFailed = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) => z.object({ week: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), ids: z.array(z.uuid()).max(RECHECK_LIMIT).optional() }).parse(i))
+  .inputValidator((i: unknown) => z.object({ week: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), ids: z.array(z.uuid()).max(RECHECK_LIMIT).optional(), before: z.iso.datetime().optional() }).parse(i))
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
     if (!isAdmin) throw new Error("Forbidden");
@@ -17,7 +17,9 @@ export const recheckFailed = createServerFn({ method: "POST" })
     let q = supabaseAdmin.from("community_check_history").select("*").eq("week_start", data.week)
       .or(`homepage_status.in.(${FAILED_HOMEPAGE.join(",")}),care_status.neq.listed`);
     if (data.ids) q = q.in("id", data.ids);
-    else q = q.is("deep_checked_at", null);
+    // "before" = full recheck: include rows deep-checked before this run started, but not manually validated ones.
+    else if (data.before) q = q.is("manual_validated_at", null).or(`deep_checked_at.is.null,deep_checked_at.lt.${data.before}`);
+    else q = q.is("deep_checked_at", null).is("manual_validated_at", null);
     const { data: rows, error } = await q.order("id").limit(RECHECK_LIMIT);
     if (error) throw new Error(error.message);
     const results: { id: string; homepage_status: string; reason: string }[] = [];
@@ -44,4 +46,20 @@ export const recheckFailed = createServerFn({ method: "POST" })
       results.push({ id: row.id, homepage_status: homepage, reason });
     }));
     return { processed: results.length, results };
+  });
+
+/** Admin marks (or unmarks) a failed result as manually validated. Never changes care status or verification dates. */
+export const markManuallyValidated = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.uuid(), validated: z.boolean(), note: z.string().trim().max(300).optional() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const patch = data.validated
+      ? { manual_validated_at: new Date().toISOString(), manual_validated_by: context.userId, manual_note: data.note || null }
+      : { manual_validated_at: null, manual_validated_by: null, manual_note: null };
+    const { error } = await supabaseAdmin.from("community_check_history").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
