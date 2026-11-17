@@ -20,6 +20,7 @@ import type { RecheckedCareResult } from "@/lib/reopened-care";
 import { communityHomepage } from "@/lib/care-links";
 import { isVaKind } from "@/lib/care-rules";
 import { CareCard } from "@/components/CareCard";
+import { useCareCard } from "@/components/CareCardContext";
 import { GuestSearchCounter } from "@/components/GuestSearchCounter";
 import { updateGuestCounter } from "@/lib/guest-counter";
 
@@ -93,6 +94,10 @@ function Home() {
   const [vaStage, setVaStage] = useState<VaStage | null>(null);
   const [facilityUnknown, setFacilityUnknown] = useState(false);
   const [myFacility, setMyFacility] = useState<NavOut["myFacility"]>(null);
+  const { setCard } = useCareCard();
+  useEffect(() => {
+    if (results?.length) setCard({ facility: myFacility, results, stage: vaStage, facilityUnknown });
+  }, [results, myFacility, vaStage, facilityUnknown, setCard]);
   const [pending, setPending] = useState<NavOut | null>(null);
   const [quiz, setQuiz] = useState<Record<string, string>>({});
   useEffect(() => { try { setQuiz(JSON.parse(sessionStorage.getItem("van_quiz") ?? "{}")); } catch { /* none */ } }, []);

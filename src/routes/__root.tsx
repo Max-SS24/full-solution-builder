@@ -11,6 +11,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { SafetyBar } from "@/components/SafetyBar";
+import { CareCardProvider } from "@/components/CareCardContext";
 import { PREFS_BOOT_SCRIPT } from "@/lib/a11y-prefs";
 
 import appCss from "../styles.css?url";
@@ -125,7 +126,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <SafetyBar />
-      <Outlet />
+      <CareCardProvider><Outlet /></CareCardProvider>
       <footer className="border-t-[3px] border-ink bg-paper px-4 py-6 text-sm text-ink">
         <p className="mx-auto max-w-7xl">VA Navigator is independent and not affiliated with the U.S. Department of Veterans Affairs.</p>
         <nav aria-label="Legal" className="mx-auto mt-2 flex max-w-6xl flex-wrap gap-4 font-semibold underline">
