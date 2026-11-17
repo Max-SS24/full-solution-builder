@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { flushSync } from "react-dom";
 import { useServerFn } from "@tanstack/react-start";
-import { Printer } from "lucide-react";
+import { Printer, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CareResult } from "@/lib/navigator.functions";
 import type { VaStage } from "@/lib/va-guide";
@@ -9,6 +9,7 @@ import { HOURS_NOTICE } from "@/lib/va-hours";
 import { verifyPrepFacts } from "@/lib/appointment-prep.functions";
 import { PREP_DISCLAIMER, applyChecks, factsFor, type PrepCheck } from "@/lib/appointment-prep";
 import { cardAddress, cardStatus } from "@/lib/care-card";
+import { deliverFile } from "@/lib/download-file";
 
 type Facility = { name: string; address: string | null; phone: string | null; url: string | null; hours?: string | null; found: boolean } | null;
 const day = (d: string) => {
@@ -22,11 +23,34 @@ export function CareCard({ facility, results, stage }: {
   const verify = useServerFn(verifyPrepFacts);
   const [checks, setChecks] = useState<PrepCheck[]>([]);
   const [printing, setPrinting] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [pdf, setPdf] = useState<Blob | null>(null);
+  const [pdfError, setPdfError] = useState("");
+  const [pdfRevision, setPdfRevision] = useState(0);
+  const [checked, setChecked] = useState(false);
   useEffect(() => {
     let active = true;
-    verify().then((r) => { if (active) setChecks(r.checks); }).catch(() => { if (active) setChecks([]); });
-    return () => { active = false; };
+    const refresh = () => {
+      setPdf(null);
+      setChecked(false);
+      verify().then((r) => { if (active) { setChecks(r.checks); setChecked(true); } }).catch(() => { if (active) { setChecks([]); setChecked(true); } });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    return () => { active = false; window.clearInterval(timer); };
   }, [verify]);
+  useEffect(() => {
+    let active = true;
+    setPdf(null);
+    setPdfError("");
+    if (!checked || !cardRef.current) return;
+    const card = cardRef.current;
+    import("@/lib/care-card-pdf").then(async ({ cardParagraphs, createCareCardPdf }) => {
+      const blob = await createCareCardPdf(cardParagraphs(card));
+      if (active) setPdf(blob);
+    }).catch(() => { if (active) setPdfError("We couldn't create your PDF. Please try again or use Print."); });
+    return () => { active = false; };
+  }, [checks, checked, facility, results, stage, pdfRevision]);
   const top = results.filter((r) => r.name !== facility?.name).slice(0, 3);
   const steps = applyChecks(factsFor(stage), checks).filter((v) => v.verified && v.fact.topic === "referral").slice(0, 3);
   async function printCard() {
@@ -40,9 +64,16 @@ export function CareCard({ facility, results, stage }: {
     <section aria-label="Your care card" className="mt-8 border-t-2 border-border py-5">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <h2 className="font-display text-xl font-bold">Your care card</h2>
-        <Button disabled={printing} onClick={printCard} className="h-auto min-h-10 whitespace-normal"><Printer aria-hidden="true" />{printing ? "Checking VA guidance…" : "Print or save as PDF"}</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button disabled={!pdf} aria-busy={!pdf} onClick={() => {
+            if (!pdf) return;
+            deliverFile(pdf, "VA-Navigator-Care-Card.pdf").catch(() => setPdfError("We couldn't download your PDF. Please try again or use Print."));
+          }} className="h-auto min-h-10 whitespace-normal"><Download aria-hidden="true" />Download PDF</Button>
+          <Button variant="outline" disabled={printing} onClick={printCard} className="h-auto min-h-10 whitespace-normal"><Printer aria-hidden="true" />{printing ? "Checking VA guidance…" : "Print or save as PDF"}</Button>
+        </div>
       </div>
-      <div id="care-card" className="mt-4 border border-border bg-card p-4 text-sm sm:p-5">
+      {pdfError && <div role="status" className="mt-2 text-sm print:hidden">{pdfError} <Button variant="outline" onClick={() => setPdfRevision((n) => n + 1)}>Retry PDF</Button></div>}
+      <div ref={cardRef} id="care-card" className="mt-4 border border-border bg-card p-4 text-sm sm:p-5">
         <h3 className="font-display text-lg font-bold">VA Navigator · Care card</h3>
         <p className="text-xs text-muted-foreground">Prepared {day(new Date().toISOString())} · Keep this personal care information private.</p>
         {facility && (
