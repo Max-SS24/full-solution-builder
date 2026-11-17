@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Keep appointment prep mounted during minute refreshes, preserve checked questions and report drafts, and retain evidence freshness checks.
 - [x] Show a shared guest search counter in chat and provider matching, preserving remaining counts and reset times across reloads.
 - [x] Add appointment guidance reports with an admin review inbox; submission, review, and phone layout verified.
 - [x] Pre-launch data-flow review: erase all security records on account deletion, remove sample listings, lock first-admin claim to signed-in users.

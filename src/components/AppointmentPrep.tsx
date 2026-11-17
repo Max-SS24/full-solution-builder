@@ -19,6 +19,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
   const [failed, setFailed] = useState(false);
   const [checking, setChecking] = useState(false);
   const [checkMsg, setCheckMsg] = useState("");
+  const [selectedQuestions, setSelectedQuestions] = useState<Record<string, boolean>>({});
   const checkNow = async () => {
     setChecking(true);
     setCheckMsg("Checking VA.gov now…");
@@ -38,7 +39,10 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
   useEffect(() => {
     let active = true;
     const refresh = () => {
-      setViews(null);
+      // Keep the page mounted while refreshing, but re-evaluate evidence expiry.
+      setViews((current) => current === null ? null : applyChecks(factsFor(stage), current.map((v) => ({
+        id: v.fact.id, ok: v.verified, checkedAt: v.verified ? v.checkedAt : v.lastCheckedAt ?? "",
+      }))));
       setFailed(false);
       verify().then((r) => { if (active) setViews(applyChecks(factsFor(stage), r.checks)); }).catch(() => { if (active) { setFailed(true); setViews(applyChecks(factsFor(stage), [])); } });
     };
@@ -104,7 +108,7 @@ export function AppointmentPrep({ stage }: { stage: VaStage | null }) {
           <ul className="mt-4 space-y-3">
             {ok.filter((v) => v.fact.askProvider).map((v) => (
               <li key={v.fact.id} className="flex gap-3">
-                <input type="checkbox" aria-label={v.fact.askProvider} className="mt-1 h-4 w-4" />
+                <input type="checkbox" aria-label={v.fact.askProvider} checked={!!selectedQuestions[v.fact.id]} onChange={(e) => setSelectedQuestions((current) => ({ ...current, [v.fact.id]: e.target.checked }))} className="mt-1 h-4 w-4" />
                 <span>{v.fact.askProvider} <a href={v.fact.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-bold underline">VA.gov source — {v.fact.sourceLabel}<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a></span>
               </li>
             ))}
