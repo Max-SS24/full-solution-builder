@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { GUEST_LIMIT_REPLY, countsAsGuestResult } from "./guest-limit";
+import { crisisSafe } from "./result-source";
 import { AREA_CODES, US_AREAS, findNamedArea } from "./us-areas";
 
 export type Variables = {
@@ -516,7 +517,7 @@ export const navigate = createServerFn({ method: "POST" })
       vaCheckedAt: new Date().toISOString(),
       variables,
       // No location in a crisis: never show (or imply) nearby results from a default area.
-      results: crisis && !locationGiven ? [] : checkedResults,
+      results: crisisSafe(crisis, locationGiven, checkedResults),
       needsMore,
       connectorError: error || liveError ? "A data source is temporarily unavailable." : null,
       aiNote: aiUsed ? null : aiError ?? `AI unavailable for ${activeProvider(aiCfg).name}; using basic matching.`,

@@ -11,7 +11,7 @@ Reply ONLY with JSON: {"summary": string (1-2 warm plain-language sentences), "m
 // Lenient: real listings can have long names, bios or insurance lists, trim instead of rejecting.
 const str = (n: number) => z.string().nullish().transform((v) => (v ?? "").slice(0, n));
 const list = z.array(z.string()).nullish().transform((v) => (v ?? []).slice(0, 20).map((x) => x.slice(0, 60)));
-const Candidate = z.object({
+export const Candidate = z.object({
   id: z.string().min(1).transform((v) => v.slice(0, 300)), name: str(300), kind: str(80),
   payment: list, bio: str(800), needs: list, care_types: list, formats: list, veteran_focus: z.boolean().nullish().transform((v) => !!v),
 });

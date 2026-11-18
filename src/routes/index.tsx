@@ -1,4 +1,5 @@
 import { HOURS_NOTICE } from "@/lib/va-hours";
+import { mergeSearchPrefs, sourceLinkFor, verifiedSourceLabel } from "@/lib/result-source";
 import type { TerritoryHelp } from "@/lib/territory-guidance";
 import { createFileRoute } from "@tanstack/react-router";
 import { guestId, guestNotice, guestLimitReply } from "@/lib/guest-limit";
@@ -253,7 +254,7 @@ function Home() {
     }
     setBusy(true);
     try {
-      const out = await run({ data: { guestId: user ? undefined : guestId(), messages: next.slice(1), prefs: { ...quiz, ...(prefs ?? {}) } } });
+      const out = await run({ data: { guestId: user ? undefined : guestId(), messages: next.slice(1), prefs: mergeSearchPrefs(quiz, prefs) } });
       if (!user) updateGuestCounter(out.guestRemaining, out.guestResetAt);
       // Corrected their VA facility after seeing results: refresh the results right away, no extra question.
       const newFac = out.variables.va_facility;
@@ -312,7 +313,7 @@ function Home() {
               <a href="sms:741741?&body=HOME" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">✉️ </span>Crisis Text Line<br />Text HOME to 741741</a>
               <a href="tel:911" className="rounded-2xl border-[3px] border-ink bg-paper px-4 py-3 text-ink shadow-hard"><span aria-hidden="true">🚨 </span>Emergency Services<br />Call 911 or go to the nearest ER{danger === "others" ? " if anyone is in danger" : ""}</a>
             </div>
-            <p className="mt-3 text-sm font-semibold">Your closest care matches are listed below too.</p>
+            {!!results?.length && <p className="mt-3 text-sm font-semibold">Your closest care matches are listed below too.</p>}
           </div>
         </div>
       )}
@@ -545,7 +546,7 @@ function Home() {
                     <p>📍 {r.city}, {r.state}{r.distance_miles != null && <strong> · {r.geo_estimated ? "about " : ""}{r.distance_miles.toFixed(1)} miles away{r.geo_estimated ? " (est.)" : ""}</strong>} · {r.formats.join(" & ")}</p>
                     {!r.reopenCheck && r.review !== undefined && r.freshness === "saved" && (
                       <p className={`rounded-xl border-2 border-ink px-2 py-1 text-xs font-bold ${r.review ? "bg-sun" : "bg-minttint"}`}>
-                        Last verified on {/va\.gov/i.test(r.source_url) ? "VA.gov" : (r.source_name || "its source")}: {fmtDay(r.last_checked)} · {r.review === "page_missing" ? "⚠️ VA.gov page needs review, call to confirm" : r.review === "contact_changed" ? "⚠️ Contact details recently changed on VA.gov, review" : "✅ Page and contact details verified"}
+                        Last verified on {verifiedSourceLabel(r)}: {fmtDay(r.last_checked)} · {r.review === "page_missing" ? "⚠️ VA.gov page needs review, call to confirm" : r.review === "contact_changed" ? "⚠️ Contact details recently changed on VA.gov, review" : "✅ Page and contact details verified"}
                       </p>
                     )}
                     <p>🩺 {r.needs.join(", ")} · {r.care_types.join(", ")}</p>
@@ -578,7 +579,7 @@ function Home() {
                         {r.homepageCheck.status === "working" ? "✓ Provider website works" : r.homepageCheck.status === "unavailable" ? "⚠ Provider website unavailable. Call the office; this does not mean care is unavailable." : r.homepageCheck.status === "unexpected_redirect" ? `⚠ Unexpected website redirect${r.homepageCheck.redirectedTo ? ` to ${r.homepageCheck.redirectedTo}` : ""}. Confirm the website with the office before using it.` : "Website could not be confirmed (it may block automated checks). Call the office to confirm."}
                         <span className="mt-1 block">Website checked: {new Date(r.homepageCheck.checkedAt).toLocaleString()}</span>
                       </p>}
-                      {(r.source_url || r.source_name.toLowerCase().includes("findtreatment") || r.id.startsWith("ft-")) ? <a href={r.source_name.toLowerCase().includes("findtreatment") || r.id.startsWith("ft-") ? "https://findtreatment.gov/locator" : r.source_url} target="_blank" rel="noopener noreferrer" className="block rounded-full bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">View original source<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a> : <p className="text-center text-xs font-semibold text-ink/65">No source link available for this listing.</p>}
+                      {sourceLinkFor(r) ? <a href={sourceLinkFor(r)!} target="_blank" rel="noopener noreferrer" className="block rounded-full bg-navy px-4 py-2.5 text-center text-sm font-bold text-cream shadow-hard">View original source<span aria-hidden="true"> ↗</span><span className="sr-only"> (opens in a new tab)</span></a> : <p className="text-center text-xs font-semibold text-ink/65">No source link available for this listing.</p>}
                     </div>}
                     <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[11px] font-semibold text-ink/60">
                       <dt>Verified by:</dt><dd className="text-ink">{r.source_name}</dd>

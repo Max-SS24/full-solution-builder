@@ -31,12 +31,6 @@ export const exportMyData = createServerFn({ method: "POST" })
       supabase.from("mfa_recovery_events").select("*").eq("user_id", userId),
     ]);
     if (history.error || prefs.error) throw new Error("Could not export your data");
-    return { json: JSON.stringify({
-      exported_at: new Date().toISOString(),
-      account: { id: userId, email: (claims as { email?: string }).email ?? null },
-      preferences: prefs.data?.prefs ?? prefs.data ?? null,
-      search_history: history.data ?? [],
-      sign_in_security: security.data ?? null,
-      recovery_code_activity: recovery.data ?? [],
-    }, null, 2) };
+    const { buildDataExport } = await import("./data-export");
+    return { json: buildDataExport({ userId, email: (claims as { email?: string }).email ?? null, prefs: (prefs.data as { prefs?: unknown } | null)?.prefs ?? null, history: history.data ?? [], security: security.data, recovery: recovery.data ?? [] }) };
   });
