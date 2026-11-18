@@ -13,7 +13,7 @@ const str = (n: number) => z.string().nullish().transform((v) => (v ?? "").slice
 const list = z.array(z.string()).nullish().transform((v) => (v ?? []).slice(0, 20).map((x) => x.slice(0, 60)));
 const Candidate = z.object({
   id: z.string().min(1).transform((v) => v.slice(0, 300)), name: str(300), kind: str(80),
-  payment: list, bio: str(800), needs: list, care_types: list, veteran_focus: z.boolean().nullish().transform((v) => !!v),
+  payment: list, bio: str(800), needs: list, care_types: list, formats: list, veteran_focus: z.boolean().nullish().transform((v) => !!v),
 });
 
 export const matchProviders = createServerFn({ method: "POST" })

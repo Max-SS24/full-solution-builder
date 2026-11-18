@@ -18,3 +18,25 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
     if (error) throw new Error("Could not delete account");
     return { ok: true };
   });
+
+// Everything we store about the signed-in user, for "Download my data" (no secrets or code hashes).
+export const exportMyData = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId, claims } = context;
+    const [history, prefs, security, recovery] = await Promise.all([
+      supabase.from("search_history").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+      supabase.from("user_preferences").select("*").eq("user_id", userId).maybeSingle(),
+      supabase.from("user_security").select("email_mfa, updated_at").eq("user_id", userId).maybeSingle(),
+      supabase.from("mfa_recovery_events").select("*").eq("user_id", userId),
+    ]);
+    if (history.error || prefs.error) throw new Error("Could not export your data");
+    return JSON.parse(JSON.stringify({
+      exported_at: new Date().toISOString(),
+      account: { id: userId, email: (claims as { email?: string }).email ?? null },
+      preferences: prefs.data?.prefs ?? prefs.data ?? null,
+      search_history: history.data ?? [],
+      sign_in_security: security.data ?? null,
+      recovery_code_activity: recovery.data ?? [],
+    })) as Record<string, unknown>;
+  });

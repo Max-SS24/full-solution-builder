@@ -153,7 +153,7 @@ function fallbackExtract(text: string): Variables {
         || /don'?t want (to deal with )?(the )?va/.test(t) || /no[n -]?va/.test(t) || /avoid (the )?va/.test(t)
         || /don'?t want (to deal with )?(the )?government/.test(t) || /no[n -]?government/.test(t) || /outside (the )?va/.test(t) ? "community"
       : /\bboth\b|either|no preference|don'?t care|compare/.test(t) ? "both"
-      : /\bva\b/.test(t) || t.includes("vet center") ? "va" : null,
+      : vaChoiceIn(t) ? "va" : null,
     va_applied: /(haven'?t|have not|never|didn'?t|did not|not yet) (yet )?(applied|enrolled)/.test(t) ? "no"
       : /\b(i('ve| have)?|already) (already )?(applied|enrolled)|\b(i'?m|i am) enrolled/.test(t) ? "yes" : null,
     va_registered: /not (registered|a patient)|never been seen/.test(t) ? "no"
@@ -507,7 +507,7 @@ export const navigate = createServerFn({ method: "POST" })
       territoryHelp: tHelp,
       vaStage,
       facilityUnknown: variables.va_facility === "unknown",
-      myFacility: needsMore ? null : myFacility,
+      myFacility: needsMore || (crisis && !locationGiven) ? null : myFacility,
       readyToShow,
       crisis,
       danger,
@@ -515,7 +515,8 @@ export const navigate = createServerFn({ method: "POST" })
       vaStatus: vaGuide && !vaStatus ? ("directory" as VaStatus) : vaStatus,
       vaCheckedAt: new Date().toISOString(),
       variables,
-      results: checkedResults,
+      // No location in a crisis: never show (or imply) nearby results from a default area.
+      results: crisis && !locationGiven ? [] : checkedResults,
       needsMore,
       connectorError: error || liveError ? "A data source is temporarily unavailable." : null,
       aiNote: aiUsed ? null : aiError ?? `AI unavailable for ${activeProvider(aiCfg).name}; using basic matching.`,
@@ -582,6 +583,12 @@ const TOPIC_RE: [string, RegExp][] = [
   ["va_registered", /(registered|enrolled) as a patient/i],
   ["va_facility", /which VA facility/i],
 ];
+/** True when the text asks for VA care, ignoring VA words that are part of a facility name. */
+export function vaChoiceIn(text: string): boolean {
+  const t = text.toLowerCase().replace(/\b[a-z.'’ ]{0,60}?\bva\b\s+(medical center|hospital|clinic|health care system|healthcare system|vamc|cboc|outpatient clinic)\b/g, " ");
+  return /\bva\b/.test(t) || t.includes("vet center");
+}
+
 /** Topics the navigator has already asked about in this chat. */
 export function askedTopics(messages: { role: string; content: string }[]): Set<string> {
   const out = new Set<string>();
@@ -592,9 +599,11 @@ export function askedTopics(messages: { role: string; content: string }[]): Set<
 const FAC_STOP = new Set(["va", "the", "in", "at", "of", "and", "medical", "center", "clinic", "hospital", "veterans", "veteran", "health", "care", "system", "outpatient", "community", "vamc", "cboc"]);
 /** True when every distinctive word the person gave appears in the facility name. */
 export function facilityMatches(said: string, name: string, city = ""): boolean {
-  const words = (t: string) => t.toLowerCase().replace(/['’]s\b/g, "").split(/[^a-z0-9]+/).filter(Boolean);
+  const ALIAS: Record<string, string> = { junior: "jr", senior: "sr", saint: "st", mount: "mt", fort: "ft" };
+  const words = (t: string) => t.toLowerCase().replace(/['’]s\b/g, "").split(/[^a-z0-9]+/).filter(Boolean).map((w) => ALIAS[w] ?? w);
+  const STATES = new Set(Object.keys(US_AREAS).map((k) => k.toLowerCase()));
   const cityWords = new Set(words(city));
-  const key = words(said).filter((w) => w.length > 1 && !FAC_STOP.has(w) && !cityWords.has(w));
+  const key = words(said).filter((w) => w.length > 1 && !FAC_STOP.has(w) && !cityWords.has(w) && !STATES.has(w));
   if (!key.length) return false;
   const have = new Set(words(name));
   return key.every((w) => have.has(w));

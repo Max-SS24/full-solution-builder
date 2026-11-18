@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useAccount, type Prefs } from "@/hooks/useAccount";
 import { useServerFn } from "@tanstack/react-start";
-import { deleteMyAccount } from "@/lib/privacy.functions";
+import { deleteMyAccount, exportMyData } from "@/lib/privacy.functions";
+import { deliverFile } from "@/lib/download-file";
 import { visibleQuestions } from "@/lib/questionnaire";
 import { useEffect, useState } from "react";
 import { EmailCodeStep } from "@/components/EmailCodeStep";
@@ -47,6 +48,14 @@ function Account() {
   }
 
   const erase = useServerFn(deleteMyAccount);
+  const exportData = useServerFn(exportMyData);
+  async function downloadAll() {
+    try {
+      const data = await exportData();
+      await deliverFile(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), `va-navigator-my-data-${new Date().toISOString().slice(0, 10)}.json`);
+      toast.success("Your data download is ready");
+    } catch { toast.error("Couldn't prepare your data. Please try again."); }
+  }
   async function eraseAll() {
     if (!confirm("Permanently delete your account, search history and preferences? This can't be undone.")) return;
     try { await erase(); toast.success("Your account and data were deleted"); await signOut(); }
@@ -101,6 +110,7 @@ function Account() {
             <li>Turn on "Private search" in the chat to search without saving anything.</li>
             <li>You can erase everything at any time below.</li>
           </ul>
+          <button onClick={downloadAll} className="mt-6 mr-3 rounded-full border-[3px] border-ink bg-paper px-4 py-2 text-sm font-bold">Download my data</button>
           <button onClick={eraseAll} className="mt-6 rounded-full border-[3px] border-ink bg-coral px-4 py-2 text-sm font-bold text-paper">Delete my account & all data</button>
         </section>
       </main>
