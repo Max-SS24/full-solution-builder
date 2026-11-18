@@ -52,7 +52,7 @@ function Account() {
   async function downloadAll() {
     try {
       const data = await exportData();
-      await deliverFile(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), `va-navigator-my-data-${new Date().toISOString().slice(0, 10)}.json`);
+      await deliverFile(new Blob([data.json], { type: "application/json" }), `va-navigator-my-data-${new Date().toISOString().slice(0, 10)}.json`);
       toast.success("Your data download is ready");
     } catch { toast.error("Couldn't prepare your data. Please try again."); }
   }
