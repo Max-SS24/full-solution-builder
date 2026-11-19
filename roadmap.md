@@ -1,4 +1,6 @@
 # Roadmap
+- [x] Add Sunday display-preference regression tests across all 13 pages, back/forward and reloads; all 66 affected tests and live preference checks pass.
+- [ ] Activate Sunday 09:17 UTC runs: workflow is ready, but requires a connected GitHub repository with Actions enabled on its default branch; hosted activation cannot be verified from Lovable.
 - [x] Cover announcements and heading focus on all 13 pages; 262 tests pass and signed-in live navigation, back/forward and reload checks pass after the type fixes (actual VoiceOver/NVDA speech remains unverified).
 - [x] Add admin-only, permanent manual validation/reversal history with notes and timestamps; signed-in validation/reversal/reload and live access regression checks passed.
 - [x] Keep appointment prep mounted during minute refreshes, preserve checked questions and report drafts, and retain evidence freshness checks.

@@ -46,6 +46,7 @@ vi.mock("@/lib/reopened-care.functions", () => ({
 }));
 
 import { routeTree } from "@/routeTree.gen";
+import { A11Y_KEY, PREFS_BOOT_SCRIPT, type TextSize } from "@/lib/a11y-prefs";
 
 // The root route renders a full <html> document, so mount into `document`
 // itself (a <div> container can't hold <html>, which left it empty).
@@ -384,4 +385,61 @@ describe("App routing", () => {
     await renderAt("/this-route-does-not-exist");
     expect(await screen.findByRole("heading", { level: 1, name: "404" }, { timeout: 5000 })).toBeInTheDocument();
   });
+});
+
+describe("Weekly display preference persistence", () => {
+  const combinations = [false, true].flatMap((contrast) =>
+    (["normal", "large", "xlarge"] as TextSize[]).map((text) => ({ contrast, text })),
+  );
+  const labels = { normal: "Standard", large: "Large", xlarge: "Extra large" };
+
+  it.each(combinations)("keeps contrast=$contrast and text=$text across every page, history and reload", async ({ contrast, text }) => {
+    const user = userEvent.setup();
+    const router = await renderAt("/");
+    await expectDestination(router, pages[0]);
+    await user.click(screen.getByRole("button", { name: "Display settings: contrast and text size" }));
+    if (contrast) await user.click(screen.getByRole("switch", { name: "High contrast" }));
+    await user.click(screen.getByRole("radio", { name: labels[text] }));
+    await user.keyboard("{Escape}");
+
+    const expectPreferences = () => {
+      expect(document.documentElement.dataset["contrast"]).toBe(contrast ? "high" : "normal");
+      expect(document.documentElement.dataset["text"]).toBe(text);
+      expect(JSON.parse(localStorage.getItem(A11Y_KEY) ?? "null")).toEqual({ contrast, text, motion: false });
+    };
+    expectPreferences();
+    for (const page of pages.slice(1)) {
+      await act(async () => { await router.navigate({ to: page.path }); });
+      await expectDestination(router, page);
+      expectPreferences();
+    }
+    for (const page of pages.slice(0, -1).reverse()) {
+      await act(async () => { router.history.back(); });
+      await expectDestination(router, page);
+      expectPreferences();
+    }
+    for (const page of pages.slice(1)) {
+      await act(async () => { router.history.forward(); });
+      await expectDestination(router, page);
+      expectPreferences();
+    }
+    // A fresh document must restore saved settings before paint. jsdom doesn't
+    // execute head scripts, so execute the exact production bootstrap explicitly.
+    cleanup();
+    for (const client of clients.splice(0)) client.clear();
+    delete document.documentElement.dataset["contrast"];
+    delete document.documentElement.dataset["text"];
+    new Function("localStorage", "document", PREFS_BOOT_SCRIPT)(localStorage, document);
+    expectPreferences();
+    const refreshed = await renderAt("/terms");
+    // React replaces <html> during this full-document remount; emulate the
+    // head bootstrap on that new element as the browser does on a real reload.
+    new Function("localStorage", "document", PREFS_BOOT_SCRIPT)(localStorage, document);
+    await expectDestination(refreshed, pages[12]);
+    await user.click(screen.getByRole("button", { name: "Display settings: contrast and text size" }));
+    expect(screen.getByRole("switch", { name: "High contrast" })).toHaveAttribute("aria-checked", String(contrast));
+    expect(screen.getByRole("radio", { name: labels[text] })).toHaveAttribute("aria-checked", "true");
+    expectPreferences();
+    await user.keyboard("{Escape}");
+  }, 30000);
 });
