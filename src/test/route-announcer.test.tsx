@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { RouteAnnouncer, pageLabel } from "@/components/RouteAnnouncer";
 
 function setup() {
-  const root = createRootRoute({ component: () => (<><RouteAnnouncer /><Link to="/b">Go B</Link><Outlet /></>) });
+  const root = createRootRoute({ component: () => (<><RouteAnnouncer /><Link to="/helpful-links">Go B</Link><Outlet /></>) });
   const a = createRoute({ getParentRoute: () => root, path: "/", component: () => <main id="main"><h1>Page A</h1></main> });
-  const b = createRoute({ getParentRoute: () => root, path: "/b", component: () => { document.title = "Helpful links | VA Navigator"; return <main id="main"><h1>Page B</h1></main>; } });
+  const b = createRoute({ getParentRoute: () => root, path: "/helpful-links", component: () => { document.title = "Helpful links | VA Navigator"; return <main id="main"><h1>Page B</h1></main>; } });
   const router = createRouter({ routeTree: root.addChildren([a, b]), history: createMemoryHistory({ initialEntries: ["/"] }) });
   render(<RouterProvider router={router} />);
   return router;

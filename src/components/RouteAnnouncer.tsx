@@ -3,7 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 
 /** Announces each client-side page change and moves focus to the new page so screen readers follow it. */
 export function pageLabel(title: string) {
-  const name = title.split("|")[0].trim() || "New";
+  const name = (title.split("|")[0] ?? "").trim() || "New";
   return `${name} page loaded`;
 }
 
