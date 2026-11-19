@@ -48,7 +48,7 @@ function ResetPage() {
   return (
     <div className="min-h-screen bg-cream">
       <SiteHeader />
-      <main className="mx-auto max-w-md px-4 py-10 sm:px-6 sm:py-16">
+      <main id="main" className="mx-auto max-w-md px-4 py-10 sm:px-6 sm:py-16">
         <form onSubmit={submit} className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:p-8">
           <h1 className="font-display text-3xl font-bold">Set a new password</h1>
           {!ready ? (

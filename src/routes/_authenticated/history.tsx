@@ -52,7 +52,7 @@ function History() {
   return (
     <div className="min-h-screen bg-cream">
       <SiteHeader />
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+      <main id="main" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
         <h1 className="font-display text-3xl font-bold sm:text-4xl">My search history</h1>
         <p className="mt-2 text-sm text-ink/60">🔒 Private, only you can see these. Delete any entry at any time.</p>
         {!!q.data?.length && (

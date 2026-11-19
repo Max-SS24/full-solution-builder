@@ -42,3 +42,4 @@
 - Optional email sign-in codes: user_security.email_mfa per user; a password sign-in records an mfa_proofs row, the emailed-code session (JWT amr otp) within 10 minutes clears that session_id in mfa_sessions; has_mfa_cleared() gates personal-data RLS and has_role, so locked sessions are blocked server-side, not just in the UI.
 - In-person searches with a location show straight-line miles from the area center (wantsDistance/withDistances in care-rules.ts); listings without directory coordinates get a ZIP-center estimate saved with geo_estimated, never an invented distance.
 - MFA recovery codes: hashed only, service_role table; redeem needs password session + fresh proof, rate limited, clears via mfa_sessions.
+- Route changes announce the page and focus main h1 (RouteAnnouncer); mains use id="main".

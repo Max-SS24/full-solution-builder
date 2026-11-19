@@ -123,7 +123,7 @@ function Admin() {
   return (
     <div className="min-h-screen bg-cream">
       <SiteHeader />
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+      <main id="main" className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <h1 className="min-w-0 font-display text-3xl font-bold sm:text-4xl">Admin</h1>
           <button onClick={signOut} className="shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 text-sm font-semibold">Sign out</button>

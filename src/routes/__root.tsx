@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { SafetyBar } from "@/components/SafetyBar";
 import { CareCardProvider } from "@/components/CareCardContext";
+import { RouteAnnouncer } from "@/components/RouteAnnouncer";
 import { PREFS_BOOT_SCRIPT } from "@/lib/a11y-prefs";
 
 import appCss from "../styles.css?url";
@@ -125,6 +126,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      <RouteAnnouncer />
       <SafetyBar />
       <CareCardProvider><Outlet /></CareCardProvider>
       <footer className="border-t-[3px] border-ink bg-paper px-4 py-6 text-sm text-ink">

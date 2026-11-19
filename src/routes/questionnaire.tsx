@@ -40,7 +40,7 @@ function Questionnaire() {
   return (
     <div className="min-h-screen bg-cream text-ink">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      <main id="main" className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         <h1 className="font-display text-3xl font-bold sm:text-4xl">Quick questions</h1>
         <p className="mt-2 text-ink/70">All optional. Skip anything you'd rather not answer, the chat will use what you share so it asks fewer questions.</p>
         <div className="mt-8 space-y-5">

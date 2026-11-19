@@ -30,7 +30,7 @@ function Security() {
   return (
     <div className="min-h-screen bg-cream text-ink">
       <SiteHeader />
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+      <main id="main" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
         <h1 className="font-display text-3xl font-bold sm:text-5xl">Data storage & security</h1>
         <p className="mt-3 max-w-2xl text-ink/70">Here is what VA Navigator stores, where it's kept and how it's protected, in plain language.</p>
 

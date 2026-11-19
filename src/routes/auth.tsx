@@ -69,7 +69,7 @@ function AuthPage() {
   return (
     <div className="min-h-screen bg-cream">
       <SiteHeader />
-      <main className="mx-auto max-w-md px-4 py-10 sm:px-6 sm:py-16">
+      <main id="main" className="mx-auto max-w-md px-4 py-10 sm:px-6 sm:py-16">
         {codeFor ? (
           <div className="rounded-[22px] border-[3px] border-ink bg-paper p-5 shadow-hard-lg sm:rounded-[30px] sm:p-8">
             <h1 className="mb-4 font-display text-3xl font-bold">Check your email</h1>

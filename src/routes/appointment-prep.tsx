@@ -30,7 +30,7 @@ function PrepPage() {
   return (
     <div className="min-h-screen bg-cream text-ink">
       <SiteHeader />
-      <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+      <main id="main" className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
         <h1 className="font-display text-3xl font-bold sm:text-4xl">Prepare for your appointment</h1>
         <p className="mt-2 max-w-2xl text-ink/75">Here are the facts we found on official VA.gov pages and what they suggest. Each one is checked against the live page before it's shown.</p>
         <CareCard facility={card?.facility ?? null} results={card?.results ?? []} stage={currentStage} facilityUnknown={card?.facilityUnknown ?? false} />
