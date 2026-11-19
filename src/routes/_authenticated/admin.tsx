@@ -8,6 +8,7 @@ import { WeeklyCheckAlert, WeeklyChecks } from "@/components/WeeklyChecks";
 import { GuidanceSources } from "@/components/GuidanceSources";
 import { GuidanceReports } from "@/components/GuidanceReports";
 import { A11yDiagnostics } from "@/components/A11yDiagnostics";
+import { A11yAlert } from "@/components/A11yAlert";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { RecoveryTrends } from "@/components/RecoveryActivity";
@@ -54,6 +55,7 @@ function Admin() {
     },
   });
   const [weeklyFocus, setWeeklyFocus] = useState(0);
+  const [a11yFocus, setA11yFocus] = useState(0);
   const [tab, setTab] = useState<"analytics" | "weekly" | "options" | "sources" | "admins" | "ai" | "audit">("analytics");
   const [form, setForm] = useState({ name: "", url: "", category: "community", description: "" });
   const refresh = () => {
@@ -138,6 +140,7 @@ function Admin() {
         {isAdmin.data && (
           <>
             <WeeklyCheckAlert onOpen={() => { setTab("weekly"); setWeeklyFocus((n) => n + 1); }} />
+            <A11yAlert onOpen={() => { setTab("weekly"); setA11yFocus((n) => n + 1); }} />
             <div role="tablist" className="mt-6 flex gap-2 overflow-x-auto pb-1">
               {([["analytics", "Analytics"], ["weekly", "Weekly checks"], ["options", "Care options"], ["sources", "Sources"], ["admins", "Admins"], ["ai", "AI service"], ["audit", "Audit log"]] as const).map(([k, l]) => (
                 <Button variant="outline" key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
@@ -145,7 +148,7 @@ function Admin() {
               ))}
             </div>
             {tab === "analytics" && <Analytics />}
-            {tab === "weekly" && <><WeeklyChecks focusSignal={weeklyFocus} /><GuidanceSources /><GuidanceReports /><A11yDiagnostics /></>}
+            {tab === "weekly" && <><WeeklyChecks focusSignal={weeklyFocus} /><GuidanceSources /><GuidanceReports /><A11yDiagnostics focusSignal={a11yFocus} /></>}
             {tab === "options" && <CareOptions />}
             {tab === "sources" && <>
              <form onSubmit={add} className="mt-8 grid min-w-0 gap-3 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:p-6 md:grid-cols-2 md:rounded-[26px]">

@@ -15,3 +15,9 @@ export function auditHtml(path: string, html: string): AuditResult {
   if (!/<h1[\s>]/i.test(html)) problems.push("Page heading (h1) missing");
   return { path, ok: problems.length === 0, problems };
 }
+
+export type AlertRun = { id: string; kind: string; ok: boolean; failed: number; ran_at: string; acknowledged_at: string | null };
+/** Failed runs no admin has reviewed yet, newest first. Passing runs never alert. */
+export function openA11yFailures<T extends AlertRun>(runs: T[]): T[] {
+  return runs.filter((r) => !r.ok && !r.acknowledged_at).sort((a, b) => b.ran_at.localeCompare(a.ran_at));
+}

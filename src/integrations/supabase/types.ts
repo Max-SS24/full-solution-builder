@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       a11y_audit_runs: {
         Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
           failed: number
           id: string
           kind: string
@@ -26,6 +28,8 @@ export type Database = {
           results: Json
         }
         Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           failed?: number
           id?: string
           kind: string
@@ -36,6 +40,8 @@ export type Database = {
           results?: Json
         }
         Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           failed?: number
           id?: string
           kind?: string
@@ -755,6 +761,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acknowledge_a11y_run: { Args: { _id: string }; Returns: undefined }
       admin_analytics:
         | { Args: never; Returns: Json }
         | { Args: { _from: string; _to: string }; Returns: Json }

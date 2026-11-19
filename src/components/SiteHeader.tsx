@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import { useAccount } from "@/hooks/useAccount";
+import { useA11yAlerts } from "@/components/A11yAlert";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 const PILL = "shrink-0 rounded-full border-[3px] border-ink px-4 py-1.5 font-semibold hover:bg-soft";
@@ -9,13 +10,14 @@ const MENU_ITEM = "flex min-h-11 items-center rounded-2xl border-[3px] border-in
 
 function NavLinks({ item, onPick }: { item: string; onPick?: () => void }) {
   const { user, isAdmin } = useAccount();
+  const alerts = useA11yAlerts(!!isAdmin).data?.length ?? 0;
   return (
     <>
       <Link to="/questionnaire" onClick={onPick} className={item}>Quick questions</Link>
       <Link to="/appointment-prep" onClick={onPick} className={item}>Appointment prep</Link>
       <Link to="/helpful-links" onClick={onPick} className={item}>Helpful links</Link>
       <Link to="/security" onClick={onPick} className={item}>Privacy & security</Link>
-      {isAdmin && <Link to="/admin" onClick={onPick} className={`${item} bg-sun`}>Admin</Link>}
+      {isAdmin && <Link to="/admin" onClick={onPick} className={`${item} bg-sun`}>Admin{alerts > 0 && <span className="ml-2 rounded-full bg-coral px-2 text-xs font-bold text-ink" aria-label={`${alerts} accessibility ${alerts === 1 ? "alert" : "alerts"}`}>{alerts}</span>}</Link>}
       {user && <Link to="/history" onClick={onPick} className={item}>History</Link>}
       {user
         ? <Link to="/account" onClick={onPick} className={item}>My account</Link>
