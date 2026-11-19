@@ -138,6 +138,12 @@ const pages = [
 
 type Page = (typeof pages)[number];
 
+function primaryNavigation() {
+  const navigation = screen.getAllByRole("navigation")[0];
+  if (!navigation) throw new Error("Primary navigation is missing");
+  return navigation;
+}
+
 async function expectDestination(router: Awaited<ReturnType<typeof renderAt>>, page: Page) {
   await waitFor(() => {
     expect(router.state.location.pathname).toBe(page.path);
@@ -148,7 +154,7 @@ async function expectDestination(router: Awaited<ReturnType<typeof renderAt>>, p
   });
   const main = screen.getByRole("main");
   expect(within(main).getByRole("heading", { level: 1 })).toBeVisible();
-  expect(screen.getAllByRole("navigation")[0]!).toBeVisible();
+  expect(screen.getAllByRole("navigation")[0]).toBeVisible();
   expect(screen.getByRole("complementary", { name: "Veterans Crisis Line" })).toBeVisible();
   if (page.path === "/admin") {
     expect(await within(main).findByRole("button", { name: /Export summary/ })).toBeVisible();
@@ -180,7 +186,9 @@ describe("Rendered link navigation", () => {
     const user = userEvent.setup();
     const router = await renderAt("/");
     await user.click(within(screen.getByRole("navigation", { name: "Legal" })).getByRole("link", { name }));
-    await expectDestination(router, pages.find((p) => p.path === path)!);
+    const page = pages.find((p) => p.path === path);
+    if (!page) throw new Error(`Missing page fixture for ${path}`);
+    await expectDestination(router, page);
   });
 
   it("restores every signed-in destination when moving back and forward through link history", async () => {
@@ -188,7 +196,7 @@ describe("Rendered link navigation", () => {
     const router = await renderAt("/");
     const journey = [pages[0], ...navigationPages.map(({ page }) => page)];
     for (const { page, name } of navigationPages) {
-      await user.click(await within(screen.getAllByRole("navigation")[0]!).findByRole("link", { name }));
+      await user.click(await within(primaryNavigation()).findByRole("link", { name }));
       await expectDestination(router, page);
     }
     for (const page of journey.slice(0, -1).reverse()) {
@@ -218,7 +226,7 @@ describe("Rendered link navigation", () => {
     const router = await renderAt("/");
     await expectDestination(router, pages[0]);
     for (const { page, name } of navigationPages) {
-      const link = await within(screen.getAllByRole("navigation")[0]!).findByRole("link", { name });
+      const link = await within(primaryNavigation()).findByRole("link", { name });
       expect(link).toHaveAttribute("href", page.path);
       await user.click(link);
       await expectDestination(router, page);
@@ -231,7 +239,7 @@ describe("Rendered link navigation", () => {
     fixtures.signedIn = false;
     const user = userEvent.setup();
     const router = await renderAt("/security");
-    const link = await within(screen.getAllByRole("navigation")[0]!).findByRole("link", { name: "Sign in" });
+    const link = await within(primaryNavigation()).findByRole("link", { name: "Sign in" });
     expect(link).toHaveAttribute("href", "/auth");
     await user.click(link);
     await expectDestination(router, pages[1]);
@@ -279,13 +287,49 @@ describe("Rendered link navigation", () => {
     cleanup();
     const router = await renderAt(destination.pathname);
     await expectDestination(router, pages[2]);
-    await user.click(within(screen.getAllByRole("navigation")[0]!).getByRole("link", { name: "Sign in" }));
+    await user.click(within(primaryNavigation()).getByRole("link", { name: "Sign in" }));
     await expectDestination(router, pages[1]);
   });
 });
 
 // Accessible landmarks establish rendered content; route ID and leaf metadata
 // distinguish it from the sign-in page, a fallback, or another valid page.
+async function expectPageAnnouncement(router: Awaited<ReturnType<typeof renderAt>>, page: Page) {
+  await expectDestination(router, page);
+  const announcer = screen.getByTestId("route-announcer");
+  expect(announcer).toHaveAttribute("role", "status");
+  expect(announcer).toHaveAttribute("aria-live", "polite");
+  expect(announcer).toHaveAttribute("aria-atomic", "true");
+  const label = page.title.split("|")[0]?.trim();
+  await waitFor(() => expect(announcer).toHaveTextContent(`${label} page loaded`));
+  const heading = within(screen.getByRole("main")).getByRole("heading", { level: 1 });
+  expect(heading).toHaveFocus();
+  expect(heading).toHaveAttribute("tabindex", "-1");
+}
+
+describe("Screen-reader page changes across every content route", () => {
+  it.each(pages)("announces and focuses $path on navigation, back, and forward", async (page) => {
+    const origin = page.path === "/security" ? pages[5] : pages[6];
+    const router = await renderAt(origin.path);
+    await expectDestination(router, origin);
+    // A cold load is read by the browser; do not announce it twice or steal focus.
+    expect(screen.getByTestId("route-announcer")).toBeEmptyDOMElement();
+    await act(async () => { await router.navigate({ to: page.path }); });
+    await expectPageAnnouncement(router, page);
+    await act(async () => { router.history.back(); });
+    await expectPageAnnouncement(router, origin);
+    await act(async () => { router.history.forward(); });
+    await expectPageAnnouncement(router, page);
+  });
+
+  it.each(["/account", "/history", "/admin"])("announces the actual sign-in destination when %s is protected", async (path) => {
+    fixtures.signedIn = false;
+    const router = await renderAt("/security");
+    await act(async () => { await router.navigate({ to: path }); });
+    await expectPageAnnouncement(router, pages[1]);
+  });
+});
+
 describe("App routing", () => {
   it.each(pages)("renders $path with its real page and shared navigation", async ({ path, id, title }) => {
     const router = await renderAt(path);

@@ -26,6 +26,9 @@ PAGES = [
     ("/account", "My account | VA Navigator", "My account"),
     ("/history", "My search history | VA Navigator", "My search history"),
     ("/admin", "Admin | VA Navigator", "Admin"),
+    ("/accessibility", "Accessibility statement | VA Navigator", "Accessibility statement"),
+    ("/privacy", "Privacy policy | VA Navigator", "Privacy policy"),
+    ("/terms", "Terms of use & disclaimers | VA Navigator", "Terms of use & disclaimers"),
 ]
 LINKS = [
     (3, "Quick questions"), (4, "Appointment prep"), (5, "Helpful links"),
@@ -33,7 +36,7 @@ LINKS = [
 ]
 
 
-async def check_destination(page, index):
+async def check_destination(page, index, announced=False):
     path, title, heading = PAGES[index]
     # Wait for document scripts and hydration before accepting SSR landmarks
     # or starting another navigation. Otherwise the previous document can
@@ -45,7 +48,7 @@ async def check_destination(page, index):
     await expect(main).to_be_visible()
     h1 = main.get_by_role("heading", level=1, **({"name": heading, "exact": True} if heading else {}))
     await expect(h1).to_be_visible()
-    await expect(page.get_by_role("navigation")).to_be_visible()
+    await expect(page.get_by_role("navigation").first).to_be_visible()
     await expect(page.get_by_role("complementary", name="Veterans Crisis Line")).to_be_visible()
     if path == "/account":
         await expect(main.get_by_role("button", name="Sign out", exact=True)).to_be_visible()
@@ -57,6 +60,15 @@ async def check_destination(page, index):
         await expect(main.get_by_role("button", name="Export summary")).to_be_visible(timeout=20000)
     if path == "/auth":
         await expect(main.get_by_role("textbox", name="Email", exact=True)).to_be_visible()
+    if announced:
+        announcer = page.get_by_test_id("route-announcer")
+        await expect(announcer).to_have_attribute("role", "status")
+        await expect(announcer).to_have_attribute("aria-live", "polite")
+        await expect(announcer).to_have_attribute("aria-atomic", "true")
+        await expect(announcer).to_have_text(title.split("|")[0].strip() + " page loaded")
+        await expect(h1).to_be_focused()
+        await expect(h1).to_have_attribute("tabindex", "-1")
+        print(f"PASS page announcement and heading focus: {path}")
 
 
 async def restore_session(context, page):
@@ -104,16 +116,20 @@ async def main():
         await check_destination(page, 0)
         journey = [0]
         for index, name in LINKS:
-            await page.get_by_role("navigation").get_by_role("link", name=name, exact=True).click()
-            await check_destination(page, index)
+            await page.get_by_role("navigation").first.get_by_role("link", name=name, exact=True).click()
+            await check_destination(page, index, announced=True)
+            journey.append(index)
+        for index, name in [(10, "Accessibility"), (11, "Privacy"), (12, "Terms & disclaimers")]:
+            await page.get_by_role("navigation", name="Legal").get_by_role("link", name=name, exact=True).click()
+            await check_destination(page, index, announced=True)
             journey.append(index)
         # go_back/go_forward invoke the same browser history as toolbar buttons.
         for index in reversed(journey[:-1]):
             await page.go_back()
-            await check_destination(page, index)
+            await check_destination(page, index, announced=True)
         for index in journey[1:]:
             await page.go_forward()
-            await check_destination(page, index)
+            await check_destination(page, index, announced=True)
         await page.get_by_role("main").screenshot(path=str(SCREENSHOTS / "history-final.png"))
         print("PASS browser back and forward across signed-in route links")
 
@@ -124,14 +140,14 @@ async def main():
         await public_page.goto(ORIGIN + "/reset-password")
         await check_destination(public_page, 2)
         for index, name in [(1, "Sign in"), (3, "Quick questions")]:
-            await public_page.get_by_role("navigation").get_by_role("link", name=name, exact=True).click()
-            await check_destination(public_page, index)
+            await public_page.get_by_role("navigation").first.get_by_role("link", name=name, exact=True).click()
+            await check_destination(public_page, index, announced=True)
         for index in [1, 2]:
             await public_page.go_back()
-            await check_destination(public_page, index)
+            await check_destination(public_page, index, announced=True)
         for index in [1, 3]:
             await public_page.go_forward()
-            await check_destination(public_page, index)
+            await check_destination(public_page, index, announced=True)
         print("PASS browser back and forward across reset and sign-in routes")
         assert not errors, "Browser runtime errors occurred"
         await browser.close()
