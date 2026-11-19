@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      a11y_audit_runs: {
+        Row: {
+          failed: number
+          id: string
+          kind: string
+          ok: boolean
+          passed: number
+          ran_at: string
+          ran_by: string | null
+          results: Json
+        }
+        Insert: {
+          failed?: number
+          id?: string
+          kind: string
+          ok: boolean
+          passed?: number
+          ran_at?: string
+          ran_by?: string | null
+          results?: Json
+        }
+        Update: {
+          failed?: number
+          id?: string
+          kind?: string
+          ok?: boolean
+          passed?: number
+          ran_at?: string
+          ran_by?: string | null
+          results?: Json
+        }
+        Relationships: []
+      }
       api_settings: {
         Row: {
           id: number

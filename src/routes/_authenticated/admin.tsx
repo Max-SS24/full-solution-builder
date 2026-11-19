@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { WeeklyCheckAlert, WeeklyChecks } from "@/components/WeeklyChecks";
 import { GuidanceSources } from "@/components/GuidanceSources";
 import { GuidanceReports } from "@/components/GuidanceReports";
+import { A11yDiagnostics } from "@/components/A11yDiagnostics";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { RecoveryTrends } from "@/components/RecoveryActivity";
@@ -144,7 +145,7 @@ function Admin() {
               ))}
             </div>
             {tab === "analytics" && <Analytics />}
-            {tab === "weekly" && <><WeeklyChecks focusSignal={weeklyFocus} /><GuidanceSources /><GuidanceReports /></>}
+            {tab === "weekly" && <><WeeklyChecks focusSignal={weeklyFocus} /><GuidanceSources /><GuidanceReports /><A11yDiagnostics /></>}
             {tab === "options" && <CareOptions />}
             {tab === "sources" && <>
              <form onSubmit={add} className="mt-8 grid min-w-0 gap-3 rounded-[22px] border-[3px] border-ink bg-paper p-4 shadow-hard-lg sm:p-6 md:grid-cols-2 md:rounded-[26px]">

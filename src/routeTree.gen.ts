@@ -23,6 +23,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
+import { Route as ApiPublicJobsA11yAuditRouteImport } from './routes/api/public/jobs/a11y-audit'
 import { Route as ApiPublicJobsValidateCareOptionsRouteImport } from './routes/api/public/jobs/validate-care-options'
 
 const IndexRoute = IndexRouteImport.update({
@@ -94,6 +95,11 @@ const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicJobsA11yAuditRoute = ApiPublicJobsA11yAuditRouteImport.update({
+  id: '/api/public/jobs/a11y-audit',
+  path: '/api/public/jobs/a11y-audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicJobsValidateCareOptionsRoute =
   ApiPublicJobsValidateCareOptionsRouteImport.update({
     id: '/api/public/jobs/validate-care-options',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/api/public/jobs/a11y-audit': typeof ApiPublicJobsA11yAuditRoute
   '/api/public/jobs/validate-care-options': typeof ApiPublicJobsValidateCareOptionsRoute
 }
 export interface FileRoutesByTo {
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/api/public/jobs/a11y-audit': typeof ApiPublicJobsA11yAuditRoute
   '/api/public/jobs/validate-care-options': typeof ApiPublicJobsValidateCareOptionsRoute
 }
 export interface FileRoutesById {
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
+  '/api/public/jobs/a11y-audit': typeof ApiPublicJobsA11yAuditRoute
   '/api/public/jobs/validate-care-options': typeof ApiPublicJobsValidateCareOptionsRoute
 }
 export interface FileRouteTypes {
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/history'
+    | '/api/public/jobs/a11y-audit'
     | '/api/public/jobs/validate-care-options'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/history'
+    | '/api/public/jobs/a11y-audit'
     | '/api/public/jobs/validate-care-options'
   id:
     | '__root__'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/_authenticated/account'
     | '/_authenticated/admin'
     | '/_authenticated/history'
+    | '/api/public/jobs/a11y-audit'
     | '/api/public/jobs/validate-care-options'
   fileRoutesById: FileRoutesById
 }
@@ -215,6 +227,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SecurityRoute: typeof SecurityRoute
   TermsRoute: typeof TermsRoute
+  ApiPublicJobsA11yAuditRoute: typeof ApiPublicJobsA11yAuditRoute
   ApiPublicJobsValidateCareOptionsRoute: typeof ApiPublicJobsValidateCareOptionsRoute
 }
 
@@ -318,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/jobs/a11y-audit': {
+      id: '/api/public/jobs/a11y-audit'
+      path: '/api/public/jobs/a11y-audit'
+      fullPath: '/api/public/jobs/a11y-audit'
+      preLoaderRoute: typeof ApiPublicJobsA11yAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/jobs/validate-care-options': {
       id: '/api/public/jobs/validate-care-options'
       path: '/api/public/jobs/validate-care-options'
@@ -355,6 +375,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SecurityRoute: SecurityRoute,
   TermsRoute: TermsRoute,
+  ApiPublicJobsA11yAuditRoute: ApiPublicJobsA11yAuditRoute,
   ApiPublicJobsValidateCareOptionsRoute: ApiPublicJobsValidateCareOptionsRoute,
 }
 export const routeTree = rootRouteImport
