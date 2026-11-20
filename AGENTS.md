@@ -13,9 +13,9 @@
 - Care Card uses the same fresh evidence checks as appointment prep, rechecks before printing, and preserves listing uncertainty; print CSS removes unrelated layout rather than hiding it.
 - Routing tests use the real document/tree and mocked services; live Python Playwright checks real back/forward and reloads with a managed session. Check leaf identity, landmarks and protected content; reset entry is email-only.
 - Analytics use URL-held inclusive UTC dates and admin_analytics aggregates; snapshot totals stay current. Owner/MFA-checked recovery_activity() provides personal exports; CSVs match displayed data.
-- Community homepages use source-supplied provider_website (separate from source_url); checks use public DNS and manual redirects and flag foreign domains without following.
+- Community homepages use source-supplied provider_website (separate from source_url); checks use public DNS and manual redirects (never redirect "error": the published runtime rejects it) and flag foreign domains without following.
 - Sunday homepage checks run in bounded batches, storing URL-bound outcomes and attempt times in care_options; website failures never change care status or verification dates.
-- Community Sunday batches persist care-source evidence and one admin-only history row per provider/week; NPI status or directory absence never proves availability or closure; alerts derive from persisted outcomes. Results show the latest check date (care_checked_at) separately from the last confirmed date; server fetches use redirect "manual", never "error" (unsupported on the published runtime).
+- Community Sunday batches persist care-source evidence and one admin-only history row per provider/week; NPI status or directory absence never proves availability or closure; alerts derive from persisted outcomes.
 - Reopened-chat analytics use the injected Lovable event global with counts/decisions only (no care data); a replacement view needs half the listing in the viewport.
 - AI provider is chosen server-side only via AI_PROVIDER env (grok|openai|gemini|openrouter) in src/lib/ai/providers.server.ts — users never see or pick the model.
 - Care search reads care_resources joined to data_sources; only enabled sources are returned (RLS), so admins control retrieval by toggling sources.

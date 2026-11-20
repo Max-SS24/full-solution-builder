@@ -5,3 +5,4 @@
 - Admins can deep-recheck failed weekly checks (src/lib/deep-check.server.ts: retries, HEAD→GET, content check); website results never change care status. Admins may also mark a failed row manually validated (history row only; never changes care status or dates); "Recheck all" loops batches until none remain.
 - Website checks (weekly + deep) share homepage-check.ts rules: exact private-range IP blocking, same-site protocol hops allowed if the final page stays HTTPS, and 401/403/429-style firewall blocks reported as "blocked" (unconfirmed), never as down.
 - Manual validation changes use the admin/MFA-checked set_manual_validation RPC: row lock, state update and append-only history insert are atomic; identity and timestamps are server-derived, never client-supplied. History reads are admin-only and do not change listing evidence.
+- Results show the latest Sunday check date (care_checked_at) separately from the last confirmed date (last_validated).
