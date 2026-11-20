@@ -1,6 +1,6 @@
 # 4. Accessibility (Section 508 / WCAG 2.1 AA)
 
-Last updated: 2026-11-12
+Last updated: 2026-11-20
 
 ## 4.1 Visual accommodations
 - High-contrast mode.
@@ -14,7 +14,8 @@ Last updated: 2026-11-12
 - The chat opens only by Enter, Space, or typing — never by tabbing past it.
 
 ## 4.3 Screen readers
-- Semantic landmarks and one main heading on all 10 pages.
+- Semantic landmarks and one main heading on all 13 pages; every page's main area is `id="main"`.
+- **Page-change announcements:** after navigating (links, back, forward), focus moves to the new page's heading and its name is announced — fixing the earlier issue where screen readers kept reading the home page.
 - Every form field has a visible, associated label.
 - Chat replies announced through a polite live region.
 - New-tab links announce "opens in a new tab."
@@ -22,12 +23,20 @@ Last updated: 2026-11-12
 ## 4.4 Crisis access
 - Persistent crisis bar: 988 Press 1, text 838255, online chat, TTY 711, 911 — all with clear accessible names.
 
-## 4.5 Testing status
+## 4.5 Ongoing monitoring
+- **Sunday server audit** of every public page, saved to the admin dashboard.
+- **Admin diagnostic** checks contrast and text-size preferences persist on all pages.
+- Failures raise an admin banner and badge until reviewed.
+
+## 4.6 Testing status
 | Check | Status |
 |-------|--------|
 | Automated axe-core audit (10 signed-in pages) | Passed |
 | Automated keyboard/dialog/crisis tests | Passed |
 | Live browser navigation, back/forward, reload | Passed |
+| Page-change announcement + heading focus, all 13 pages | Passed (automated + live) |
+| Preference persistence (6 combinations x 13 pages) | Passed |
+| Manual VoiceOver / NVDA by the developer | Home page read correctly; page-change fix since applied — re-test needed |
 | VoiceOver (macOS/iOS), NVDA/JAWS (Windows) | **Not yet verified** |
 | Formal VPAT / Accessibility Conformance Report | Draft — see 05-vpat.md |
 

@@ -1,6 +1,6 @@
 # 3. Application Data Security
 
-Last updated: 2026-11-12
+Last updated: 2026-11-20
 
 ## 3.1 Access control
 - **Row-level security** on every table; personal data (history, preferences, security records) is owner-only.
@@ -17,11 +17,23 @@ Last updated: 2026-11-12
 ## 3.3 Privacy
 - **Private search mode** skips saving search history.
 - **Personal export** of recovery activity (owner + MFA checked).
+- **Download my data:** a signed-in export of the owner's own records only.
 - **Account erasure** deletes profile, preferences, history, MFA sessions/proofs, and recovery records, then the login itself.
 - Analytics are totals/counts only; no care details are sent to event tracking.
 - Guidance reports ask users not to include names, contact details, or medical information.
 
-## 3.4 Secrets and data handling
+## 3.4 Abuse and cost protection
+- **Guest limits** are counted on the server against a hashed guest token plus a looser per-network cap; the browser cannot reset them.
+- **AI cost cap for guests:** every guest AI request spends a daily budget first; on overrun or counter error the AI is not called (fail-closed).
+- Chat and provider-matching server functions verify the session or guest budget before doing any work.
+
+## 3.5 Hardened data rules
+- `has_role()` answers only for the caller (after MFA), admins, or the backend — users cannot probe others' roles.
+- Appointment-prep check rows are readable only for official va.gov sources, or by admins.
+- Manual validation and accessibility acknowledgements go through admin-checked database functions; history tables are append-only.
+- Guidance reports accept only fixed fact IDs and validated text.
+
+## 3.6 Secrets and data handling
 - API keys stay in server secrets; never in source code or the browser.
 - All database access uses parameterized client/RPC calls — no raw SQL from user input.
 - Public scheduled-job endpoints are protected by a cron secret.

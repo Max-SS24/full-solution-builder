@@ -1,6 +1,6 @@
 # 5. Accessibility Conformance Report (VPAT® 2.5 Rev 508 — Draft)
 
-Last updated: 2026-11-14 · **Status: DRAFT — not yet a final conformance claim**
+Last updated: 2026-11-20 · **Status: DRAFT — not yet a final conformance claim**
 
 ## 5.1 Product information
 | Field | Value |
@@ -10,10 +10,11 @@ Last updated: 2026-11-14 · **Status: DRAFT — not yet a final conformance clai
 | URL | https://va-navigator.lovable.app |
 | Description | Helps veterans find VA and community care, prepare for appointments, and reach crisis support. Not affiliated with VA. |
 | Contact | _To be added at launch_ |
-| Report date | 2026-11-14 |
+| Report date | 2026-11-20 |
 
 ## 5.2 Evaluation methods
-- Automated axe-core audits of all 10 main pages (signed in), WCAG 2.1 A/AA rule sets.
+- Weekly in-app server audit and admin diagnostic (since 2026-11).
+- Automated axe-core audits of all main pages (signed in), WCAG 2.1 A/AA rule sets.
 - Automated tests for chat dialog, crisis links, keyboard focus, routing, back/forward and reload.
 - Manual keyboard-only walkthroughs and accessibility-tree inspection.
 - Layout checks at 320px–1920px (phones, foldables, tablets, laptops, desktops).
@@ -47,7 +48,7 @@ Last updated: 2026-11-14 · **Status: DRAFT — not yet a final conformance clai
 | 2.3.1 Three Flashes | Supports | No flashing content. |
 | 2.4.1 Bypass Blocks | Supports | "Skip to main content" on every page. |
 | 2.4.2 Page Titled | Supports | Unique title per page. |
-| 2.4.3 Focus Order | Supports | Logical; verified by tests. |
+| 2.4.3 Focus Order | Supports | Logical; on page change focus moves to the new main heading. Verified by tests on all 13 pages. |
 | 2.4.4 Link Purpose | Supports | Descriptive links; new-tab links announced. |
 | 2.5.1–2.5.4 Pointer/Label/Motion | Supports | No gestures or motion input; visible labels match accessible names. |
 | 3.1.1 Language of Page | Supports | `lang="en"`. |
@@ -77,7 +78,7 @@ Last updated: 2026-11-14 · **Status: DRAFT — not yet a final conformance clai
 | 3.2.3–3.2.4 Consistent Navigation/Identification | Supports | Shared header, footer and crisis bar. |
 | 3.3.3 Error Suggestion | Supports | Errors explain how to fix. |
 | 3.3.4 Error Prevention (Legal, Financial, Data) | Supports | Account deletion requires confirmation. |
-| 4.1.3 Status Messages | Supports | Chat replies and check results use polite live regions. |
+| 4.1.3 Status Messages | Supports | Chat replies, check results, guest counter and page changes use polite live regions. |
 
 ## 5.6 Revised Section 508
 | Chapter | Status | Remarks |

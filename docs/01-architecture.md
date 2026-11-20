@@ -1,6 +1,6 @@
 # 1. Full System Architecture
 
-Last updated: 2026-11-12
+Last updated: 2026-11-20
 
 ## 1.1 Technology stack
 - **Frontend / server:** TanStack Start v1 (React 19, Vite 7), TypeScript, Tailwind CSS v4.
@@ -23,7 +23,9 @@ Scheduled Sunday jobs --> /api/public/jobs/* (cron-auth guarded) --> Database
 4. **Variable extraction:** need, location, in-person vs telehealth, VA vs community, individual vs group, VA application/registration stage, registered facility. Saved preferences fill only variables the chat left empty; the latest VA/community choice wins.
 5. **Consent gate:** the server flags `readyToShow`; results are held until the person answers "Would you like to see your results now?"
 6. **Fixed guidance:** VA care guide text and appointment-prep facts are fixed, VA.gov-sourced content — never AI-generated.
-7. **Crisis detection:** danger signs surface 988 / 838255 / 911 alongside replies.
+7. **Crisis detection:** danger signs surface 988 / 838255 / 911 alongside replies. If no location was given, no results are shown — only crisis contacts.
+8. **Guest AI budget:** every signed-out AI call (chat turn or provider comparison) first spends a server-side daily allowance (40 replies per guest, 200 per network). Over budget, or if the counter fails, the AI is skipped and basic keyword matching is used instead (fail-closed).
+9. **Saved preferences vs. questionnaire:** saved account preferences win over questionnaire answers; the chat itself wins over both.
 
 ## 1.3 Database (key tables)
 | Table | Purpose |
@@ -39,6 +41,11 @@ Scheduled Sunday jobs --> /api/public/jobs/* (cron-auth guarded) --> Database
 | `guidance_reports` | User reports of outdated guidance |
 | `audit_log` | Trigger-written changes to sources and AI settings |
 | `api_settings` | Admin AI provider choice |
+| `guest_usage` | Hashed guest-token and network counters for the free-search and AI limits |
+| `community_check_history` | One admin-only row per community provider per week, incl. manual-validation state |
+| `manual_validation_history` | Append-only record of each admin "mark validated" / "undo" with note and time |
+| `a11y_audit_runs` | Sunday server audits and admin in-browser accessibility diagnostics, with acknowledgement |
+| `appointment_guidance_reports` | User reports of outdated guidance (fixed fact IDs only) |
 
 ## 1.4 Data verification pipeline
 - **Per search:** live connectors query enabled sources; results are upserted into `care_options`.
@@ -51,4 +58,24 @@ Scheduled Sunday jobs --> /api/public/jobs/* (cron-auth guarded) --> Database
   - Helpful links and appointment-prep source page checks.
 - **Appointment-prep facts:** shown only when the source page still contains its evidence phrases, checked within the last hour.
 - **Reopened chats:** saved results are rechecked; unavailable options trigger a consent-based replacement offer.
+- **Website check rules (weekly + deep recheck):** exact private-IP blocking, same-site HTTP->HTTPS hops allowed only if the final page is HTTPS, and 401/403/429-style firewall responses reported as "blocked (unconfirmed)", never as down.
+- **Deep recheck (admin):** 3 attempts, HEAD then GET, manual redirects, public-DNS check, page-content sanity check. "Recheck all failed" loops in batches of 25 until none remain.
+- **Manual validation:** admins may mark a failed row validated through the `set_manual_validation` function (row lock + audit row in one step; admin identity and time taken from the server). This never changes care status or verification dates.
+- **Dates shown to users:** "Last checked" (latest Sunday check) is shown separately from "Last confirmed" (last successful verification).
+- **Clinic hours:** read from VA.gov structured data (openingHoursSpecification) during the Sunday VA batch, always with "Hours may not be accurate". Community listings have no hours.
 - **Territories:** PR, GU, VI, AS, MP geocoded by name, with fixed official fallback contacts when no providers are found.
+
+## 1.5 Scheduled jobs (Sunday)
+| Job | What it does |
+|-----|--------------|
+| validate-care-options | Re-validates listings, VA directory pages, hours, community evidence and homepages in bounded batches |
+| VA discovery | Adds newly listed VA facilities from VA.gov sitemaps |
+| Link checks | Helpful links and appointment-prep source pages |
+| a11y-audit (09:17 UTC) | Fetches every public page and checks language, title, skip link, `main#main`, one h1 and the display-preference script |
+
+All job endpoints live under `/api/public/jobs/*` and reject calls without the cron secret.
+
+## 1.6 Client-side features
+- **Care Card PDF:** built in the browser with pdf-lib (no upload of personal data); guidance is rechecked before printing or downloading.
+- **Route announcer:** after each page change, focus moves to the page's main heading and the new page title is announced.
+- **Display preferences:** contrast, text size and motion are stored on the device and applied before first paint.
