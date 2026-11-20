@@ -25,13 +25,15 @@ export const matchProviders = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data }) => {
     const { gatewayText, parseJson } = await import("./ai/gateway.server");
-    const { viewerId, useGuestResult } = await import("./guest-limit.server");
+    const { viewerId, useGuestResult, useGuestAiCall } = await import("./guest-limit.server");
     let guestRemaining: number | null = null;
     let guestResetAt: string | null = null;
     if (!(await viewerId())) {
       const g = await useGuestResult(data.guestId);
       guestRemaining = g.remaining; guestResetAt = g.resetAt;
       if (guestRemaining < 0) return { summary: "", matches: [] as ProviderMatch[], error: "You've used your 5 free searches for today. Sign in or create a free account to compare providers without limits.", guestRemaining: 0, guestResetAt, limitReached: true };
+      // Guests also share a daily AI budget with the chat, checked before the paid AI call.
+      if (!(await useGuestAiCall(data.guestId))) return { summary: "", matches: [] as ProviderMatch[], error: "You've reached today's guest limit for AI matching. Sign in or create a free account to compare providers without limits.", guestRemaining: Math.max(guestRemaining, 0), guestResetAt, limitReached: true };
     }
     try {
       const text = await gatewayText(SYSTEM, [{ role: "user", content:

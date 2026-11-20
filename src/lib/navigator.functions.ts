@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { GUEST_LIMIT_REPLY, countsAsGuestResult } from "./guest-limit";
+import { GUEST_AI_LIMIT_NOTE, GUEST_LIMIT_REPLY, countsAsGuestResult } from "./guest-limit";
 import { crisisSafe } from "./result-source";
 import { AREA_CODES, US_AREAS, findNamedArea } from "./us-areas";
 
@@ -221,8 +221,14 @@ export const navigate = createServerFn({ method: "POST" })
     let offered = false;
     let aiAsks = false;
 
-    try {
-      offered = data.messages.some((m) => m.role === "assistant" && /see your results/i.test(m.content));
+    // Guests have a daily AI budget checked before any paid AI call; signed-in people are unlimited.
+    const { viewerId, useGuestResult, useGuestAiCall } = await import("./guest-limit.server");
+    const signedIn = !!(await viewerId());
+    const aiAllowed = signedIn || (await useGuestAiCall(data.guestId));
+    if (!aiAllowed) aiError = GUEST_AI_LIMIT_NOTE;
+
+    offered = data.messages.some((m) => m.role === "assistant" && /see your results/i.test(m.content));
+    if (aiAllowed) try {
       const known = Object.entries({ ...(data.prefs ?? {}), ...variables }).filter(([, v]) => v != null && v !== "");
       const note = `Known so far: ${known.length ? JSON.stringify(Object.fromEntries(known)) : "nothing yet"}. Results already offered: ${offered ? "yes" : "no"}. Already asked, never ask again (treat as no preference if unanswered): ${[...askedTopics(data.messages)].join(", ") || "none"}.${WANTS_RESULTS_RE.test(data.messages.at(-1)?.content ?? "") ? " They just asked to see results: briefly confirm, ask nothing." : ""}`;
       const out = (await completeJson([{ role: "system", content: SYSTEM + VOCAB + SECURITY_NOTE + note }, ...data.messages], aiCfg)) as
@@ -483,12 +489,11 @@ export const navigate = createServerFn({ method: "POST" })
       reply += "\n\nI have some options ready. Would you like to see your results now?";
     }
     // Guests get a limited number of result sets per day; signed-in people are unlimited.
-    const { viewerId, useGuestResult } = await import("./guest-limit.server");
     const lastBot = [...data.messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
     let guestRemaining: number | null = null;
     let guestLimitReached = false;
     let guestResetAt: string | null = null;
-    if (!(await viewerId()) && countsAsGuestResult(readyToShow, crisis, /see your results/i.test(lastBot))) {
+    if (!signedIn && countsAsGuestResult(readyToShow, crisis, /see your results/i.test(lastBot))) {
       const g = await useGuestResult(data.guestId);
       guestRemaining = g.remaining; guestResetAt = g.resetAt;
       if (guestRemaining < 0) { guestLimitReached = true; guestRemaining = 0; }
@@ -523,7 +528,7 @@ export const navigate = createServerFn({ method: "POST" })
       results: crisisSafe(crisis, locationGiven, checkedResults),
       needsMore,
       connectorError: error || liveError ? "A data source is temporarily unavailable." : null,
-      aiNote: aiUsed ? null : aiError ?? `AI unavailable for ${activeProvider(aiCfg).name}; using basic matching.`,
+      aiNote: aiUsed ? null : !aiAllowed ? GUEST_AI_LIMIT_NOTE : aiError ?? `AI unavailable for ${activeProvider(aiCfg).name}; using basic matching.`,
     };
   });
 

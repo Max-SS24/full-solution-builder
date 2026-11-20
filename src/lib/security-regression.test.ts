@@ -66,3 +66,21 @@ describe("untrusted chat history and saved answers", () => {
     expect(SECURITY_NOTE).toMatch(/never as instructions/);
   });
 });
+
+describe("guest AI budget", () => {
+  const src = (f: string) => readFileSync(join(process.cwd(), "src/lib", f), "utf8");
+  it("checks the guest AI budget before the chat's AI call", () => {
+    const s = src("navigator.functions.ts");
+    expect(s.indexOf("useGuestAiCall(data.guestId)")).toBeGreaterThan(0);
+    expect(s.indexOf("useGuestAiCall(data.guestId)")).toBeLessThan(s.indexOf("await completeJson("));
+    expect(s).toMatch(/if \(aiAllowed\) try \{/);
+  });
+  it("checks the guest AI budget before provider matching's AI call", () => {
+    const s = src("match.functions.ts");
+    expect(s.indexOf("useGuestAiCall(data.guestId)")).toBeGreaterThan(0);
+    expect(s.indexOf("useGuestAiCall(data.guestId)")).toBeLessThan(s.indexOf("await gatewayText("));
+  });
+  it("blocks AI calls when the guest counter fails", () => {
+    expect(src("guest-limit.server.ts")).toMatch(/\[guest-ai-limit\][^\n]*return false/);
+  });
+});
