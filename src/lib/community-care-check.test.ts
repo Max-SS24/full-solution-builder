@@ -27,4 +27,15 @@ it("confirms services listed by the treatment directory", async () => {
 it("does not infer closure from capped treatment search absence", async () => {
   ft.mockResolvedValue([]);
   expect((await checkCommunityCare({ ...provider, external_id: "ft-provider", data_sources: { name: "Treatment", connector: "findtreatment" } })).status).toBe("unconfirmed");
+});it("calls the registry with a redirect mode the published server supports", async () => {
+  const f = vi.fn().mockResolvedValue(Response.json({ results: [{ number: 1234567890, basic: { status: "A" } }] }));
+  vi.stubGlobal("fetch", f);
+  expect((await checkCommunityCare(provider)).reason).toContain("CMS registration is active");
+  expect(f.mock.calls[0]![1].redirect).toBe("manual");
+});
+it("retries the registry once before reporting uncertainty", async () => {
+  const f = vi.fn().mockRejectedValueOnce(new Error("timeout")).mockResolvedValue(Response.json({ results: [{ number: 1234567890, basic: { status: "D" } }] }));
+  vi.stubGlobal("fetch", f);
+  expect((await checkCommunityCare(provider)).status).toBe("inactive_registration");
+  expect(f).toHaveBeenCalledTimes(2);
 });

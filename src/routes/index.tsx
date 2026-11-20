@@ -583,7 +583,10 @@ function Home() {
                     </div>}
                     <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[11px] font-semibold text-ink/60">
                       <dt>Verified by:</dt><dd className="text-ink">{r.source_name}</dd>
-                      <dt>Last checked:</dt><dd className="text-ink">{new Date(r.last_checked + "T12:00:00").toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</dd>
+                      {r.care_checked_at && r.care_checked_at.slice(0, 10) > r.last_checked ? <>
+                        <dt>Last checked:</dt><dd className="text-ink">{fmtDay(r.care_checked_at.slice(0, 10))}{r.care_check_status !== "listed" && " (not confirmed, call to confirm)"}</dd>
+                        <dt>Last confirmed:</dt><dd className="text-ink">{fmtDay(r.last_checked)}</dd>
+                      </> : <><dt>Last checked:</dt><dd className="text-ink">{fmtDay(r.last_checked)}</dd></>}
                     </dl>
                   </div>
                 </article>

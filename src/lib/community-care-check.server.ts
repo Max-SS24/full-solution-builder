@@ -3,14 +3,27 @@ import type { Variables } from "./navigator.functions";
 export type CommunityCareCheck = { status: "listed" | "inactive_registration" | "unconfirmed"; reason: string; checkedAt: string };
 type Provider = { external_id: string; city: string | null; state: string | null; data_sources: { name: string; connector: string | null } };
 
+/** CMS NPI Registry lookup. Uses redirect "manual" because the published server runtime rejects
+ * redirect "error" (that made every Sunday registry check fail); a redirect is treated as a failure.
+ * One retry absorbs brief registry slowdowns. */
+async function registryLookup(npi: string): Promise<Response | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch(`https://npiregistry.cms.hhs.gov/api/?version=2.1&number=${npi}`, { redirect: "manual", signal: AbortSignal.timeout(10000) });
+      if (response.ok) return response;
+    } catch { /* retry once, then report uncertainty */ }
+  }
+  return null;
+}
+
 /** A directory listing is evidence of advertised services, not appointment availability. */
 export async function checkCommunityCare(row: Provider): Promise<CommunityCareCheck> {
   const checkedAt = new Date().toISOString();
   const result = (status: CommunityCareCheck["status"], reason: string) => ({ status, reason, checkedAt });
   try {
     if (row.data_sources.connector === "npi" && /^npi-\d{10}$/.test(row.external_id)) {
-      const response = await fetch(`https://npiregistry.cms.hhs.gov/api/?version=2.1&number=${row.external_id.slice(4)}`, { redirect: "error", signal: AbortSignal.timeout(6000) });
-      if (response.ok) {
+      const response = await registryLookup(row.external_id.slice(4));
+      if (response?.ok) {
         const data = await response.json() as { results?: { number: number | string; basic?: { status?: string } }[] };
         const provider = data.results?.find((r) => String(r.number) === row.external_id.slice(4));
         if (provider?.basic?.status === "D") return result("inactive_registration", "CMS reports this provider registration as deactivated; care availability needs manual confirmation.");

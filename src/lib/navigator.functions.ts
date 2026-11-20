@@ -36,6 +36,9 @@ export type CareResult = {
   homepageCheck?: import("./homepage-check").HomepageCheck;
   verified: boolean;
   last_checked: string;
+  /** When the Sunday check last looked at this listing (it may not have confirmed it). */
+  care_checked_at?: string | null;
+  care_check_status?: "listed" | "inactive_registration" | "unconfirmed" | null;
   source_name: string;
   bio?: string | null;
   freshness?: "live" | "saved";
@@ -327,7 +330,7 @@ export const navigate = createServerFn({ method: "POST" })
         id: o.external_id, name: o.name, kind: o.kind, city: o.city, state: o.state, formats: o.formats, needs: o.needs,
         care_types: o.care_types, payment: o.insurance, veteran_focus: o.veteran_focus, phone: o.phone, source_url: o.website, provider_website: o.provider_website,
         lat: o.lat, lon: o.lon, geo_estimated: o.geo_estimated, hours: o.hours,
-        verified: true, last_checked: o.last_validated, source_name: (o.data_sources as { name: string } | null)?.name ?? "Saved listing", bio: o.bio, freshness: "saved" as const,
+        verified: true, last_checked: o.last_validated, care_checked_at: o.care_checked_at, care_check_status: (o.care_check as { status?: CareResult["care_check_status"] } | null)?.status ?? null, source_name: (o.data_sources as { name: string } | null)?.name ?? "Saved listing", bio: o.bio, freshness: "saved" as const,
       }));
     }
     if (liveRows.length) {
