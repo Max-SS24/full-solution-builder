@@ -1,3 +1,4 @@
 # Test architecture
 - Weekly accessibility checks run in-app: a Sunday server job audits public page HTML (src/lib/a11y-audit.ts) and admins run the in-browser preference diagnostic; both log to a11y_audit_runs; failed runs alert admins in-app (admin banner + header badge) until an admin acknowledges them via acknowledge_a11y_run(). Browser automation cannot run in the HTTP worker.
-- Full-document jsdom remounts replace the HTML element; explicitly run the production preference head bootstrap on the new document because jsdom does not execute it.- Live browser checks that create guest usage (free-search counts) delete those guest_usage rows in a finally block, so test runs never consume real visitors' allowance.
+- Full-document jsdom remounts replace the HTML element; explicitly run the production preference head bootstrap on the new document because jsdom does not execute it.
+- Live browser checks that create guest usage (free-search counts) delete those guest_usage rows in a finally block, so test runs never consume real visitors' allowance.
