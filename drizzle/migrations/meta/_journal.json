@@ -267,6 +267,13 @@
       "when": 1795114561806,
       "tag": "0037_a11y_audit_acknowledge",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795311465559,
+      "tag": "0038_audit_log_no_emails",
+      "breakpoints": true
     }
   ]
 }

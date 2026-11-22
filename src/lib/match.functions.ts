@@ -24,17 +24,18 @@ export const matchProviders = createServerFn({ method: "POST" })
     payment: z.string().nullish().transform((v) => (v ? v.slice(0, 60) : null)),
   }).parse(d))
   .handler(async ({ data }) => {
-    const { gatewayText, parseJson } = await import("./ai/gateway.server");
-    const { viewerId, useGuestResult, useGuestAiCall } = await import("./guest-limit.server");
-    let guestRemaining: number | null = null;
-    let guestResetAt: string | null = null;
+    const { viewerId, useGuestResult } = await import("./guest-limit.server");
     if (!(await viewerId())) {
+      // Guests never reach the paid AI service: they get the built-in word match instead.
       const g = await useGuestResult(data.guestId);
-      guestRemaining = g.remaining; guestResetAt = g.resetAt;
-      if (guestRemaining < 0) return { summary: "", matches: [] as ProviderMatch[], error: "You've used your 5 free searches for today. Sign in or create a free account to compare providers without limits.", guestRemaining: 0, guestResetAt, limitReached: true };
-      // Guests also share a daily AI budget with the chat, checked before the paid AI call.
-      if (!(await useGuestAiCall(data.guestId))) return { summary: "", matches: [] as ProviderMatch[], error: "You've reached today's guest limit for AI matching. Sign in or create a free account to compare providers without limits.", guestRemaining: Math.max(guestRemaining, 0), guestResetAt, limitReached: true };
+      const guestResetAt = g.resetAt;
+      if (g.remaining < 0) return { summary: "", matches: [] as ProviderMatch[], error: "You've used your 5 free searches for today. Sign in or create a free account to compare providers without limits.", guestRemaining: 0, guestResetAt, limitReached: true };
+      const { basicMatch } = await import("./basic-match");
+      return { ...basicMatch(data.priorities, data.candidates, data.payment), error: null, guestRemaining: g.remaining, guestResetAt, basic: true };
     }
+    const { gatewayText, parseJson } = await import("./ai/gateway.server");
+    const guestRemaining: number | null = null;
+    const guestResetAt: string | null = null;
     try {
       const text = await gatewayText(SYSTEM, [{ role: "user", content:
         `What matters most to me: ${data.priorities}\nMy insurance: ${data.payment ?? "not given"}\nListings:\n${JSON.stringify(data.candidates)}` }]);

@@ -67,20 +67,19 @@ describe("untrusted chat history and saved answers", () => {
   });
 });
 
-describe("guest AI budget", () => {
+describe("guests never reach the paid AI service", () => {
   const src = (f: string) => readFileSync(join(process.cwd(), "src/lib", f), "utf8");
-  it("checks the guest AI budget before the chat's AI call", () => {
+  it("only lets signed-in people use the chat AI", () => {
     const s = src("navigator.functions.ts");
-    expect(s.indexOf("useGuestAiCall(data.guestId)")).toBeGreaterThan(0);
-    expect(s.indexOf("useGuestAiCall(data.guestId)")).toBeLessThan(s.indexOf("await completeJson("));
+    expect(s).toMatch(/const aiAllowed = signedIn;/);
     expect(s).toMatch(/if \(aiAllowed\) try \{/);
+    expect(s).not.toMatch(/useGuestAiCall/);
   });
-  it("checks the guest AI budget before provider matching's AI call", () => {
+  it("answers guest provider matching before loading the AI gateway", () => {
     const s = src("match.functions.ts");
-    expect(s.indexOf("useGuestAiCall(data.guestId)")).toBeGreaterThan(0);
-    expect(s.indexOf("useGuestAiCall(data.guestId)")).toBeLessThan(s.indexOf("await gatewayText("));
-  });
-  it("blocks AI calls when the guest counter fails", () => {
-    expect(src("guest-limit.server.ts")).toMatch(/\[guest-ai-limit\][^\n]*return false/);
+    const guestReturn = s.indexOf("basicMatch(data.priorities");
+    expect(guestReturn).toBeGreaterThan(0);
+    expect(guestReturn).toBeLessThan(s.indexOf('import("./ai/gateway.server")'));
+    expect(guestReturn).toBeLessThan(s.indexOf("await gatewayText("));
   });
 });

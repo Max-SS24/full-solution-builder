@@ -6,7 +6,7 @@ Last updated: 2026-11-20
 - **Row-level security** on every table; personal data (history, preferences, security records) is owner-only.
 - **Roles** live in `user_roles` and are checked by the server-side `has_role()` function — never from user-editable data.
 - **First admin:** the first signed-in user to open `/admin` becomes admin via `claim_first_admin()`.
-- **Audit log** rows are written only by database triggers; clients can read (admins) but never write.
+- **Audit log** rows are written only by database triggers and checked admin functions; clients can read (admins) but never write. Rows store account IDs, never email addresses (enforced by a database rule).
 
 ## 3.2 Authentication
 - Email + password with enforced sign-up password rules.
@@ -24,8 +24,8 @@ Last updated: 2026-11-20
 
 ## 3.4 Abuse and cost protection
 - **Guest limits** are counted on the server against a hashed guest token plus a looser per-network cap; the browser cannot reset them.
-- **AI cost cap for guests:** every guest AI request spends a daily budget first; on overrun or counter error the AI is not called (fail-closed).
-- Chat and provider-matching server functions verify the session or guest budget before doing any work.
+- **No paid AI for guests:** signed-out chat uses the built-in guided search and provider comparison uses a built-in word match, so guests never trigger paid AI calls.
+- Chat and provider-matching server functions check the session first; only signed-in callers reach the AI service.
 
 ## 3.5 Hardened data rules
 - `has_role()` answers only for the caller (after MFA), admins, or the backend — users cannot probe others' roles.

@@ -457,14 +457,17 @@ function PasswordReset() {
   );
 }
 
-type AuditEntry = { id: number; actor_email: string | null; action: string; entity: string; details: unknown; created_at: string };
+type AuditEntry = { id: number; actor_id: string | null; actor_email: string | null; action: string; entity: string; entity_id: string | null; details: unknown; created_at: string };
+
+/** Short account reference: the history stores account IDs, never email addresses. */
+const accountRef = (id: string | null | undefined) => (id ? `account ${id.slice(0, 8)}` : "unknown account");
 
 function AuditRow({ a }: { a: AuditEntry }) {
   const d = (a.details ?? {}) as { old?: Record<string, unknown>; new?: Record<string, unknown> };
   const rec = d.new ?? d.old ?? {};
   const oldValues = d.old;
   const newValues = d.new;
-  const label = a.entity === "api_settings" ? "AI settings" : a.entity === "admin_roles" ? `Admin: ${String(rec["name"] ?? "")}` : a.entity === "password_reset" ? `Password reset sent: ${String(rec["name"] ?? "")}` : String(rec["name"] ?? "Data source");
+  const label = a.entity === "api_settings" ? "AI settings" : a.entity === "admin_roles" ? `Admin: ${accountRef(a.entity_id)}` : a.entity === "password_reset" ? `Password reset sent: ${accountRef(a.entity_id)}` : String(rec["name"] ?? "Data source");
   const changed =
     oldValues && newValues
       ? Object.keys(newValues)
@@ -475,7 +478,7 @@ function AuditRow({ a }: { a: AuditEntry }) {
   return (
     <tr className="border-b border-ink/15 align-top">
       <td className="p-3 whitespace-nowrap">{new Date(a.created_at).toLocaleString()}</td>
-      <td className="p-3">{a.actor_email ?? "system"}</td>
+      <td className="p-3">{a.actor_id ? `Admin (${accountRef(a.actor_id)})` : a.actor_email ?? "system"}</td>
       <td className="p-3 font-bold uppercase">{a.action}</td>
       <td className="p-3">{label}</td>
       <td className="p-3 text-ink/70">{changed || ", "}</td>

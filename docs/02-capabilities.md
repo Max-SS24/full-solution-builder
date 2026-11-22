@@ -13,7 +13,7 @@ Last updated: 2026-11-20
 - **Appointment prep** (`/appointment-prep`): verified VA.gov facts presented as "what we found and what it suggests," with sources, review date, and a disclaimer. Each item has **Report an issue**.
 - **Appointment prep checks:** each item shows when it was last checked, links to its VA.gov source, and has a **Check if this is current** button (limited to once per 30 seconds).
 - **Care Card:** one-page summary of matched facilities, contacts, hours and verified next steps — **Print** or **Download PDF**, also available from the Appointment prep page.
-- **Guest access:** no account needed. Guests get 5 free result sets per 24 hours with a visible counter, a gentle notice at the 4th, and the reset time in their own time zone. Crisis help never counts.
+- **Guest access:** no account needed. Guests get the built-in guided search and simple word matching (the AI assistant is for signed-in accounts), with 5 free result sets per 24 hours with a visible counter, a gentle notice at the 4th, and the reset time in their own time zone. Crisis help never counts.
 - **Download my data:** account owners can download all their saved data as a file.
 - **Works on every screen:** phones (incl. foldables), tablets, laptops and desktops, 320px to 1920px.
 - **Helpful links** (`/helpful-links`) with weekly verification dates.
@@ -37,4 +37,4 @@ Last updated: 2026-11-20
 - Recovery-code-used email alerts wait on a connected sender domain.
 - Distances are straight-line, not driving distance.
 - Accessibility alerts and guidance reports appear in-app only (no email yet).
-- Guest limits (5 results; 40 AI replies) are fixed values that can be tuned.
+- The guest limit (5 result sets) is a fixed value that can be tuned.

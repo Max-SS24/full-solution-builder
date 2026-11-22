@@ -24,7 +24,7 @@ Scheduled Sunday jobs --> /api/public/jobs/* (cron-auth guarded) --> Database
 5. **Consent gate:** the server flags `readyToShow`; results are held until the person answers "Would you like to see your results now?"
 6. **Fixed guidance:** VA care guide text and appointment-prep facts are fixed, VA.gov-sourced content — never AI-generated.
 7. **Crisis detection:** danger signs surface 988 / 838255 / 911 alongside replies. If no location was given, no results are shown — only crisis contacts.
-8. **Guest AI budget:** every signed-out AI call (chat turn or provider comparison) first spends a server-side daily allowance (40 replies per guest, 200 per network). Over budget, or if the counter fails, the AI is skipped and basic keyword matching is used instead (fail-closed).
+8. **Guests and AI:** signed-out visitors never reach the paid AI service. The chat uses the built-in guided extraction, and provider comparison uses a built-in word match (src/lib/basic-match.ts).
 9. **Saved preferences vs. questionnaire:** saved account preferences win over questionnaire answers; the chat itself wins over both.
 
 ## 1.3 Database (key tables)
@@ -41,7 +41,7 @@ Scheduled Sunday jobs --> /api/public/jobs/* (cron-auth guarded) --> Database
 | `guidance_reports` | User reports of outdated guidance |
 | `audit_log` | Trigger-written changes to sources and AI settings |
 | `api_settings` | Admin AI provider choice |
-| `guest_usage` | Hashed guest-token and network counters for the free-search and AI limits |
+| `guest_usage` | Hashed guest-token and network counters for the free-search limit |
 | `community_check_history` | One admin-only row per community provider per week, incl. manual-validation state |
 | `manual_validation_history` | Append-only record of each admin "mark validated" / "undo" with note and time |
 | `a11y_audit_runs` | Sunday server audits and admin in-browser accessibility diagnostics, with acknowledgement |

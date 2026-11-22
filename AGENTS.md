@@ -24,7 +24,7 @@
 - Search history is saved client-side to search_history (owner-only RLS) after each answer; reopened via /?h=<id>.
 - Reopened history is reconciled by an owner-scoped server fn against enabled sources and allowlisted official hosts; unconfirmed checks never refresh verification dates.
 - Replacement offers need consent, exclude existing results, keep saved preferences, return only newly confirmed listings, and save as a separate conversation.
-- Audit log rows are written only by the audit_changes() trigger on data_sources and api_settings; clients can read (admins) but never write.
+- Audit log rows come only from security-definer triggers/RPCs; admins read, nobody writes; account IDs only, never emails.
 - AI provider precedence: api_settings row (admin page) -> AI_PROVIDER secret -> grok; a provider without a key or failing falls back to the Lovable AI Gateway (src/lib/ai/gateway.server.ts); keys stay secrets.
 - Live connectors (src/lib/connectors.server.ts) run per request for enabled data_sources with a connector; never copy listings from sites that forbid it.
 - Account erasure runs in src/lib/privacy.functions.ts (auth-checked server fn, admin client only for auth user deletion); private-search mode skips search_history inserts client-side.

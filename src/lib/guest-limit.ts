@@ -3,10 +3,8 @@ export const GUEST_DAILY_RESULTS = 5;
 // Looser per-network cap so shared Wi-Fi (libraries, VA clinics) isn't blocked by one person.
 export const GUEST_NETWORK_RESULTS = 25;
 export const GUEST_TOKEN_KEY = "van_guest";
-// Signed-out AI budget: every chat or provider-matching AI call by a guest counts, checked before the call.
-export const GUEST_DAILY_AI_CALLS = 40;
-export const GUEST_NETWORK_AI_CALLS = 200;
-export const GUEST_AI_LIMIT_NOTE = "You've reached today's guest limit for the chat assistant, so basic matching is used. Sign in or create a free account for the full assistant.";
+// Guests never use the paid AI service; they get the built-in guided search and word matching.
+export const GUEST_AI_LIMIT_NOTE = "Guests use the built-in guided search. Sign in or create a free account for the full chat assistant.";
 
 export const GUEST_LIMIT_REPLY: string =
   "You've used your 5 free searches for today. Sign in or create a free account to keep searching without limits. The results you already found stay on this page. If you're in crisis, call 988 and press 1, or text 838255, right now.";

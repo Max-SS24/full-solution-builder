@@ -221,10 +221,10 @@ export const navigate = createServerFn({ method: "POST" })
     let offered = false;
     let aiAsks = false;
 
-    // Guests have a daily AI budget checked before any paid AI call; signed-in people are unlimited.
-    const { viewerId, useGuestResult, useGuestAiCall } = await import("./guest-limit.server");
+    // Only signed-in people reach the paid AI service; guests get the built-in guided search.
+    const { viewerId, useGuestResult } = await import("./guest-limit.server");
     const signedIn = !!(await viewerId());
-    const aiAllowed = signedIn || (await useGuestAiCall(data.guestId));
+    const aiAllowed = signedIn;
     if (!aiAllowed) aiError = GUEST_AI_LIMIT_NOTE;
 
     offered = data.messages.some((m) => m.role === "assistant" && /see your results/i.test(m.content));
