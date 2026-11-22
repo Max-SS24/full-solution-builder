@@ -16,7 +16,7 @@ Last updated: 2026-11-20
 | Unit (Vitest) | Care rules, distance, guest limits, website-check rules, PDF, QA fixes, a11y audit rules |
 | Integration (Testing Library + axe-core) | Chat dialog, crisis links, keyboard, Care Card print, appointment prep refresh |
 | Routing (real route tree) | All 13 pages: direct load, links, back/forward, announcements, preference persistence |
-| Live browser (Python Playwright) | Navigation, QA retest steps, manual validation history |
+| Live browser (Python Playwright) | Navigation, QA retest steps, manual validation history, guest guided chat and word matching, email-free admin activity log |
 | Access checks (Python) | Role, public-read and appointment-prep visibility rules |
 
 Total: 270+ automated test cases, all passing as of this date. Run with `bunx vitest run`.
