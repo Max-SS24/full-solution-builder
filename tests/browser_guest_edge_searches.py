@@ -20,6 +20,7 @@ ASK_NEED = "What would you like support with? For example PTSD, depression, anxi
 ASK_PLACE = "What city and state (or ZIP) should I search near?"
 OFFER = "Would you like to see your results now?"
 GUEST_NOTE = "Guests use the built-in guided search. Sign in or create a free account for the full chat assistant."
+COVERAGE = "Searches here cover the 50 U.S. states, Washington, D.C., and the U.S. territories"
 EMPTY_HEADING = "Your care options will appear here"
 OFFICIAL = ("https://www.va.gov/", "https://www.samhsa.gov/", "https://findtreatment.gov/")
 failures: list[str] = []
@@ -34,14 +35,29 @@ def check(ok: bool, label: str):
 async def open_guest(browser):
     ctx = await browser.new_context(viewport={"width": 1280, "height": 1800})
     page = await ctx.new_page()
-    await page.goto(BASE, wait_until="domcontentloaded"); await page.wait_for_timeout(2500)
+    await page.goto(BASE, wait_until="domcontentloaded")
+    await page.locator("#msg").wait_for(state="visible", timeout=30000)
+    await page.wait_for_timeout(2500)
     return ctx, page
+
+
+async def open_chat(page):
+    """Makes sure the chat dialog is open, clicking the launcher again if the first click landed too early."""
+    box = page.locator("#msg-big")
+    if await box.is_visible():
+        return
+    await page.locator("#msg").click()
+    try:
+        await box.wait_for(state="visible", timeout=10000)
+    except Exception:
+        await page.locator("#msg").click()
+        await box.wait_for(state="visible", timeout=10000)
 
 
 async def say(page, text: str) -> str:
     """Sends one chat message and returns the newest assistant reply ("" once the dialog closes for results)."""
     box = page.locator("#msg-big")
-    if not await box.is_visible(): await page.locator("#msg").click()
+    await open_chat(page)
     await box.wait_for(timeout=10000)
     await box.fill(text); await box.press("Enter")
     await page.wait_for_timeout(1000)
@@ -74,8 +90,8 @@ async def state(page) -> dict:
 
 async def case_blank(browser):
     ctx, page = await open_guest(browser)
-    await page.locator("#msg").click()
-    box = page.locator("#msg-big"); await box.wait_for()
+    await open_chat(page)
+    box = page.locator("#msg-big")
     await box.fill("   \n  ")
     send = page.get_by_role("dialog").get_by_role("button", name=re.compile("Send"))
     check(await send.is_disabled(), "blank: Send stays disabled for a message of only spaces")
@@ -137,6 +153,8 @@ async def case_outside_us(browser, msg: str, label: str):
     ctx, page = await open_guest(browser)
     r1 = await say(page, msg)
     check(r1.endswith(ASK_PLACE) and OFFER not in r1, f"unsupported place ({label}): asks for a U.S. city/state or ZIP")
+    check(COVERAGE in r1, f"unsupported place ({label}): states that search covers U.S. states, D.C. and the territories")
+    check("I can't search" in r1 and label.split(",")[0] in r1, f"unsupported place ({label}): names the place it can't search")
     s = await state(page)
     check(s["listings"] == 0 and s["heading"] == EMPTY_HEADING, f"unsupported place ({label}): no listings shown")
     check(s["left"] == 5, f"unsupported place ({label}): no free search used")

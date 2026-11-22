@@ -4,6 +4,7 @@ import { z } from "zod";
 import { GUEST_AI_LIMIT_NOTE, GUEST_LIMIT_REPLY, countsAsGuestResult } from "./guest-limit";
 import { crisisSafe } from "./result-source";
 import { AREA_CODES, US_AREAS, findNamedArea } from "./us-areas";
+import { outOfAreaNotice, withNotice } from "./coverage";
 
 export type Variables = {
   location: string | null;
@@ -460,6 +461,9 @@ export const navigate = createServerFn({ method: "POST" })
     // The AI may forget to ask; on search turns where it asked nothing, ask the single next relevant question.
     const nextQ = missing[0] ?? vaQuestion;
     if (!conversational && needsMore && nextQ && aiUsed && !aiAsks && !/\?/.test(reply)) reply += ` ${nextQ}`;
+    // A place outside U.S. coverage gets a plain note, placed before the question so it is read first.
+    const outOfArea = outOfAreaNotice(lastUser);
+    if (outOfArea && !conversational && !crisis && !/territor/i.test(reply)) reply = withNotice(reply, outOfArea);
     const { FIND_MY_FACILITY, vaStageOf } = await import("./va-guide");
     if (!conversational && wantsVa && variables.va_facility === "unknown" && !/877-222-8387/.test(reply)) reply += ` ${FIND_MY_FACILITY}`;
     const danger: "self" | "others" | null = dangerOf(userText) ?? (crisis ? "self" : null);

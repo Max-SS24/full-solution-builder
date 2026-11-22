@@ -14,6 +14,7 @@ Last updated: 2026-11-20
 - **Appointment prep checks:** each item shows when it was last checked, links to its VA.gov source, and has a **Check if this is current** button (limited to once per 30 seconds).
 - **Care Card:** one-page summary of matched facilities, contacts, hours and verified next steps — **Print** or **Download PDF**, also available from the Appointment prep page.
 - **Guest access:** no account needed. Guests get the built-in guided search and simple word matching (the AI assistant is for signed-in accounts), with 5 free result sets per 24 hours with a visible counter, a gentle notice at the 4th, and the reset time in their own time zone. Crisis help never counts.
+- **Coverage area:** searches cover the 50 U.S. states, Washington, D.C., and the U.S. territories (Puerto Rico, Guam, the U.S. Virgin Islands, American Samoa, and the Northern Mariana Islands). When someone names a place outside that area, the chat says so plainly, lists what is covered, and asks for a U.S. city, state or ZIP — no listings are invented and no free search is used.
 - **Download my data:** account owners can download all their saved data as a file.
 - **Works on every screen:** phones (incl. foldables), tablets, laptops and desktops, 320px to 1920px.
 - **Helpful links** (`/helpful-links`) with weekly verification dates.
