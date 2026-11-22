@@ -37,6 +37,11 @@ export function toOptionRow(r: CareResult, sourceId: string): CareOptionRow {
   };
 }
 
+/** No location from the person: the search falls back to a default area, so never show miles from a place they didn't name. */
+export function hideUnaskedDistances<T extends { distance_miles?: number | null }>(rows: T[], locationGiven: boolean): T[] {
+  return locationGiven ? rows : rows.map((r) => ({ ...r, distance_miles: null }));
+}
+
 /** Distances are shown for in-person care when the person gave a location. */
 export function wantsDistance(v: { location: string | null; care_format: string | null }): boolean {
   return !!v.location && v.care_format === "in-person";

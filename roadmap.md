@@ -1,6 +1,8 @@
 # Roadmap
+- [x] Browser tests for empty, ambiguous and unsupported guest searches (fallback guidance and results shown); 27 live checks pass. Fixed distances shown when no location was given.
+- [x] Pull request CI workflow: skipped at the user's request (no GitHub); tests run on request.
 - [x] Add Sunday display-preference regression tests across all 13 pages, back/forward and reloads; all 66 affected tests and live preference checks pass.
-- [ ] Activate Sunday 09:17 UTC runs: workflow is ready, but requires a connected GitHub repository with Actions enabled on its default branch; hosted activation cannot be verified from Lovable.
+- [x] Sunday display-preference runs: GitHub workflow dropped (user no longer uses GitHub); in-app Sunday audit and admin diagnostic replace it.
 - [x] Cover announcements and heading focus on all 13 pages; 262 tests pass and signed-in live navigation, back/forward and reload checks pass after the type fixes (actual VoiceOver/NVDA speech remains unverified).
 - [x] Add admin-only, permanent manual validation/reversal history with notes and timestamps; signed-in validation/reversal/reload and live access regression checks passed.
 - [x] Keep appointment prep mounted during minute refreshes, preserve checked questions and report drafts, and retain evidence freshness checks.

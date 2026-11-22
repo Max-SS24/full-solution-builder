@@ -306,7 +306,7 @@ export const navigate = createServerFn({ method: "POST" })
 
     // Where the person is: a ZIP they typed wins, otherwise their city/state.
     const { geocode, geocodeZip } = await import("./connectors.server");
-    const { milesBetween, sortByDistance, reviewReason, wantsDistance, withDistances } = await import("./care-rules");
+    const { milesBetween, sortByDistance, reviewReason, wantsDistance, withDistances, hideUnaskedDistances } = await import("./care-rules");
     const zip = data.messages.filter((m) => m.role === "user").map((m) => m.content.match(/\b(\d{5})(?:-\d{4})?\b/)?.[1]).filter(Boolean).at(-1);
     let origin: { lat: number; lon: number } | null = null;
     try {
@@ -416,7 +416,7 @@ export const navigate = createServerFn({ method: "POST" })
       }
     }
 
-    if (!locationGiven) variables.location = null;
+    if (!locationGiven) { variables.location = null; results = hideUnaskedDistances(results, false); }
     // Optional details are asked once; if they skip or say "not sure", we move on instead of looping.
     const asked = askedTopics(data.messages);
     const wantsNow = WANTS_RESULTS_RE.test(lastUser);
