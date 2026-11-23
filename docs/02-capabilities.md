@@ -30,6 +30,8 @@ Last updated: 2026-11-20
 - Audit log and recovery-code dashboard.
 - **Weekly checks:** filter failed providers by failure reason, recheck status and last-verified date.
 - **Deep recheck** per row, or **Recheck all failed sources**.
+- **Auto-resolve:** a failed result clears itself ("Resolved automatically") when a newer check of that provider — Sunday, deep recheck or a live search — passes every part that failed.
+- **Certificate rule:** a provider whose website security certificate can't be verified is left out of search results, reopened searches and replacements until a later check verifies it.
 - **Mark validated / Undo** with a note, plus an audit history of who did it and when.
 - **Accessibility health:** Sunday page audit results, an in-browser diagnostic that tries every contrast/text-size combination on all 13 pages, and an alert banner plus Admin badge until failures are marked reviewed or a newer check of the same kind passes every page that failed.
 

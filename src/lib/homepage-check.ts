@@ -6,6 +6,8 @@ export type HomepageCheck = {
   reason?: string;
   /** True when the site answered but refused automated checks (it usually opens fine in a browser). */
   blocked?: boolean;
+  /** Set when our checker couldn't verify the site's security certificate (525/526). */
+  certificate?: "unverified";
 };
 
 /** Same site (ignoring www), over http(s), no credentials/ports. Protocol hops in the middle are fine;
@@ -45,6 +47,16 @@ export const CHECKER_HEADERS = {
 export const CHECKER_SIDE_ERRORS = [520, 525, 526];
 export const DROPPED_REASON = "Site dropped the connection for our automated checker — it may still open normally in a browser";
 export const CERT_REASON = "Our checker couldn't verify this site's security certificate — it may still open normally in a browser; check it before relying on it";
+
+/** A site whose security certificate couldn't be verified is never offered as a care option.
+ * Older saved checks have only the reason text, so both are accepted. */
+export function certificateUnverified(check?: { certificate?: string; reason?: string } | null): boolean {
+  return check?.certificate === "unverified" || check?.reason === CERT_REASON;
+}
+export function withoutUnverifiedCertificates<T extends { homepageCheck?: HomepageCheck | undefined }>(rows: T[]): T[] {
+  return rows.filter((r) => !certificateUnverified(r.homepageCheck));
+}
+export const isCertificateStatus = (status: number) => status === 525 || status === 526;
 
 /** Reason for a checker-side error, or null when the status is a real answer from the site. */
 export function checkerSideReason(status: number): string | null {

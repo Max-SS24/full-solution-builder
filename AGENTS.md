@@ -17,7 +17,7 @@
 - Sunday homepage checks run in bounded batches, storing URL-bound outcomes and attempt times in care_options; website failures never change care status or verification dates.
 - Community Sunday batches persist care-source evidence and one admin-only history row per provider/week; NPI status or directory absence never proves availability or closure; alerts derive from persisted outcomes.
 - Reopened-chat analytics use the injected Lovable event global with counts/decisions only (no care data); a replacement view needs half the listing in the viewport.
-- AI provider is chosen server-side only via AI_PROVIDER env (grok|openai|gemini|openrouter) in src/lib/ai/providers.server.ts — users never see or pick the model.
+- AI provider is chosen server-side only (src/lib/ai/providers.server.ts); users never see or pick the model.
 - Care search reads care_resources joined to data_sources; only enabled sources are returned (RLS), so admins control retrieval by toggling sources.
 - First signed-in user to open /admin becomes admin via claim_first_admin(); roles live in user_roles, never on profiles.
 - Registered-user search preferences live in user_preferences (jsonb, one row per user) and are merged server-side only where the chat left a variable empty.

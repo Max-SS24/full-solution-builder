@@ -434,6 +434,14 @@ export const navigate = createServerFn({ method: "POST" })
     else if (wantsVa && variables.va_applied === "yes" && !variables.va_registered && !asked.has("va_registered")) vaQuestion = "Are you registered as a patient at a VA facility (yes, no, or not sure)?";
     else if (wantsVa && variables.va_registered === "yes" && !variables.va_facility && (fix === "ask" || !asked.has("va_facility"))) vaQuestion = "Which VA facility are you registered at? If you don't know, just say so and I'll show you how to find out.";
     const needsMore = (missing.length > 0 || !!vaQuestion) && !crisis;
+    // Check community websites live; a site whose security certificate can't be verified is never offered.
+    if (!needsMore && results.length) {
+      const { checkCommunityHomepages, saveLiveHomepageChecks } = await import("./homepage-check.server");
+      const { withoutUnverifiedCertificates } = await import("./homepage-check");
+      const checked = await checkCommunityHomepages(results);
+      await saveLiveHomepageChecks(checked);
+      results = withoutUnverifiedCertificates(checked);
+    }
 
     if (!reply) {
       const last = data.messages.filter((m) => m.role === "user").at(-1)?.content ?? "";
@@ -510,8 +518,7 @@ export const navigate = createServerFn({ method: "POST" })
         guestRemaining, guestLimitReached, guestResetAt,
       };
     }
-    const { checkCommunityHomepages } = await import("./homepage-check.server");
-    const checkedResults = needsMore ? [] : await checkCommunityHomepages(results);
+    const checkedResults = needsMore ? [] : results;
     return {
       guestRemaining,
       guestLimitReached,

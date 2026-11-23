@@ -539,7 +539,7 @@ function Home() {
                   </div>
                   <div className="flex-1 space-y-2 p-5 text-sm font-medium text-ink/75">
                     {r.reopenCheck && <p className={`border-2 border-ink px-3 py-2 text-xs font-bold ${r.reopenCheck.status === "confirmed" ? "bg-minttint" : "bg-sun"}`}>
-                      {r.reopenCheck.status === "confirmed" ? "Listing confirmed in its official source" : r.reopenCheck.status === "unavailable" ? "No longer available in the enabled directory, or its official page is missing. Search again for current options." : "Could not confirm this listing right now. Call before relying on it."}
+                      {r.reopenCheck.status === "confirmed" ? "Listing confirmed in its official source" : r.reopenCheck.reason === "certificate" ? "Removed: this provider's website security certificate couldn't be verified. Search again for current options." : r.reopenCheck.status === "unavailable" ? "No longer available in the enabled directory, or its official page is missing. Search again for current options." : "Could not confirm this listing right now. Call before relying on it."}
                       {" · "}{r.reopenCheck.link === "working" ? "Official link works" : r.reopenCheck.link === "broken" ? "Official link is broken" : "Link not confirmed"}
                       {" · Checked "}{fmtDay(r.reopenCheck.checkedAt.slice(0, 10))}
                     </p>}

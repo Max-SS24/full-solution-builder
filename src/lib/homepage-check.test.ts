@@ -95,3 +95,27 @@ describe("checker-side errors (520/525/526)", () => {
     expect((await checkHomepage("https://provider.example/", requester([new Response("", { status: 500 })]))).status).toBe("unavailable");
   });
 });
+
+import { CERT_REASON, BLOCKED_REASON, DROPPED_REASON, withoutUnverifiedCertificates } from "./homepage-check";
+describe("care options with an unverifiable security certificate", () => {
+  it("marks a 526 certificate failure so the option can be withheld", async () => {
+    const r = await checkHomepage("https://provider.example/", requester([new Response("", { status: 526 }), new Response("", { status: 526 })]));
+    expect(r.certificate).toBe("unverified");
+  });
+  it("does not mark a dropped connection (520) as a certificate problem", async () => {
+    const r = await checkHomepage("https://provider.example/", requester([new Response("", { status: 520 }), new Response("", { status: 520 })]));
+    expect(r.certificate).toBeUndefined();
+  });
+  it("removes only options whose certificate couldn't be verified", () => {
+    const at = "2026-11-23T00:00:00Z";
+    const rows = [
+      { id: "cert", homepageCheck: { status: "unconfirmed" as const, checkedAt: at, reason: CERT_REASON, certificate: "unverified" as const } },
+      { id: "old-cert", homepageCheck: { status: "unconfirmed" as const, checkedAt: at, reason: CERT_REASON } },
+      { id: "firewall", homepageCheck: { status: "unconfirmed" as const, checkedAt: at, reason: BLOCKED_REASON, blocked: true } },
+      { id: "dropped", homepageCheck: { status: "unconfirmed" as const, checkedAt: at, reason: DROPPED_REASON } },
+      { id: "down", homepageCheck: { status: "unavailable" as const, checkedAt: at } },
+      { id: "no-site" },
+    ];
+    expect(withoutUnverifiedCertificates(rows).map((r) => r.id)).toEqual(["firewall", "dropped", "down", "no-site"]);
+  });
+});

@@ -1,6 +1,6 @@
 import type { CareResult, Variables } from "./navigator.functions";
 
-export type ReopenCheck = { status: "confirmed" | "unavailable" | "unconfirmed"; link: "working" | "broken" | "unchecked"; checkedAt: string };
+export type ReopenCheck = { status: "confirmed" | "unavailable" | "unconfirmed"; link: "working" | "broken" | "unchecked"; checkedAt: string; reason?: "certificate" };
 export type RecheckedCareResult = CareResult & { reopenCheck?: ReopenCheck };
 
 export function unavailableOptions(rows: RecheckedCareResult[]) {

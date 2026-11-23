@@ -1,7 +1,8 @@
 import type { CareResult, Variables } from "./navigator.functions";
 import { applyReopenCheck, checkOutcome, officialCheckUrl, type ReopenCheck } from "./reopened-care";
 import { parseVaPage } from "./care-options.server";
-import { checkCommunityHomepages } from "./homepage-check.server";
+import { checkCommunityHomepages, saveLiveHomepageChecks } from "./homepage-check.server";
+import { certificateUnverified } from "./homepage-check";
 
 /** Redirects must stay on approved official hosts, too. */
 async function officialPage(raw: string): Promise<{ status: number; body: string } | null> {
@@ -61,5 +62,8 @@ export async function recheckCare(row: CareResult, connector: string | null, var
   // If the source changed the website, the old page check cannot validate it.
   const freshLink = updated.source_url !== row.source_url ? "unchecked" : link;
   const [checked] = await checkCommunityHomepages([updated]);
+  if (checked) await saveLiveHomepageChecks([checked]);
+  // A website whose security certificate can't be verified is never offered.
+  if (certificateUnverified(checked?.homepageCheck)) return applyReopenCheck(checked!, { ...checkOutcome("unavailable", freshLink, checkedAt), reason: "certificate" });
   return applyReopenCheck(checked ?? updated, checkOutcome(source, freshLink, checkedAt));
 }

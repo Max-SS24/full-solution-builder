@@ -1,8 +1,8 @@
-import { BLOCKED_REASON, blockedStatus, checkerSideReason, expectedHomepageRedirect, fetchSite, finalHomepageSafe, publicIpv4, type HomepageCheck } from "./homepage-check";
+import { BLOCKED_REASON, blockedStatus, checkerSideReason, expectedHomepageRedirect, fetchSite, finalHomepageSafe, isCertificateStatus, publicIpv4, type HomepageCheck } from "./homepage-check";
 
 type Fetcher = typeof fetch;
 export type DeepCheck = HomepageCheck & { reason: string; attempts: number };
-type Attempt = { status: HomepageCheck["status"]; redirectedTo?: string; reason: string; blocked?: boolean; final?: boolean };
+type Attempt = { status: HomepageCheck["status"]; redirectedTo?: string; reason: string; blocked?: boolean; final?: boolean; certificate?: "unverified" };
 
 async function publicHost(host: string, request: Fetcher, signal: AbortSignal) {
   const r = await request(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=A`, { signal });
@@ -46,7 +46,7 @@ async function attemptOnce(raw: string, request: Fetcher, timeoutMs: number): Pr
     }
     await res.body?.cancel();
     const checkerSide = checkerSideReason(res.status);
-    if (checkerSide) return { status: "unconfirmed", reason: checkerSide, ...(res.status === 520 ? { blocked: true } : {}), final: true };
+    if (checkerSide) return { status: "unconfirmed", reason: checkerSide, ...(res.status === 520 ? { blocked: true } : {}), ...(isCertificateStatus(res.status) ? { certificate: "unverified" as const } : {}), final: true };
     if ([404, 410].includes(res.status) || res.status >= 500) return { status: "unavailable", reason: `Site responded with error ${res.status}` };
     if (blockedStatus(res.status, res.headers)) return { status: "unconfirmed", reason: BLOCKED_REASON, blocked: true };
     return { status: "unconfirmed", reason: `Site refused the check (${res.status})` };

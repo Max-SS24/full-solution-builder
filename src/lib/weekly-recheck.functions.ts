@@ -18,8 +18,8 @@ export const recheckFailed = createServerFn({ method: "POST" })
       .or(`homepage_status.in.(${FAILED_HOMEPAGE.join(",")}),care_status.neq.listed`);
     if (data.ids) q = q.in("id", data.ids);
     // "before" = full recheck: include rows deep-checked before this run started, but not manually validated ones.
-    else if (data.before) q = q.is("manual_validated_at", null).or(`deep_checked_at.is.null,deep_checked_at.lt.${data.before}`);
-    else q = q.is("deep_checked_at", null).is("manual_validated_at", null);
+    else if (data.before) q = q.is("manual_validated_at", null).is("auto_resolved_at", null).or(`deep_checked_at.is.null,deep_checked_at.lt.${data.before}`);
+    else q = q.is("deep_checked_at", null).is("manual_validated_at", null).is("auto_resolved_at", null);
     const { data: rows, error } = await q.order("id").limit(RECHECK_LIMIT);
     if (error) throw new Error(error.message);
     const results: { id: string; homepage_status: string; reason: string }[] = [];
@@ -32,7 +32,7 @@ export const recheckFailed = createServerFn({ method: "POST" })
         const c = await deepCheckHomepage(row.homepage_url);
         homepage = c.status; redirected = c.redirectedTo ?? null; reasons.push(`Website: ${c.reason}`);
         // Website outcomes only; care status and verification dates are untouched.
-        await supabaseAdmin.from("care_options").update({ homepage_check: { url: row.homepage_url, status: c.status, checkedAt: c.checkedAt, ...(c.redirectedTo ? { redirectedTo: c.redirectedTo } : {}), reason: c.reason, ...(c.blocked ? { blocked: true } : {}) }, homepage_checked_at: c.checkedAt }).eq("id", row.care_option_id);
+        await supabaseAdmin.from("care_options").update({ homepage_check: { url: row.homepage_url, status: c.status, checkedAt: c.checkedAt, ...(c.redirectedTo ? { redirectedTo: c.redirectedTo } : {}), reason: c.reason, ...(c.blocked ? { blocked: true } : {}), ...(c.certificate ? { certificate: c.certificate } : {}) }, homepage_checked_at: c.checkedAt }).eq("id", row.care_option_id);
       }
       let care = { status: row.care_status, reason: row.care_reason };
       if (opt && row.care_status !== "listed") {

@@ -34,7 +34,7 @@ describe("deep homepage recheck", () => {
     let calls = 0;
     const f = (async (u: string) => u.includes("dns.google") ? dns() : (calls++, new Response("", { status: 526 }))) as typeof fetch;
     const r = await deepCheckHomepage("https://clinic.example/", f, noWait);
-    expect(r).toMatchObject({ status: "unconfirmed", attempts: 1 });
+    expect(r).toMatchObject({ status: "unconfirmed", attempts: 1, certificate: "unverified" });
     expect(r.reason).toMatch(/security certificate/);
     expect(calls).toBe(4); // HEAD + GET, each tried with both names
   });

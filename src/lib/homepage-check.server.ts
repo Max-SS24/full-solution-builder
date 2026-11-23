@@ -1,5 +1,5 @@
 import { communityHomepage } from "./care-links";
-import { BLOCKED_REASON, BROWSER_HEADERS, blockedStatus, checkerSideReason, expectedHomepageRedirect, fetchSite, finalHomepageSafe, publicIpv4, type HomepageCheck } from "./homepage-check";
+import { BLOCKED_REASON, BROWSER_HEADERS, blockedStatus, checkerSideReason, expectedHomepageRedirect, fetchSite, finalHomepageSafe, isCertificateStatus, publicIpv4, type HomepageCheck } from "./homepage-check";
 import type { CareResult } from "./navigator.functions";
 
 type Fetcher = typeof fetch;
@@ -41,7 +41,7 @@ export async function checkHomepage(raw: string, request: Fetcher = fetch): Prom
       if (!finalHomepageSafe(original, url)) return result("unexpected_redirect", url.hostname, "Secure link ends on an insecure page");
       if (response.ok) return result("working");
       const checkerSide = checkerSideReason(response.status);
-      if (checkerSide) return result("unconfirmed", undefined, checkerSide, response.status === 520);
+      if (checkerSide) return { ...result("unconfirmed", undefined, checkerSide, response.status === 520), ...(isCertificateStatus(response.status) ? { certificate: "unverified" as const } : {}) };
       if ([404, 410].includes(response.status) || response.status >= 500) return result("unavailable");
       if (blockedStatus(response.status, response.headers)) return result("unconfirmed", undefined, BLOCKED_REASON, true);
       return result("unconfirmed", undefined, `Site refused the check (${response.status})`); // Does not prove the site is down.
@@ -58,5 +58,18 @@ export async function checkCommunityHomepages<T extends CareResult>(rows: T[]): 
     let check = checks.get(homepage);
     if (!check) { check = checkHomepage(homepage); checks.set(homepage, check); }
     return { ...row, homepageCheck: await check };
+  }));
+}
+
+/** Save live search checks on the provider so admin alerts can clear when a newer check passes. */
+export async function saveLiveHomepageChecks(rows: (CareResult & { homepageCheck?: HomepageCheck | undefined })[]) {
+  const checked = rows.flatMap((r) => { const url = communityHomepage(r); return url && r.homepageCheck ? [{ id: r.id, url, check: r.homepageCheck }] : []; });
+  if (!checked.length) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await Promise.all(checked.map(async ({ id, url, check }) => {
+    const { error } = await supabaseAdmin.from("care_options")
+      .update({ homepage_check: { url, ...check }, homepage_checked_at: check.checkedAt })
+      .eq("external_id", id).eq("va_vs_community", "community");
+    if (error) console.error("[homepage] save live check", error.message);
   }));
 }

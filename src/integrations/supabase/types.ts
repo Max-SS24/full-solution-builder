@@ -369,6 +369,8 @@ export type Database = {
       }
       community_check_history: {
         Row: {
+          auto_resolved_at: string | null
+          auto_resolved_note: string | null
           care_option_id: string
           care_reason: string
           care_status: string
@@ -389,6 +391,8 @@ export type Database = {
           week_start: string
         }
         Insert: {
+          auto_resolved_at?: string | null
+          auto_resolved_note?: string | null
           care_option_id: string
           care_reason: string
           care_status: string
@@ -409,6 +413,8 @@ export type Database = {
           week_start: string
         }
         Update: {
+          auto_resolved_at?: string | null
+          auto_resolved_note?: string | null
           care_option_id?: string
           care_reason?: string
           care_status?: string
@@ -784,6 +790,13 @@ export type Database = {
         | { Args: never; Returns: Json }
         | { Args: { _from: string; _to: string }; Returns: Json }
       claim_first_admin: { Args: never; Returns: boolean }
+      community_newer_pass: {
+        Args: {
+          _h: Database["public"]["Tables"]["community_check_history"]["Row"]
+          _o: Database["public"]["Tables"]["care_options"]["Row"]
+        }
+        Returns: string
+      }
       get_ai_settings: {
         Args: never
         Returns: {
