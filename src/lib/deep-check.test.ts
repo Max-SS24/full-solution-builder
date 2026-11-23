@@ -23,4 +23,19 @@ describe("deep homepage recheck", () => {
     const f = (async (u: string) => u.includes("dns.google") ? dns() : new Response("<html><title>404 Not Found</title>" + "x".repeat(300), { headers: { "content-type": "text/html" } })) as typeof fetch;
     expect((await deepCheckHomepage("https://clinic.example/", f, noWait)).status).toBe("unavailable");
   });
+  it("retries 520 with the honest checker name and recovers on the first attempt", async () => {
+    const f = (async (u: string, init?: RequestInit) => u.includes("dns.google") ? dns()
+      : String((init?.headers as Record<string, string>)["User-Agent"]).startsWith("Mozilla") ? new Response("", { status: 520 }) : page()) as typeof fetch;
+    const r = await deepCheckHomepage("https://clinic.example/", f, noWait);
+    expect(r.status).toBe("working");
+    expect(r.attempts).toBe(1);
+  });
+  it("stops after one attempt on a certificate error and keeps it unconfirmed", async () => {
+    let calls = 0;
+    const f = (async (u: string) => u.includes("dns.google") ? dns() : (calls++, new Response("", { status: 526 }))) as typeof fetch;
+    const r = await deepCheckHomepage("https://clinic.example/", f, noWait);
+    expect(r).toMatchObject({ status: "unconfirmed", attempts: 1 });
+    expect(r.reason).toMatch(/security certificate/);
+    expect(calls).toBe(4); // HEAD + GET, each tried with both names
+  });
 });

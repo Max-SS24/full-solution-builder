@@ -1,13 +1,9 @@
 import { communityHomepage } from "./care-links";
-import { BLOCKED_REASON, blockedStatus, expectedHomepageRedirect, finalHomepageSafe, publicIpv4, type HomepageCheck } from "./homepage-check";
+import { BLOCKED_REASON, BROWSER_HEADERS, blockedStatus, checkerSideReason, expectedHomepageRedirect, fetchSite, finalHomepageSafe, publicIpv4, type HomepageCheck } from "./homepage-check";
 import type { CareResult } from "./navigator.functions";
 
 type Fetcher = typeof fetch;
-export const BROWSER_HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 VA-Navigator-check",
-  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-  "Accept-Language": "en-US,en;q=0.9",
-};
+export { BROWSER_HEADERS };
 
 /** Resolve through a fixed public service; refuse nonpublic addresses before any provider request. */
 async function publicHost(host: string, request: Fetcher, signal: AbortSignal): Promise<boolean> {
@@ -32,7 +28,7 @@ export async function checkHomepage(raw: string, request: Fetcher = fetch): Prom
       visited.add(url.href);
       if (!expectedHomepageRedirect(original, url)) return result("unexpected_redirect", url.hostname);
       if (!await publicHost(url.hostname, request, signal)) return result("unconfirmed", undefined, "Website address could not be found on the public internet");
-      const response = await request(url.href, { redirect: "manual", signal, headers: BROWSER_HEADERS });
+      const response = await fetchSite(request, url.href, { redirect: "manual", signal });
       await response.body?.cancel();
       if (response.status >= 300 && response.status < 400) {
         const location = response.headers.get("location");
@@ -44,6 +40,8 @@ export async function checkHomepage(raw: string, request: Fetcher = fetch): Prom
       }
       if (!finalHomepageSafe(original, url)) return result("unexpected_redirect", url.hostname, "Secure link ends on an insecure page");
       if (response.ok) return result("working");
+      const checkerSide = checkerSideReason(response.status);
+      if (checkerSide) return result("unconfirmed", undefined, checkerSide, response.status === 520);
       if ([404, 410].includes(response.status) || response.status >= 500) return result("unavailable");
       if (blockedStatus(response.status, response.headers)) return result("unconfirmed", undefined, BLOCKED_REASON, true);
       return result("unconfirmed", undefined, `Site refused the check (${response.status})`); // Does not prove the site is down.

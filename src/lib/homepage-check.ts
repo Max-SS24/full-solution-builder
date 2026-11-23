@@ -27,6 +27,46 @@ export function blockedStatus(status: number, headers?: Headers): boolean {
 }
 export const BLOCKED_REASON = "Site blocks automated checks (protected by a firewall) — it may still open normally in a browser";
 
+/** First try: browser-like headers (some sites refuse unknown clients). */
+export const BROWSER_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 VA-Navigator-check",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+};
+/** Second try: an honest checker name. Many hosts (e.g. SiteGround) drop connections that claim to be Chrome
+ * but don't look like Chrome; behind the server's network that surfaces as a 520 error. */
+export const CHECKER_HEADERS = {
+  "User-Agent": "VA-Navigator-LinkCheck/1.0 (+https://va-navigator.lovable.app)",
+  Accept: "text/html,application/xhtml+xml,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+};
+/** Errors produced by the network in front of our server, not by the provider's site:
+ * 520 = the site dropped our connection, 525/526 = our checker couldn't verify the site's certificate. */
+export const CHECKER_SIDE_ERRORS = [520, 525, 526];
+export const DROPPED_REASON = "Site dropped the connection for our automated checker — it may still open normally in a browser";
+export const CERT_REASON = "Our checker couldn't verify this site's security certificate — it may still open normally in a browser; check it before relying on it";
+
+/** Reason for a checker-side error, or null when the status is a real answer from the site. */
+export function checkerSideReason(status: number): string | null {
+  if (status === 520) return DROPPED_REASON;
+  if (status === 525 || status === 526) return CERT_REASON;
+  return null;
+}
+
+/** Fetch with browser-like headers, retrying once with the honest checker name on a checker-side error or dropped connection. */
+export async function fetchSite(request: typeof fetch, url: string, init: RequestInit): Promise<Response> {
+  let first: Response | undefined;
+  try {
+    first = await request(url, { ...init, headers: BROWSER_HEADERS });
+    if (!CHECKER_SIDE_ERRORS.includes(first.status)) return first;
+    await first.body?.cancel();
+  } catch (error) {
+    if (init.signal?.aborted) throw error;
+  }
+  try { return await request(url, { ...init, headers: CHECKER_HEADERS }); }
+  catch (error) { if (first) return first; throw error; }
+}
+
 const PRIVATE_V4: [number, number, number][] = [
   // [first octet, second-octet min, second-octet max] for ranges inside a /8
   [10, 0, 255], [127, 0, 255], [0, 0, 255],

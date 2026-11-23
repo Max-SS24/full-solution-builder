@@ -65,3 +65,33 @@ describe("insecure endings", () => {
     expect((await checkHomepage("https://provider.example/", request)).status).toBe("unexpected_redirect");
   });
 });
+describe("checker-side errors (520/525/526)", () => {
+  const ua = (init?: RequestInit) => (init?.headers as Record<string, string> | undefined)?.["User-Agent"] ?? "";
+  it("retries a 520 with the honest checker name and accepts the working site", async () => {
+    const request = vi.fn<typeof fetch>(async (input, init) => String(input).startsWith("https://dns.google/")
+      ? Response.json({ Answer: [{ type: 1, data: "93.184.216.34" }] })
+      : ua(init).startsWith("Mozilla") ? new Response("", { status: 520 }) : new Response("OK"));
+    expect((await checkHomepage("https://provider.example/", request)).status).toBe("working");
+    expect(request.mock.calls.some(([, init]) => ua(init).startsWith("VA-Navigator-LinkCheck"))).toBe(true);
+  });
+  it("retries a dropped connection with the honest checker name", async () => {
+    const request = vi.fn<typeof fetch>(async (input, init) => {
+      if (String(input).startsWith("https://dns.google/")) return Response.json({ Answer: [{ type: 1, data: "93.184.216.34" }] });
+      if (ua(init).startsWith("Mozilla")) throw new TypeError("connection reset");
+      return new Response("OK");
+    });
+    expect((await checkHomepage("https://provider.example/", request)).status).toBe("working");
+  });
+  it("never calls a site down when every try gets 520", async () => {
+    const r = await checkHomepage("https://provider.example/", requester([new Response("", { status: 520 }), new Response("", { status: 520 })]));
+    expect(r).toMatchObject({ status: "unconfirmed", blocked: true });
+  });
+  it("labels a certificate our checker can't verify (526) as unconfirmed, not down", async () => {
+    const r = await checkHomepage("https://provider.example/", requester([new Response("", { status: 526 }), new Response("", { status: 526 })]));
+    expect(r.status).toBe("unconfirmed");
+    expect(r.reason).toMatch(/security certificate/);
+  });
+  it("still calls a real server error (500) unavailable", async () => {
+    expect((await checkHomepage("https://provider.example/", requester([new Response("", { status: 500 })]))).status).toBe("unavailable");
+  });
+});

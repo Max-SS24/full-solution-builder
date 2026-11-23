@@ -1,9 +1,8 @@
-import { BLOCKED_REASON, blockedStatus, expectedHomepageRedirect, finalHomepageSafe, publicIpv4, type HomepageCheck } from "./homepage-check";
-import { BROWSER_HEADERS } from "./homepage-check.server";
+import { BLOCKED_REASON, blockedStatus, checkerSideReason, expectedHomepageRedirect, fetchSite, finalHomepageSafe, publicIpv4, type HomepageCheck } from "./homepage-check";
 
 type Fetcher = typeof fetch;
 export type DeepCheck = HomepageCheck & { reason: string; attempts: number };
-type Attempt = { status: HomepageCheck["status"]; redirectedTo?: string; reason: string; blocked?: boolean };
+type Attempt = { status: HomepageCheck["status"]; redirectedTo?: string; reason: string; blocked?: boolean; final?: boolean };
 
 async function publicHost(host: string, request: Fetcher, signal: AbortSignal) {
   const r = await request(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=A`, { signal });
@@ -17,7 +16,6 @@ const SOFT_404 = /<title>[^<]*(404|not found|page unavailable|error)[^<]*<\/titl
 
 async function attemptOnce(raw: string, request: Fetcher, timeoutMs: number): Promise<Attempt> {
   const signal = AbortSignal.timeout(timeoutMs);
-  const headers = BROWSER_HEADERS;
   const original = new URL(raw);
   let url = original;
   const visited = new Set<string>();
@@ -26,10 +24,10 @@ async function attemptOnce(raw: string, request: Fetcher, timeoutMs: number): Pr
     visited.add(url.href);
     if (!expectedHomepageRedirect(original, url)) return { status: "unexpected_redirect", redirectedTo: url.hostname, reason: `Leads to a different website (${url.hostname})` };
     if (!await publicHost(url.hostname, request, signal)) return { status: "unconfirmed", reason: "Website address could not be found on the public internet" };
-    let res = await request(url.href, { method: "HEAD", redirect: "manual", signal, headers });
+    let res = await fetchSite(request, url.href, { method: "HEAD", redirect: "manual", signal });
     await res.body?.cancel();
     const isRedirect = (s: number) => s >= 300 && s < 400;
-    if (!isRedirect(res.status)) res = await request(url.href, { method: "GET", redirect: "manual", signal, headers });
+    if (!isRedirect(res.status)) res = await fetchSite(request, url.href, { method: "GET", redirect: "manual", signal });
     if (isRedirect(res.status)) {
       await res.body?.cancel();
       const loc = res.headers.get("location");
@@ -47,6 +45,8 @@ async function attemptOnce(raw: string, request: Fetcher, timeoutMs: number): Pr
       return { status: "working", reason: "Page loaded with content" };
     }
     await res.body?.cancel();
+    const checkerSide = checkerSideReason(res.status);
+    if (checkerSide) return { status: "unconfirmed", reason: checkerSide, ...(res.status === 520 ? { blocked: true } : {}), final: true };
     if ([404, 410].includes(res.status) || res.status >= 500) return { status: "unavailable", reason: `Site responded with error ${res.status}` };
     if (blockedStatus(res.status, res.headers)) return { status: "unconfirmed", reason: BLOCKED_REASON, blocked: true };
     return { status: "unconfirmed", reason: `Site refused the check (${res.status})` };
@@ -61,9 +61,10 @@ export async function deepCheckHomepage(raw: string, request: Fetcher = fetch, w
     try { last = await attemptOnce(raw, request, 8000 + n * 4000); }
     catch { last = { status: "unconfirmed", reason: "Site did not respond in time" }; }
     if (last.status === "working") return { ...last, checkedAt: new Date().toISOString(), attempts: n, reason: n > 1 ? `Recovered on attempt ${n}` : last.reason };
-    if (last.status === "unexpected_redirect" || last.blocked) break; // Retrying won't get past a foreign redirect or a firewall. // A foreign redirect won't change with retries.
+    if (last.status === "unexpected_redirect" || last.blocked || last.final) break; // Retrying won't get past a foreign redirect, a firewall or a certificate our checker can't verify.
     if (n < 3) await wait(n * 1500);
   }
-  const attempts = last.status === "unexpected_redirect" || last.blocked ? 1 : 3;
-  return { ...last, checkedAt: new Date().toISOString(), attempts, reason: attempts > 1 ? `Still failing after 3 tries: ${last.reason}` : last.reason };
+  const attempts = last.status === "unexpected_redirect" || last.blocked || last.final ? 1 : 3;
+  const { final: _final, ...rest } = last;
+  return { ...rest, checkedAt: new Date().toISOString(), attempts, reason: attempts > 1 ? `Still failing after 3 tries: ${last.reason}` : last.reason };
 }
