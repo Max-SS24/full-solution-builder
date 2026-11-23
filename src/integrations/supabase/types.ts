@@ -25,6 +25,7 @@ export type Database = {
           passed: number
           ran_at: string
           ran_by: string | null
+          resolved_by_run: string | null
           results: Json
         }
         Insert: {
@@ -37,6 +38,7 @@ export type Database = {
           passed?: number
           ran_at?: string
           ran_by?: string | null
+          resolved_by_run?: string | null
           results?: Json
         }
         Update: {
@@ -49,9 +51,18 @@ export type Database = {
           passed?: number
           ran_at?: string
           ran_by?: string | null
+          resolved_by_run?: string | null
           results?: Json
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "a11y_audit_runs_resolved_by_run_fkey"
+            columns: ["resolved_by_run"]
+            isOneToOne: false
+            referencedRelation: "a11y_audit_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       api_settings: {
         Row: {
@@ -761,6 +772,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      a11y_run_covers: {
+        Args: {
+          _failure: Database["public"]["Tables"]["a11y_audit_runs"]["Row"]
+          _pass: Database["public"]["Tables"]["a11y_audit_runs"]["Row"]
+        }
+        Returns: boolean
+      }
       acknowledge_a11y_run: { Args: { _id: string }; Returns: undefined }
       admin_analytics:
         | { Args: never; Returns: Json }

@@ -12,9 +12,10 @@ export function useA11yAlerts(enabled = true) {
     queryKey: A11Y_ALERTS_KEY,
     enabled,
     queryFn: async () => {
-      const { data } = await supabase.from("a11y_audit_runs").select("id, kind, ok, failed, ran_at, acknowledged_at")
-        .eq("ok", false).is("acknowledged_at", null).order("ran_at", { ascending: false }).limit(20);
-      return openA11yFailures((data ?? []) as AlertRun[]);
+      const { data } = await supabase.from("a11y_audit_runs").select("id, kind, ok, failed, ran_at, acknowledged_at, resolved_by_run, results")
+        .is("acknowledged_at", null).order("ran_at", { ascending: false }).limit(30);
+      // Passing runs are fetched too, so a newer full pass hides an older failure right away.
+      return openA11yFailures((data ?? []) as unknown as AlertRun[]);
     },
   });
 }

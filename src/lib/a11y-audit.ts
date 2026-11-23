@@ -16,8 +16,21 @@ export function auditHtml(path: string, html: string): AuditResult {
   return { path, ok: problems.length === 0, problems };
 }
 
-export type AlertRun = { id: string; kind: string; ok: boolean; failed: number; ran_at: string; acknowledged_at: string | null };
-/** Failed runs no admin has reviewed yet, newest first. Passing runs never alert. */
+export type AlertRun = { id: string; kind: string; ok: boolean; failed: number; ran_at: string; acknowledged_at: string | null; resolved_by_run?: string | null; results?: AuditResult[] | null };
+
+/** Mirrors a11y_run_covers() in the database: a newer passing run of the same kind clears an older failure
+ * only when it passed every page that failed. */
+export function resolvesFailure(failure: AlertRun, pass: AlertRun): boolean {
+  if (failure.ok || !pass.ok || pass.failed > 0 || pass.kind !== failure.kind) return false;
+  if (Date.parse(pass.ran_at) <= Date.parse(failure.ran_at)) return false;
+  const passed = new Set((pass.results ?? []).filter((r) => r.ok).map((r) => r.path));
+  if (!passed.size) return false;
+  return (failure.results ?? []).filter((r) => !r.ok).every((r) => passed.has(r.path));
+}
+
+/** Failed runs no admin has reviewed and no newer passing run has resolved, newest first. Passing runs never alert. */
 export function openA11yFailures<T extends AlertRun>(runs: T[]): T[] {
-  return runs.filter((r) => !r.ok && !r.acknowledged_at).sort((a, b) => b.ran_at.localeCompare(a.ran_at));
+  return runs
+    .filter((r) => !r.ok && !r.acknowledged_at && !r.resolved_by_run && !runs.some((p) => resolvesFailure(r, p)))
+    .sort((a, b) => b.ran_at.localeCompare(a.ran_at));
 }

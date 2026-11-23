@@ -44,7 +44,7 @@ Scheduled Sunday jobs --> /api/public/jobs/* (cron-auth guarded) --> Database
 | `guest_usage` | Hashed guest-token and network counters for the free-search limit |
 | `community_check_history` | One admin-only row per community provider per week, incl. manual-validation state |
 | `manual_validation_history` | Append-only record of each admin "mark validated" / "undo" with note and time |
-| `a11y_audit_runs` | Sunday server audits and admin in-browser accessibility diagnostics, with acknowledgement |
+| `a11y_audit_runs` | Sunday server audits and admin in-browser accessibility diagnostics, with acknowledgement; a newer passing check of the same kind automatically resolves older failures (`resolved_by_run`) |
 | `appointment_guidance_reports` | User reports of outdated guidance (fixed fact IDs only) |
 
 ## 1.4 Data verification pipeline

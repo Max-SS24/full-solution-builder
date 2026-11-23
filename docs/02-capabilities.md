@@ -31,7 +31,7 @@ Last updated: 2026-11-20
 - **Weekly checks:** filter failed providers by failure reason, recheck status and last-verified date.
 - **Deep recheck** per row, or **Recheck all failed sources**.
 - **Mark validated / Undo** with a note, plus an audit history of who did it and when.
-- **Accessibility health:** Sunday page audit results, an in-browser diagnostic that tries every contrast/text-size combination on all 13 pages, and an alert banner plus Admin badge until failures are marked reviewed.
+- **Accessibility health:** Sunday page audit results, an in-browser diagnostic that tries every contrast/text-size combination on all 13 pages, and an alert banner plus Admin badge until failures are marked reviewed or a newer check of the same kind passes every page that failed.
 
 ## 2.3 Known limitations
 - Community clinic hours are not available from a reliable official source.

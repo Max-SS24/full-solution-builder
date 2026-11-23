@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { A11Y_KEY, TEXT_SIZES } from "@/lib/a11y-prefs";
 import { AUDIT_BROWSER_PAGES, type AuditResult } from "@/lib/a11y-audit";
 
-type Run = { id: string; kind: string; ok: boolean; passed: number; failed: number; results: AuditResult[]; ran_at: string; acknowledged_at: string | null };
+type Run = { id: string; kind: string; ok: boolean; passed: number; failed: number; results: AuditResult[]; ran_at: string; acknowledged_at: string | null; resolved_by_run: string | null };
 
 function loadFrame(frame: HTMLIFrameElement, path: string) {
   return new Promise<Document>((resolve, reject) => {
@@ -81,7 +81,7 @@ export function A11yDiagnostics({ focusSignal = 0 }: { focusSignal?: number }) {
           <li key={r.id} className="py-2">
             <details>
               <summary className="cursor-pointer">
-                <span className="font-semibold">{r.kind === "server" ? "Sunday page check" : "In-browser diagnostic"}</span> · {new Date(r.ran_at).toLocaleString()} · <span className={r.ok ? "font-bold" : "font-bold text-coral"}>{r.ok ? `✓ ${r.passed} passed` : `${r.failed} need attention`}</span>{!r.ok && (r.acknowledged_at ? " · reviewed" : " · not reviewed")}
+                <span className="font-semibold">{r.kind === "server" ? "Sunday page check" : "In-browser diagnostic"}</span> · {new Date(r.ran_at).toLocaleString()} · <span className={r.ok ? "font-bold" : "font-bold text-coral"}>{r.ok ? `✓ ${r.passed} passed` : `${r.failed} need attention`}</span>{!r.ok && (r.resolved_by_run ? " · resolved by a later passing check" : r.acknowledged_at ? " · reviewed" : " · not reviewed")}
               </summary>
               <ul className="ml-4 mt-1 list-disc">
                 {r.results.map((p) => <li key={p.path}>{p.path}: {p.ok ? "passed" : p.problems.join("; ")}</li>)}
