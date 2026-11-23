@@ -71,7 +71,7 @@ Scheduled Sunday jobs --> /api/public/jobs/* (cron-auth guarded) --> Database
 | validate-care-options | Re-validates listings, VA directory pages, hours, community evidence and homepages in bounded batches |
 | VA discovery | Adds newly listed VA facilities from VA.gov sitemaps |
 | Link checks | Helpful links and appointment-prep source pages |
-| a11y-audit (09:17 UTC) | Fetches every public page and checks language, title, skip link, `main#main`, one h1 and the display-preference script |
+| a11y-audit (09:17 UTC) | Renders every public page inside the app (hosting refuses self-requests with 403) and checks language, title, skip link, `main#main`, one h1 and the display-preference script |
 
 All job endpoints live under `/api/public/jobs/*` and reject calls without the cron secret.
 
