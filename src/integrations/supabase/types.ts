@@ -367,6 +367,53 @@ export type Database = {
           },
         ]
       }
+      certificate_recoveries: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          care_option_id: string
+          city: string | null
+          homepage_url: string | null
+          id: string
+          new_status: string
+          provider_name: string
+          recovered_at: string
+          state: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          care_option_id: string
+          city?: string | null
+          homepage_url?: string | null
+          id?: string
+          new_status: string
+          provider_name: string
+          recovered_at?: string
+          state?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          care_option_id?: string
+          city?: string | null
+          homepage_url?: string | null
+          id?: string
+          new_status?: string
+          provider_name?: string
+          recovered_at?: string
+          state?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_recoveries_care_option_id_fkey"
+            columns: ["care_option_id"]
+            isOneToOne: false
+            referencedRelation: "care_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_check_history: {
         Row: {
           auto_resolved_at: string | null
@@ -786,9 +833,14 @@ export type Database = {
         Returns: boolean
       }
       acknowledge_a11y_run: { Args: { _id: string }; Returns: undefined }
+      acknowledge_certificate_recovery: {
+        Args: { _id: string }
+        Returns: undefined
+      }
       admin_analytics:
         | { Args: never; Returns: Json }
         | { Args: { _from: string; _to: string }; Returns: Json }
+      cert_unverified: { Args: { _c: Json }; Returns: boolean }
       claim_first_admin: { Args: never; Returns: boolean }
       community_newer_pass: {
         Args: {

@@ -288,6 +288,13 @@
       "when": 1795408259462,
       "tag": "0040_community_checks_auto_resolve",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1795555991970,
+      "tag": "0041_certificate_recoveries",
+      "breakpoints": true
     }
   ]
 }

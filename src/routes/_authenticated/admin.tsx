@@ -9,6 +9,7 @@ import { GuidanceSources } from "@/components/GuidanceSources";
 import { GuidanceReports } from "@/components/GuidanceReports";
 import { A11yDiagnostics } from "@/components/A11yDiagnostics";
 import { A11yAlert } from "@/components/A11yAlert";
+import { CertificateRecoveryAlert } from "@/components/CertificateRecoveryAlert";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { RecoveryTrends } from "@/components/RecoveryActivity";
@@ -140,6 +141,7 @@ function Admin() {
         {isAdmin.data && (
           <>
             <WeeklyCheckAlert onOpen={() => { setTab("weekly"); setWeeklyFocus((n) => n + 1); }} />
+            <CertificateRecoveryAlert onOpen={() => { setTab("weekly"); setWeeklyFocus((n) => n + 1); }} />
             <A11yAlert onOpen={() => { setTab("weekly"); setA11yFocus((n) => n + 1); }} />
             <div role="tablist" className="mt-6 flex gap-2 overflow-x-auto pb-1">
               {([["analytics", "Analytics"], ["weekly", "Weekly checks"], ["options", "Care options"], ["sources", "Sources"], ["admins", "Admins"], ["ai", "AI service"], ["audit", "Audit log"]] as const).map(([k, l]) => (

@@ -10,3 +10,4 @@
 - Results show the latest Sunday check date (care_checked_at) separately from the last confirmed date (last_validated).
 
 - Failed community_check_history rows auto-resolve via a care_options trigger (community_newer_pass) when a newer saved check (Sunday, deep or live search) passes every failed part; manual validation is separate.
+- Certificate recoveries (cert unverified -> any other result on care_options.homepage_check) are logged by a DB trigger into certificate_recoveries; admins see and acknowledge them on /admin.
