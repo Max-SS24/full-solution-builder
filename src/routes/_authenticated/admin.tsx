@@ -312,10 +312,16 @@ function CareOptions() {
   const q = useQuery({
     queryKey: ["care-options-admin"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("care_options").select("*, data_sources(name)")
-        .order("state").order("city").order("va_vs_community").order("name").limit(2000);
-      if (error) throw error;
-      return data;
+      // The database returns at most 1,000 rows per request, so read every page.
+      const all = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from("care_options").select("*, data_sources(name)")
+          .order("state").order("city").order("va_vs_community").order("name").order("id").range(from, from + 999);
+        if (error) throw error;
+        all.push(...data);
+        if (data.length < 1000) break;
+      }
+      return all;
     },
   });
   const rows = (q.data ?? []).filter((r) =>
@@ -339,7 +345,10 @@ function CareOptions() {
         <input placeholder="Insurance (e.g. tricare)" value={ins} onChange={(e) => setIns(e.target.value)} className={inputCls} />
         <Button onClick={exportCsv} disabled={!rows.length}><Download />Export CSV</Button>
       </div>
-      <p className="mt-3 text-xs font-semibold text-ink/60">{rows.length} options</p>
+      <p className="mt-3 text-xs font-semibold text-ink/60">
+        {q.isLoading ? "Loading options…" : `Showing ${rows.length} of ${(q.data ?? []).length} options on file`}
+        {q.data && ` · ${q.data.filter((r) => r.status === "active").length} active · ${q.data.filter((r) => r.status === "needs_review").length} needing review · ${q.data.filter((r) => r.va_vs_community === "va").length} VA · ${q.data.filter((r) => r.va_vs_community === "community").length} community`}
+      </p>
       <div className="mt-2 max-w-full overflow-x-auto rounded-[22px] border-[3px] border-ink bg-paper">
         <table className="w-full min-w-[960px] text-left text-sm">
           <thead className="border-b-[3px] border-ink bg-soft"><tr>

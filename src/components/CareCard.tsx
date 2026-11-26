@@ -10,6 +10,7 @@ import { verifyPrepFacts } from "@/lib/appointment-prep.functions";
 import { PREP_DISCLAIMER, applyChecks, factsFor, type PrepCheck } from "@/lib/appointment-prep";
 import { cardAddress, cardStatus } from "@/lib/care-card";
 import { deliverFile } from "@/lib/download-file";
+import { EMPTY_MINE, MINE_LABEL, hasMine, loadMine, saveMine, type MyCardDetails } from "@/lib/care-card-mine";
 
 type Facility = { name: string; address: string | null; phone: string | null; url: string | null; hours?: string | null; found: boolean } | null;
 const day = (d: string) => {
@@ -28,6 +29,10 @@ export function CareCard({ facility, results, stage }: {
   const [pdfError, setPdfError] = useState("");
   const [pdfRevision, setPdfRevision] = useState(0);
   const [checked, setChecked] = useState(false);
+  const [mine, setMine] = useState<MyCardDetails>(EMPTY_MINE);
+  const [editing, setEditing] = useState(false);
+  useEffect(() => { setMine(loadMine()); }, []);
+  const updateMine = (k: keyof MyCardDetails, v: string) => setMine((m) => { const n = { ...m, [k]: v }; saveMine(n); return n; });
   useEffect(() => {
     let active = true;
     const refresh = () => {
@@ -50,9 +55,10 @@ export function CareCard({ facility, results, stage }: {
       if (active) setPdf(blob);
     }).catch(() => { if (active) setPdfError("We couldn't create your PDF. Please try again or use Print."); });
     return () => { active = false; };
-  }, [checks, checked, facility, results, stage, pdfRevision]);
+  }, [checks, checked, facility, results, stage, pdfRevision, mine]);
   const top = results.filter((r) => r.name !== facility?.name).slice(0, 3);
   const steps = applyChecks(factsFor(stage), checks).filter((v) => v.verified && v.fact.topic === "referral").slice(0, 3);
+  const unconfirmed = !facility?.found || steps.length === 0;
   async function printCard() {
     setPrinting(true);
     let current: PrepCheck[] = [];
@@ -73,6 +79,26 @@ export function CareCard({ facility, results, stage }: {
         </div>
       </div>
       {pdfError && <div role="status" className="mt-2 text-sm print:hidden">{pdfError} <Button variant="outline" onClick={() => setPdfRevision((n) => n + 1)}>Retry PDF</Button></div>}
+      {(unconfirmed || hasMine(mine)) && (
+        <div className="mt-3 border border-border bg-muted/40 p-3 text-sm print:hidden">
+          <p>{unconfirmed ? "Some details on this card couldn't be confirmed. You can add the information yourself so your card is complete." : "You've added your own details to this card."}</p>
+          <Button variant="outline" className="mt-2" aria-expanded={editing} aria-controls="care-card-mine" onClick={() => setEditing((e) => !e)}>{editing ? "Done" : hasMine(mine) ? "Edit my details" : "Add this myself"}</Button>
+          {editing && (
+            <div id="care-card-mine" className="mt-3 grid gap-3 sm:grid-cols-2">
+              {([["facility", "Facility or clinic name"], ["address", "Address"], ["phone", "Phone number"], ["appointment", "Appointment date and time"]] as const).map(([k, l]) => (
+                <label key={k} className="grid gap-1 font-semibold">{l}
+                  <input value={mine[k]} maxLength={160} onChange={(e) => updateMine(k, e.target.value)} className="min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal" />
+                </label>
+              ))}
+              <label className="grid gap-1 font-semibold sm:col-span-2">Notes (for example steps your VA team told you)
+                <textarea value={mine.notes} maxLength={400} rows={3} onChange={(e) => updateMine("notes", e.target.value)} className="min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal" />
+              </label>
+              <p className="text-xs text-muted-foreground sm:col-span-2">Saved only on this device until you close the tab. Not checked against VA.gov.</p>
+              {hasMine(mine) && <Button variant="outline" className="sm:col-span-2 sm:justify-self-start" onClick={() => { setMine(EMPTY_MINE); saveMine(EMPTY_MINE); }}>Clear my details</Button>}
+            </div>
+          )}
+        </div>
+      )}
       <div ref={cardRef} id="care-card" className="mt-4 border border-border bg-card p-4 text-sm sm:p-5">
         <h3 className="font-display text-lg font-bold">VA Navigator · Care card</h3>
         <p className="text-xs text-muted-foreground">Prepared {day(new Date().toISOString())} · Keep this personal care information private.</p>
@@ -85,6 +111,16 @@ export function CareCard({ facility, results, stage }: {
               <p>Hours: {facility.hours ?? "Not supplied — contact the facility"}</p>
               {facility.url && <a href={facility.url} className="block break-all text-xs underline">{facility.url}</a>}
             </> : <p>Facility not matched to an official listing; address and phone unconfirmed.</p>}
+          </section>
+        )}
+        {hasMine(mine) && (
+          <section className="mt-3 border-l-4 border-border pl-3">
+            <h4 className="font-bold">Your own details ({MINE_LABEL})</h4>
+            {mine.facility && <p>Facility: {mine.facility}</p>}
+            {mine.address && <p>Address: {mine.address}</p>}
+            {mine.phone && <p>Phone: {mine.phone}</p>}
+            {mine.appointment && <p>Appointment: {mine.appointment}</p>}
+            {mine.notes && <p>Notes: {mine.notes}</p>}
           </section>
         )}
         {top.length > 0 && (

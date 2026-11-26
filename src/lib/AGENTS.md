@@ -11,3 +11,5 @@
 
 - Failed community_check_history rows auto-resolve via a care_options trigger (community_newer_pass) when a newer saved check (Sunday, deep or live search) passes every failed part; manual validation is separate.
 - Certificate recoveries (cert unverified -> any other result on care_options.homepage_check) are logged by a DB trigger into certificate_recoveries; admins see and acknowledge them on /admin.
+- A registered facility given as a place ("near Decatur, GA", ZIP) is resolved in src/lib/facility-place.ts: nearest VA rows offered as a numbered list, saved only after the person picks one (picks persist by rescanning the chat); "none" saves nothing.
+- Care Card details a person types (src/lib/care-card-mine.ts) stay in sessionStorage, are labeled unverified on screen/print/PDF, and never replace confirmed VA.gov data.

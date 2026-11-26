@@ -41,3 +41,8 @@ Last updated: 2026-11-20
 - Distances are straight-line, not driving distance.
 - Accessibility alerts and guidance reports appear in-app only (no email yet).
 - The guest limit (5 result sets) is a fixed value that can be tuned.
+
+### Registered facility by place and self-entered Care Card details
+- Saying a registered facility is "near Decatur, GA" (or a ZIP) shows up to four nearest VA locations with addresses and miles; the person picks one or says "none of these". Nothing is saved without their choice.
+- When Care Card details can't be confirmed, people can add facility, address, phone, appointment time and notes themselves. These stay on their device and are marked "Entered by you — not verified by VA Navigator" on the card, print and PDF.
+- Admin Care options now loads every listing (not just the first 1,000) and shows totals by status and VA/community that match Analytics.

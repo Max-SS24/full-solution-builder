@@ -261,6 +261,37 @@ export const navigate = createServerFn({ method: "POST" })
     // Corrections: "my facility is actually X", "that's not my facility", "wrong facility".
     const fix = correctFacility(lastUser);
     if (fix) variables.va_facility = fix === "ask" ? null : fix;
+    // A facility given as a place ("near Decatur, GA") is looked up and confirmed, never guessed.
+    const { placeOf, offeredNames, pickCandidate, candidatesReply } = await import("./facility-place");
+    type Place = NonNullable<ReturnType<typeof placeOf>>;
+    let facilityPlace: Place | null = null;
+    let facilityPrompt: string | null = null;
+    let holdFacility = false;
+    const offeredFac = offeredNames(prevBot);
+    if (offeredFac.length && fix !== "ask") {
+      const pick = typeof fix === "string" ? null : pickCandidate(lastUser, offeredFac);
+      if (pick === "none") { holdFacility = true; facilityPrompt = "No problem. What's the name of your VA facility or clinic, or a nearby city and state?"; }
+      else if (pick) variables.va_facility = pick;
+      else if ((facilityPlace = placeOf(typeof fix === "string" ? fix : lastUser))) holdFacility = true;
+      else if (!fix) { holdFacility = true; facilityPrompt = `Sorry, I didn't catch which one. ${prevBot.slice(prevBot.indexOf("I found"))}`; }
+    } else if (/which VA facility/i.test(prevBot) || fix) {
+      facilityPlace = placeOf(typeof fix === "string" ? fix : lastUser);
+    }
+    if (!facilityPlace && variables.va_facility && variables.va_facility !== "unknown" && !offeredFac.length) facilityPlace = placeOf(variables.va_facility);
+    if (facilityPlace) holdFacility = true;
+    // Keep a facility they confirmed earlier in this chat (a later "none of these" or correction replaces it).
+    if (!variables.va_facility && !holdFacility && !fix) {
+      let confirmed: string | null = null;
+      data.messages.forEach((m, i) => {
+        const nextUser = data.messages[i + 1];
+        if (m.role !== "assistant" || nextUser?.role !== "user") return;
+        const names = offeredNames(m.content);
+        if (names.length) { const p = pickCandidate(nextUser.content, names); if (p) confirmed = p === "none" ? null : p; }
+        else if (correctFacility(nextUser.content)) confirmed = null;
+      });
+      if (confirmed) variables.va_facility = confirmed;
+    }
+    if (holdFacility) variables.va_facility = null;
     // The newest VA / community choice wins over anything said earlier.
     const latestChoice = fallbackExtract(lastUser).va_vs_community;
     if (latestChoice) variables.va_vs_community = latestChoice;
@@ -274,6 +305,7 @@ export const navigate = createServerFn({ method: "POST" })
       }
     }
 
+    if (holdFacility) variables.va_facility = null;
     const locationGiven = !!variables.location;
     if (!variables.location) variables.location = "Atlanta, GA";
 
@@ -315,6 +347,27 @@ export const navigate = createServerFn({ method: "POST" })
       if (g) origin = { lat: Number(g.lat), lon: Number(g.lon) };
     } catch { /* distance just won't show */ }
     const radius = Math.min(Math.max(variables.distance_miles ?? 50, 5), 150);
+    if (facilityPlace) {
+      let near: { lat: number; lon: number } | null = null;
+      try {
+        const g = facilityPlace.zip ? await geocodeZip(facilityPlace.zip) : await geocode(facilityPlace.city, facilityPlace.state);
+        if (g) near = { lat: Number(g.lat), lon: Number(g.lon) };
+      } catch { /* fall back to a city match */ }
+      let cands: { name: string; address: string | null; distance_miles: number | null }[] = [];
+      if (near) {
+        const dLat = 60 / 69, dLon = 60 / (69 * Math.max(Math.cos((near.lat * Math.PI) / 180), 0.2));
+        const { data: rowsNear } = await sb.from("care_options").select("name, bio, lat, lon").eq("va_vs_community", "va")
+          .gte("lat", near.lat - dLat).lte("lat", near.lat + dLat).gte("lon", near.lon - dLon).lte("lon", near.lon + dLon).limit(300);
+        cands = sortByDistance((rowsNear ?? []).filter((r) => r.lat != null && r.lon != null).map((r) => ({
+          name: r.name, address: addressOf(r.bio), distance_miles: Math.round(milesBetween(near!, { lat: r.lat!, lon: r.lon! }) * 10) / 10,
+        }))).slice(0, 4);
+      }
+      if (!cands.length && facilityPlace.city) {
+        const { data: rowsCity } = await sb.from("care_options").select("name, bio").eq("va_vs_community", "va").eq("state", facilityPlace.state).ilike("city", facilityPlace.city).limit(4);
+        cands = (rowsCity ?? []).map((r) => ({ name: r.name, address: addressOf(r.bio), distance_miles: null }));
+      }
+      facilityPrompt = candidatesReply(facilityPlace, cands);
+    }
 
     // Saved care options sheet for this area (active and needs-review rows of enabled sources are readable).
     let stored: CareResult[] = [];
@@ -409,7 +462,13 @@ export const navigate = createServerFn({ method: "POST" })
       }
       // Their own VA facility first, matched loosely by name ("James A. Haley in Tampa").
       if (v.va_facility && v.va_facility !== "unknown") {
-        const own = pool.find((r) => (r.kind.includes("VA") || r.kind === "Vet Center") && facilityMatches(v.va_facility!, r.name, city));
+        let own = pool.find((r) => (r.kind.includes("VA") || r.kind === "Vet Center") && facilityMatches(v.va_facility!, r.name, city));
+        // A facility they confirmed from the list may sit outside today's search area: look it up by its exact name.
+        if (!own) {
+          const { data: exact } = await sb.from("care_options").select("*").eq("va_vs_community", "va").eq("name", v.va_facility).limit(1);
+          const o = exact?.[0];
+          if (o) own = { id: o.external_id, name: o.name, kind: o.kind, city: o.city, state: o.state, formats: o.formats, needs: o.needs, care_types: o.care_types, payment: o.insurance, veteran_focus: o.veteran_focus, phone: o.phone, source_url: o.website, provider_website: o.provider_website, lat: o.lat, lon: o.lon, hours: o.hours, verified: true, last_checked: o.last_validated, source_name: "VA.gov", bio: o.bio, freshness: "saved" } as CareResult;
+        }
         if (own) results = [own, ...results.filter((r) => r.id !== own.id)].slice(0, 6);
         myFacility = own
           ? { name: own.name, address: addressOf(own.bio), phone: own.phone, url: own.source_url, hours: own.hours ?? null, found: true }
@@ -433,7 +492,7 @@ export const navigate = createServerFn({ method: "POST" })
     else if (wantsVa && !variables.va_applied && !asked.has("va_applied")) vaQuestion = "Have you already applied for VA health care?";
     else if (wantsVa && variables.va_applied === "yes" && !variables.va_registered && !asked.has("va_registered")) vaQuestion = "Are you registered as a patient at a VA facility (yes, no, or not sure)?";
     else if (wantsVa && variables.va_registered === "yes" && !variables.va_facility && (fix === "ask" || !asked.has("va_facility"))) vaQuestion = "Which VA facility are you registered at? If you don't know, just say so and I'll show you how to find out.";
-    const needsMore = (missing.length > 0 || !!vaQuestion) && !crisis;
+    const needsMore = (missing.length > 0 || !!vaQuestion || !!facilityPrompt) && !crisis;
     // Check community websites live; a site whose security certificate can't be verified is never offered.
     if (!needsMore && results.length) {
       const { checkCommunityHomepages, saveLiveHomepageChecks } = await import("./homepage-check.server");
@@ -469,6 +528,7 @@ export const navigate = createServerFn({ method: "POST" })
     // The AI may forget to ask; on search turns where it asked nothing, ask the single next relevant question.
     const nextQ = missing[0] ?? vaQuestion;
     if (!conversational && needsMore && nextQ && aiUsed && !aiAsks && !/\?/.test(reply)) reply += ` ${nextQ}`;
+    if (facilityPrompt && !crisis) reply = facilityPrompt;
     // A place outside U.S. coverage gets a plain note, placed before the question so it is read first.
     const outOfArea = outOfAreaNotice(lastUser);
     if (outOfArea && !conversational && !crisis && !/territor/i.test(reply)) reply = withNotice(reply, outOfArea);
